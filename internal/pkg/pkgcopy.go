@@ -99,7 +99,7 @@ func CopySingleFile(path string, destPath string, logGroup *logger.LogGroup, arg
 	}
 
 	if logGroup != nil {
-		logGroup.Info("📑 Copying file %s", prettyPath)
+		logGroup.Info("%sCopying file %s", logger.File, prettyPath)
 	}
 
 	// Open source file in read-only mode
@@ -151,7 +151,7 @@ func (p *PkgCopy) CopyToPackageDir(logGroup *logger.LogGroup) error {
 
 		// Skip hidden files or directories based on their base name.
 		if strings.HasPrefix(d.Name(), ".") && d.Name() != "." && d.Name() != ".." {
-			logGroup.Debug("⛔ Ignoring hidden file or directory %s", path)
+			logGroup.Debug("%sIgnoring hidden file or directory %s", logger.Ignore, path)
 			if d.IsDir() {
 				return filepath.SkipDir
 			}
@@ -176,7 +176,7 @@ func (p *PkgCopy) CopyToPackageDir(logGroup *logger.LogGroup) error {
 				return fmt.Errorf("error matching ignore pattern: %v", err)
 			}
 			if matched {
-				logGroup.Debug("⛔ Ignoring %s", prettyPath)
+				logGroup.Debug("%sIgnoring %s", logger.Ignore, prettyPath)
 				// If it's a directory, skip the whole subtree.
 				if d.IsDir() {
 					return filepath.SkipDir
@@ -189,7 +189,7 @@ func (p *PkgCopy) CopyToPackageDir(logGroup *logger.LogGroup) error {
 				return fmt.Errorf("error matching ignore pattern: %v", err)
 			}
 			if matched {
-				logGroup.Debug("⛔ Ignoring %s", prettyPath)
+				logGroup.Debug("%sIgnoring %s", logger.Ignore, prettyPath)
 				// If it's a directory, skip the whole subtree.
 				if d.IsDir() {
 					return filepath.SkipDir
@@ -200,7 +200,7 @@ func (p *PkgCopy) CopyToPackageDir(logGroup *logger.LogGroup) error {
 
 		// Check the repo's ignore logic.
 		if vR.IsIgnored(path, d.IsDir()) {
-			logGroup.Debug("⛔ Ignoring %s", prettyPath)
+			logGroup.Debug("%sIgnoring %s", logger.Ignore, prettyPath)
 			if d.IsDir() {
 				return filepath.SkipDir
 			}
@@ -212,7 +212,7 @@ func (p *PkgCopy) CopyToPackageDir(logGroup *logger.LogGroup) error {
 
 		// If it's a directory, create it.
 		if d.IsDir() {
-			logGroup.Info("🗂️  Creating directory %s", destPath)
+			logGroup.Info("%sCreating directory %s", logger.Directory, destPath)
 			if err := os.MkdirAll(destPath, 0755); err != nil {
 				return fmt.Errorf("error creating directory %s: %v", destPath, err)
 			}

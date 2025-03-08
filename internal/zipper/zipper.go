@@ -25,7 +25,7 @@ func (z *Zipper) Complete() {
 }
 
 func (z *Zipper) ZipFiles(srcPath string, destPath string, noLibArgs ...[]string) error {
-	z.logGroup.Info("📦 Creating %s", destPath)
+	z.logGroup.Info("%sCreating %s", logger.ZipFile, destPath)
 	dirsToExclude := []string{}
 	noLibStripPaths := []string{}
 	if len(noLibArgs) > 0 {
@@ -170,7 +170,7 @@ func (z *Zipper) ZipFiles(srcPath string, destPath string, noLibArgs ...[]string
 }
 
 func NewZipper(pkgDir string, releaseDir string, topDir string, unixLineEndings bool) *Zipper {
-	logGroup := logger.NewLogGroup("💼 Creating Zip File(s)")
+	logGroup := logger.NewLogGroup(fmt.Sprintf("%sCreating Zip File(s)", logger.Zip))
 	return &Zipper{
 		pkgDir:          pkgDir,
 		releaseDir:      releaseDir,

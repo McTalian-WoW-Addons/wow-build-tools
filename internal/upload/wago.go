@@ -331,7 +331,7 @@ type UploadWagoArgs struct {
 }
 
 func UploadToWago(args UploadWagoArgs) error {
-	logGroup := logger.NewLogGroup("🪢  Uploading to Wago")
+	logGroup := logger.NewLogGroup(fmt.Sprintf("%sUploading to Wago", logger.Wago))
 	defer logGroup.Flush(true)
 
 	if args.SkipUpload {

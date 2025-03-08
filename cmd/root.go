@@ -26,12 +26,16 @@ import (
 
 	"github.com/McTalian/wow-build-tools/internal/configdir"
 	"github.com/McTalian/wow-build-tools/internal/logger"
+	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )
 
 var LevelVerbose bool
 var LevelDebug bool
+var NoEmoji bool
+var NoColor bool
+var Boring bool
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -66,8 +70,17 @@ func init() {
 	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.wow-build-tools.yaml)")
 	rootCmd.PersistentFlags().BoolVarP(&LevelVerbose, "verbose", "V", false, "Enable verbose output")
 	rootCmd.PersistentFlags().BoolVarP(&LevelDebug, "debug", "v", false, "Enable debug output")
+	rootCmd.PersistentFlags().BoolVar(&NoEmoji, "no-emoji", false, "Disable emoji output")
+	rootCmd.PersistentFlags().BoolVar(&NoColor, "no-color", false, "Disable color output")
+	rootCmd.PersistentFlags().BoolVar(&Boring, "boring", false, "Disable emoji and color output")
 
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		if NoEmoji || Boring {
+			logger.DisableEmoji()
+		}
+		if NoColor || Boring {
+			color.NoColor = true
+		}
 		if LevelVerbose {
 			logger.SetLogLevel(logger.VERBOSE)
 		} else if LevelDebug {
