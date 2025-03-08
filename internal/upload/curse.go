@@ -402,7 +402,7 @@ type UploadCurseArgs struct {
 }
 
 func UploadToCurse(args UploadCurseArgs) error {
-	logGroup := logger.NewLogGroup("🔥 Uploading to CurseForge")
+	logGroup := logger.NewLogGroup(fmt.Sprintf("%sUploading to CurseForge", logger.CurseForge))
 	defer logGroup.Flush(true)
 
 	if args.SkipUpload || args.OnlyLocalization {

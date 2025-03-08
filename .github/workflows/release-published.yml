@@ -208,7 +208,8 @@ jobs:
       CF_API_KEY: ${{ secrets.CF_API_KEY }}
       WOWI_API_TOKEN: ${{ secrets.WOWI_API_TOKEN }}
       WAGO_API_TOKEN: ${{ secrets.WAGO_API_TOKEN }}
-      COMMON_ARGS: "--interface-versions=110100 -i ./wow-build-tools.zip -l ${{ github.ref_name }} -r ${{ needs.upload-assets.outputs.release-type }} -V"
+      COMMON_ARGS: "--interface-versions=110100 -i ./wow-build-tools-${{ github.ref_name }}.zip -l ${{ github.ref_name }} -r ${{ needs.upload-assets.outputs.release-type }} -V"
+      VERSION: ${{ github.ref_name }}
     steps:
       - uses: actions/checkout@v4
 
@@ -216,11 +217,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: zip-${{ env.CMD }}_windows_amd64
-
-      - name: Extract the windows binary
-        run: |
-          mkdir -p ./bin
-          unzip -j ${{ env.CMD }}_windows_amd64.zip -d ./bin
+          path: bin
 
       - name: Create a windows zip for upload to distros
         run: |
@@ -229,28 +226,28 @@ jobs:
           touch bin/README.txt
           echo "This is NOT a WoW addon, it is a tool for building and releasing WoW addons." >> bin/README.txt
           echo "It is a development tool. This particular zip is uploaded to the three popular WoW Addon distribution platforms - Hello folks at ${{ matrix.distro }}!" >> bin/README.txt
-          echo "It contains the Windows AMD64 binary, ${CMD}.exe." >> bin/README.txt
+          echo "It contains the Windows AMD64 binary within ${CMD}_windows_amd64.zip." >> bin/README.txt
           echo "" >> bin/README.txt
           echo "For more information, see the GitHub repository which has releases for other platforms as well as a Wiki." >> bin/README.txt
-          echo "https://github.com/Mctalian/wow-build-tools/tree/beta" >> bin/README.txt
+          echo "https://github.com/Mctalian/${{ env.CMD }}" >> bin/README.txt
           echo "" >> bin/README.txt
           echo "Also, the project is still in BETA, so please report any issues you find." >> bin/README.txt
-          echo "Thank you for reading this and for your interest in wow-build-tools :)" >> bin/README.txt
+          echo "Thank you for reading this and for your interest in ${{ env.CMD }} :)" >> bin/README.txt
           echo "" >> bin/README.txt
           echo "- McTalian" >> bin/README.txt
           echo "" >> bin/README.txt
           echo "Copying LICENSE to bin"
           cp LICENSE ./bin/LICENSE
-          echo "Generating wow-build-tools.toc (mainly for Wago)"
-          rm -f ./bin/wow-build-tools.toc
-          touch bin/wow-build-tools.toc
-          echo "## Interface: 110100" >> bin/wow-build-tools.toc
-          echo "## Title: wow-build-tools" >> bin/wow-build-tools.toc
-          echo "## Notes: This is NOT an addon, but a tool for building and releasing WoW addons." >> bin/wow-build-tools.toc
-          echo "## Author: McTalian" >> bin/wow-build-tools.toc
-          echo "" >> bin/wow-build-tools.toc
+          echo "Generating ${{ env.CMD }}.toc (mainly for Wago)"
+          rm -f ./bin/${{ env.CMD }}.toc
+          touch bin/${{ env.CMD }}.toc
+          echo "## Interface: 110100" >> bin/${{ env.CMD }}.toc
+          echo "## Title: ${{ env.CMD }}" >> bin/${{ env.CMD }}.toc
+          echo "## Notes: This is NOT an addon, but a tool for building and releasing WoW addons." >> bin/${{ env.CMD }}.toc
+          echo "## Author: McTalian" >> bin/${{ env.CMD }}.toc
+          echo "" >> bin/${{ env.CMD }}.toc
           echo "Putting it all in a zip"
-          zip -j ./${{ env.CMD }}.zip ./bin/${{ env.CMD }}_windows_amd64.exe ./bin/README.txt ./bin/LICENSE ./bin/wow-build-tools.toc
+          zip -j ./${{ env.CMD }}-${{ env.VERSION }}.zip ./bin/${{ env.CMD }}_windows_amd64.zip ./bin/README.txt ./bin/LICENSE ./bin/${{ env.CMD }}.toc
 
       - name: Download binary
         uses: actions/download-artifact@v4

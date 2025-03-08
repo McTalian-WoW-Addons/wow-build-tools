@@ -82,7 +82,7 @@ func (p *PkgMeta) String() string {
 
 func (p *PkgMeta) FetchExternals(packageDir string, forceExternals bool) error {
 	externalLogger := logger.GetSubLog("EXT")
-	externalLogger.Debug("Fetching external dependencies")
+	externalLogger.Info("%sFetching external dependencies", logger.External)
 
 	var checkoutWg sync.WaitGroup
 	checkoutErrChan := make(chan error, len(p.Externals))
@@ -95,14 +95,14 @@ func (p *PkgMeta) FetchExternals(packageDir string, forceExternals bool) error {
 		currentEntry := entry
 		currentPath := path
 
-		currentEntry.LogGroup = logger.NewLogGroup(fmt.Sprintf("🌐 External %s", path))
+		currentEntry.LogGroup = logger.NewSubLogGroup(fmt.Sprintf("%sExternal %s", logger.External, path))
 
 		var ext external.Vcs
 		var err error
 		switch currentEntry.EType {
 		case external.Git:
 			checkoutWg.Add(1)
-			currentEntry.LogGroup.Info("📥 Processing external for %s", currentPath)
+			currentEntry.LogGroup.Info("%sProcessing external for %s", logger.Processing, currentPath)
 			ext, err = external.NewGitExternal(currentEntry, forceExternals)
 			if err != nil {
 				currentEntry.LogGroup.Error("Failed to create git external: %v", err)
@@ -112,7 +112,7 @@ func (p *PkgMeta) FetchExternals(packageDir string, forceExternals bool) error {
 			}
 		case external.Svn:
 			checkoutWg.Add(1)
-			currentEntry.LogGroup.Info("📥 Processing external for %s", currentPath)
+			currentEntry.LogGroup.Info("%sProcessing external for %s", logger.Processing, currentPath)
 			ext, err = external.NewSvnExternal(currentEntry, forceExternals)
 			if err != nil {
 				currentEntry.LogGroup.Error("Failed to create svn external: %v", err)
@@ -169,7 +169,7 @@ func (p *PkgMeta) FetchExternals(packageDir string, forceExternals bool) error {
 		}
 	}
 
-	externalLogger.Timing("All External dependencies fetched in %s", time.Since(start))
+	externalLogger.Timing("%s%sFetching external dependencies in %s", logger.Finish, logger.External, time.Since(start))
 
 	if missingSlugEncountered && len(p.EmbeddedLibraries) < len(p.Externals) {
 		externalLogger.Warn("CurseSlugs could not be determined for one or more externals above and it may not be specified in your pkgmeta embedded-libraries.")

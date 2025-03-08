@@ -54,7 +54,7 @@ jobs:
           mkdir -p ./.coverage
           # mkdir -p ./.test-results
           echo "Running tests..."
-          go test -tags='' -v ./... -cover -coverpkg=./... -coverprofile="./.coverage/.cover.out"
+          go test -v ./... -cover -coverpkg=./... -coverprofile="./.coverage/.cover.out"
           echo "Generating coverage report..."
           go tool cover -html="./.coverage/.cover.out" -o "./.coverage/report.html"
 

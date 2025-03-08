@@ -22,6 +22,22 @@ type LogGroup struct {
 	Header      string
 	Buffer      []BufferedLog
 	parent      *Logger
+	indent      int
+	unbuffered  bool
+}
+
+func NewUnbufferedLogGroup(header string, args ...*Logger) *LogGroup {
+	parent := DefaultLogger
+	if len(args) > 0 {
+		parent = args[0]
+	}
+	return &LogGroup{
+		timeCreated: time.Now(),
+		Header:      header,
+		parent:      parent,
+		indent:      0,
+		unbuffered:  true,
+	}
 }
 
 // NewLogGroup creates a new LogGroup with the specified header.
@@ -35,6 +51,21 @@ func NewLogGroup(header string, args ...*Logger) *LogGroup {
 		Header:      header,
 		Buffer:      make([]BufferedLog, 0),
 		parent:      parent,
+		indent:      0,
+	}
+}
+
+func NewSubLogGroup(header string, args ...*Logger) *LogGroup {
+	parent := DefaultLogger
+	if len(args) > 0 {
+		parent = args[0]
+	}
+	return &LogGroup{
+		timeCreated: time.Now(),
+		Header:      header,
+		Buffer:      make([]BufferedLog, 0),
+		parent:      parent,
+		indent:      1,
 	}
 }
 
@@ -98,11 +129,17 @@ func (lg *LogGroup) Flush(writeToTiming ...bool) {
 	if len(writeToTiming) > 0 {
 		withTiming = writeToTiming[0]
 	}
+	baseIndentStr := strings.Repeat("    ", lg.indent)
+	subIndentStr := strings.Repeat("    ", lg.indent+1)
+
 	// Print the header.
 	// You might choose to colorize or style it as needed.
-	headerStr := color.GreenString(lg.Header)
+	headerStr := color.GreenString(baseIndentStr + lg.Header)
 
 	if lg.parent.level == WARN {
+		if lg.indent == 1 {
+			return
+		}
 		sb.WriteString(headerStr)
 		sb.WriteString(color.MagentaString(fmt.Sprintf(" took %s", time.Since(lg.timeCreated))))
 		log.Print(sb.String())
@@ -122,17 +159,17 @@ func (lg *LogGroup) Flush(writeToTiming ...bool) {
 			// Apply level-specific color.
 			coloredMsg := colorizeMessage(entry.Level, msg)
 			// Indent the message (e.g. 4 spaces).
-			sb.WriteString("    ")
+			sb.WriteString(subIndentStr)
 			sb.WriteString(coloredMsg)
 			sb.WriteString("\n")
 		}
 	}
 
-	sb.WriteString(color.MagentaString(fmt.Sprintf("🏁  %s took %s", lg.Header, time.Since(lg.timeCreated))))
+	sb.WriteString(color.MagentaString(fmt.Sprintf("%s%s%s took %s", baseIndentStr, Finish, lg.Header, time.Since(lg.timeCreated))))
 
 	// Print the entire group in one atomic call.
 	log.Print(sb.String())
 	if withTiming {
-		TimingNoLog("🏁  %s took %s", lg.Header, time.Since(lg.timeCreated))
+		TimingNoLog("%s%s took %s", Finish, lg.Header, time.Since(lg.timeCreated))
 	}
 }

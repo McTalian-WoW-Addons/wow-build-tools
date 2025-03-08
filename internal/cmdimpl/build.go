@@ -113,7 +113,7 @@ func Build(args *BuildArgs) error {
 
 	projectName := toc.DetermineProjectName(tocFilePaths)
 
-	l.Info("🔨 Building %s...", projectName)
+	l.Info("%sBuilding %s...", logger.Build, projectName)
 
 	var tocFiles []*toc.Toc
 	for _, tocFilePath := range tocFilePaths {
@@ -176,7 +176,7 @@ func Build(args *BuildArgs) error {
 		projectName = pkgMeta.PackageAs
 	}
 
-	copyLogGroup := logger.NewLogGroup("🗃️  Preparing Package Directory")
+	copyLogGroup := logger.NewLogGroup(fmt.Sprintf("%sPreparing Package Directory", logger.Package))
 	l.Debug("Top Directory: %s", topDir)
 	l.Debug("Top Directory from Flags: %s", args.TopDir)
 	l.Debug("Release Directory: %s", args.ReleaseDir)
@@ -514,9 +514,9 @@ func Build(args *BuildArgs) error {
 	l.WarningsEncountered()
 
 	fmt.Println("")
-	successMessage := fmt.Sprintf("✨ Successfully packaged %s in ⏱️  %s", projectName, time.Since(start))
+	successMessage := fmt.Sprintf("%sSuccessfully packaged %s in %s%s", logger.Done, projectName, logger.Time, time.Since(start))
 	if args.WatchMode {
-		successMessage = fmt.Sprintf("%s at %s 👀", successMessage, time.Now().Format("15:04:05"))
+		successMessage = fmt.Sprintf("%s at %s%s", successMessage, time.Now().Format("15:04:05"), logger.Watch)
 	}
 	l.Success("%s", successMessage)
 	return nil

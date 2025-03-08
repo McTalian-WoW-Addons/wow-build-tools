@@ -84,7 +84,7 @@ type UploadGitHubArgs struct {
 }
 
 func UploadToGitHub(args UploadGitHubArgs) error {
-	logGroup := logger.NewLogGroup("🐱 Uploading to GitHub")
+	logGroup := logger.NewLogGroup(fmt.Sprintf("%sUploading to GitHub", logger.GitHub))
 	defer logGroup.Flush(true)
 	var err error
 

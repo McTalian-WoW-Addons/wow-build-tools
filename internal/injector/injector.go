@@ -224,7 +224,7 @@ func (i *Injector) ensureLineEndings(filePath string) error {
 }
 
 func (i *Injector) Execute() error {
-	i.logGroup = logger.NewLogGroup("💉 Injecting tokens into package directory")
+	i.logGroup = logger.NewLogGroup(fmt.Sprintf("%sInjecting tokens into package directory", logger.Inject))
 	defer i.logGroup.Flush(true)
 
 	return filepath.WalkDir(i.pkgDir, func(path string, d fs.DirEntry, err error) error {

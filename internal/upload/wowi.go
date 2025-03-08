@@ -274,7 +274,7 @@ type UploadWowiArgs struct {
 }
 
 func UploadToWowi(args UploadWowiArgs) error {
-	logGroup := logger.NewLogGroup("🛜  Uploading to WoW Interface")
+	logGroup := logger.NewLogGroup(fmt.Sprintf("%sUploading to WoW Interface", logger.WoWInterface))
 	defer logGroup.Flush(true)
 
 	if args.SkipUpload {

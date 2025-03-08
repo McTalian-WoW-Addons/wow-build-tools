@@ -1,0 +1,43 @@
+package logger
+
+var (
+	Build        string = "🔨 "
+	CurseForge   string = "🔥 "
+	Directory    string = "🗂️  "
+	Done         string = "✨ "
+	External     string = "🌐 "
+	File         string = "📑 "
+	Finish       string = "🏁  "
+	GitHub       string = "🐱 "
+	Ignore       string = "⛔ " //"🚫 "
+	Inject       string = "💉 "
+	Package      string = "🗃️  "
+	Processing   string = "📥 "
+	Time         string = "⏱️  "
+	Wago         string = "🪢  "
+	Watch        string = " 👀"
+	WoWInterface string = "🛜  "
+	Zip          string = "💼 "
+	ZipFile      string = "📦 "
+)
+
+func DisableEmoji() {
+	Build = ""
+	CurseForge = ""
+	Directory = ""
+	Done = ""
+	External = ""
+	File = ""
+	Finish = ""
+	GitHub = ""
+	Ignore = ""
+	Inject = ""
+	Package = ""
+	Processing = ""
+	Time = ""
+	Wago = ""
+	Watch = ""
+	WoWInterface = ""
+	Zip = ""
+	ZipFile = ""
+}

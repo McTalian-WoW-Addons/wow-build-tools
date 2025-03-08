@@ -24,6 +24,8 @@ package main
 import (
 	"os"
 
+	"github.com/fatih/color"
+
 	"github.com/McTalian/wow-build-tools/cmd"
 	"github.com/McTalian/wow-build-tools/internal/logger"
 	"github.com/McTalian/wow-build-tools/internal/secrets"
@@ -34,6 +36,7 @@ func main() {
 	secrets.LoadSecrets()
 	logger.InitLogger()
 	if os.Getenv("CI") == "true" {
+		color.NoColor = false
 		logger.Verbose("Running in CI environment, no automatic updates will be performed")
 	} else {
 		update.ConfirmAndSelfUpdate()
