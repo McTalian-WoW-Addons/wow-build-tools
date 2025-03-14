@@ -39,7 +39,6 @@ import (
 var globalConfig bool = true
 var configType string
 var configFile string
-var wizardMode bool
 
 var ErrConfigCreationAborted = fmt.Errorf("configuration file creation aborted")
 
@@ -134,6 +133,28 @@ func (f Flavor) ToDir() string {
 	}
 }
 
+// StringToFlavor converts a string to a Flavor type
+func StringToFlavor(s string) Flavor {
+	switch s {
+	case "retail":
+		return retail
+	case "classic":
+		return classic
+	case "classicera":
+		return classicEra
+	case "ptr":
+		return ptr
+	case "xptr":
+		return xptr
+	case "classicptr":
+		return classicPtr
+	case "classiceraptr":
+		return classicEraPtr
+	default:
+		return retail // Default to retail as a fallback
+	}
+}
+
 func capitalize(s string) string {
 	if len(s) == 0 {
 		return s
@@ -143,6 +164,7 @@ func capitalize(s string) string {
 
 func setFlavorPath(reader *bufio.Reader, flavor Flavor, value ...string) error {
 	var flavorPath string
+	var err error
 	if len(value) == 1 {
 		flavorPath = value[0]
 	} else {
@@ -163,12 +185,12 @@ func setFlavorPath(reader *bufio.Reader, flavor Flavor, value ...string) error {
 		}
 
 		logger.Prompt("Enter the path to your %s WoW installation [%s]: ", capitalize(string(flavor)), defaultPath)
-		flavorPath, err := reader.ReadString('\n')
+		flavorPath, err = reader.ReadString('\n')
 		if err != nil {
 			return err
 		}
 		flavorPath = strings.TrimSpace(flavorPath)
-		if flavorPath == "" {
+		if len(flavorPath) == 0 {
 			flavorPath = defaultPath
 		}
 	}
@@ -349,7 +371,7 @@ var configCmd = &cobra.Command{
 		}
 
 		validPrimaryArgs := []string{"wowPath"}
-		if args != nil && len(args) > 0 {
+		if len(args) > 0 {
 			if slices.Contains(validPrimaryArgs, args[0]) {
 				if len(args) == 1 {
 					logger.Error("No subcommand provided for %s configuration", args[0])

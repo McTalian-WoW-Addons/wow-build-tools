@@ -25,6 +25,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"slices"
 
 	"github.com/McTalian/wow-build-tools/internal/logger"
 	"github.com/lithammer/dedent"
@@ -34,6 +35,7 @@ import (
 
 var wslPathToAddonReleaseDir string
 var forceLink bool
+var onlyFlavors []string
 
 // linkCmd represents the link command
 var linkCmd = &cobra.Command{
@@ -52,6 +54,35 @@ var linkCmd = &cobra.Command{
 
 		if cmd.Flags().Changed("topDir") && !cmd.Flags().Changed("releaseDir") {
 			releaseDir = filepath.Join(topDir, ".release")
+		}
+
+		var flavors []Flavor = []Flavor{retail, classic, classicEra, ptr, xptr, classicPtr, classicEraPtr}
+		// Filter flavors if specific ones are requested
+		if len(onlyFlavors) > 0 {
+			filteredFlavors := map[Flavor]bool{
+				retail:        false,
+				classic:       false,
+				classicEra:    false,
+				ptr:           false,
+				xptr:          false,
+				classicPtr:    false,
+				classicEraPtr: false,
+			}
+			for _, flavorStr := range onlyFlavors {
+				flavor := StringToFlavor(flavorStr)
+				if !slices.Contains(knownFlavors, flavor) {
+					l.Warn("Unknown flavor: %s", flavorStr)
+					continue
+				}
+				filteredFlavors[flavor] = true
+				flavors = []Flavor{}
+			}
+
+			for filteredFlavor, include := range filteredFlavors {
+				if include {
+					flavors = append(flavors, filteredFlavor)
+				}
+			}
 		}
 
 		wowPaths := viper.GetStringMapString("wowPath")
@@ -88,6 +119,12 @@ var linkCmd = &cobra.Command{
 			if k == "base" {
 				continue
 			}
+
+			if !slices.Contains(flavors, StringToFlavor(k)) {
+				l.Debug("Skipping flavor %s", k)
+				continue
+			}
+
 			if _, err := os.Stat(filepath.Join(wowPath)); os.IsNotExist(err) {
 				l.Error("World of Warcraft path %s does not exist", wowPath)
 				return err
@@ -140,4 +177,5 @@ func init() {
 	linkCmd.Flags().StringVarP(&releaseDir, "releaseDir", "r", "", "Path to the release directory of the addon")
 	linkCmd.Flags().StringVarP(&wslPathToAddonReleaseDir, "wsl-path-to-addon-release-dir", "w", "", "Path to the addon release directory in WSL")
 	linkCmd.Flags().BoolVarP(&forceLink, "force", "f", false, "Force linking even if the destination exists (will overwrite)")
+	linkCmd.Flags().StringSliceVar(&onlyFlavors, "flavor", []string{}, "Only create links in the specified flavor installations")
 }
