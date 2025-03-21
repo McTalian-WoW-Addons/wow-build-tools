@@ -273,6 +273,7 @@ func (s *SvnExternal) Checkout() error {
 					}
 					continue
 				}
+				e.LogGroup.Flush()
 				return fmt.Errorf("failed to checkout repository %s: %w, output: %s", e.DestPath, err, outputStr)
 			}
 		}
