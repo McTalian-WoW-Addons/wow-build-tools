@@ -13,11 +13,7 @@ var githubUploadUrl = "https://uploads.github.com/"
 var authHeaderValue string
 
 func IsTokenSet() bool {
-	if os.Getenv("GITHUB_OAUTH") == "" {
-		return false
-	}
-
-	return true
+	return os.Getenv("GITHUB_OAUTH") != ""
 }
 
 func getAuthHeaderValue() (string, error) {

@@ -59,7 +59,12 @@ func copyToWow(l *logger.Logger, done chan error) {
 				defer copyWg.Done()
 				interfaceDir := filepath.Join(path, "Interface", "AddOns")
 				if _, err := os.Stat(interfaceDir); os.IsNotExist(err) {
-					os.MkdirAll(interfaceDir, os.ModePerm)
+					err = os.MkdirAll(interfaceDir, os.ModePerm)
+					if err != nil {
+						l.Error("Error creating directory %s: %v", interfaceDir, err)
+						done <- err
+						return
+					}
 				}
 
 				for _, dir := range addonDirs {

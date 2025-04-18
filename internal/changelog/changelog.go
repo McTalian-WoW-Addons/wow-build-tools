@@ -47,8 +47,6 @@ func (c *Changelog) Cleanup() {
 	} else if os.IsNotExist(err) {
 		return
 	}
-
-	return
 }
 
 var ErrManualChangelogNotFound = fmt.Errorf("Manual changelog file not found")

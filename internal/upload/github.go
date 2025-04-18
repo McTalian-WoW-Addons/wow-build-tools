@@ -94,7 +94,7 @@ func UploadToGitHub(args UploadGitHubArgs) error {
 		return nil
 	}
 
-	prerelease := true
+	var prerelease bool
 	switch args.ReleaseType {
 	case "release":
 		prerelease = false
@@ -126,6 +126,10 @@ func UploadToGitHub(args UploadGitHubArgs) error {
 		gameVersions,
 		args.ZipPaths...,
 	)
+	if err != nil {
+		logGroup.Error("Could not get the release metadata contents: %v", err)
+		return err
+	}
 
 	tmpDir := os.TempDir()
 	releaseFile, err := os.CreateTemp(tmpDir, "release-metadata-*.json")

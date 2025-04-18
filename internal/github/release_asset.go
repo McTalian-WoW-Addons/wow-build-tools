@@ -19,31 +19,31 @@ type GitHubReleaseAsset struct {
 	Url  string `json:"url"`
 }
 
-func (ghRA *GitHubReleaseAsset) downloadAsset(logGroup *logger.LogGroup) (io.ReadCloser, error) {
-	req, err := http.NewRequest("GET", ghRA.Url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
+// func (ghRA *GitHubReleaseAsset) downloadAsset(logGroup *logger.LogGroup) (io.ReadCloser, error) {
+// 	req, err := http.NewRequest("GET", ghRA.Url, nil)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("failed to create request: %w", err)
+// 	}
 
-	err = addAuthHeader(req)
-	if err != nil {
-		return nil, err
-	}
+// 	err = addAuthHeader(req)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+// 	client := &http.Client{}
+// 	resp, err := client.Do(req)
 
-	if err != nil {
-		return nil, fmt.Errorf("failed to get request: %w", err)
-	}
+// 	if err != nil {
+// 		return nil, fmt.Errorf("failed to get request: %w", err)
+// 	}
 
-	if resp.StatusCode == http.StatusOK {
-		logGroup.Info("Successfully downloaded asset %s", ghRA.Name)
-		return resp.Body, nil
-	}
+// 	if resp.StatusCode == http.StatusOK {
+// 		logGroup.Info("Successfully downloaded asset %s", ghRA.Name)
+// 		return resp.Body, nil
+// 	}
 
-	return nil, fmt.Errorf("failed to download asset %s: %s", ghRA.Name, resp.Status)
-}
+// 	return nil, fmt.Errorf("failed to download asset %s: %s", ghRA.Name, resp.Status)
+// }
 
 func getAssetId(slug string, releaseId int, filename string) (int, error) {
 	url := fmt.Sprintf("%srepos/%s/releases/%d/assets", githubApiUrl, slug, releaseId)
@@ -84,40 +84,40 @@ func getAssetId(slug string, releaseId int, filename string) (int, error) {
 	return -1, nil
 }
 
-func getAsset(slug string, assetId int) (*GitHubReleaseAsset, error) {
-	url := fmt.Sprintf("%srepos/%s/releases/assets/%d", githubApiUrl, slug, assetId)
+// func getAsset(slug string, assetId int) (*GitHubReleaseAsset, error) {
+// 	url := fmt.Sprintf("%srepos/%s/releases/assets/%d", githubApiUrl, slug, assetId)
 
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create request: %w", err)
-	}
+// 	req, err := http.NewRequest("GET", url, nil)
+// 	if err != nil {
+// 		return nil, fmt.Errorf("failed to create request: %w", err)
+// 	}
 
-	addAcceptHeader(req)
+// 	addAcceptHeader(req)
 
-	err = addAuthHeader(req)
-	if err != nil {
-		return nil, err
-	}
+// 	err = addAuthHeader(req)
+// 	if err != nil {
+// 		return nil, err
+// 	}
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+// 	client := &http.Client{}
+// 	resp, err := client.Do(req)
 
-	if err != nil {
-		return nil, fmt.Errorf("failed to get request: %w", err)
-	}
+// 	if err != nil {
+// 		return nil, fmt.Errorf("failed to get request: %w", err)
+// 	}
 
-	if resp.StatusCode == http.StatusOK {
-		var asset GitHubReleaseAsset
-		err = json.NewDecoder(resp.Body).Decode(&asset)
-		if err != nil {
-			return nil, fmt.Errorf("failed to decode response: %w", err)
-		}
+// 	if resp.StatusCode == http.StatusOK {
+// 		var asset GitHubReleaseAsset
+// 		err = json.NewDecoder(resp.Body).Decode(&asset)
+// 		if err != nil {
+// 			return nil, fmt.Errorf("failed to decode response: %w", err)
+// 		}
 
-		return &asset, nil
-	}
+// 		return &asset, nil
+// 	}
 
-	return nil, fmt.Errorf("failed to get asset %d: %s", assetId, resp.Status)
-}
+// 	return nil, fmt.Errorf("failed to get asset %d: %s", assetId, resp.Status)
+// }
 
 func deleteAsset(slug string, assetId int, logGroup *logger.LogGroup) error {
 	url := fmt.Sprintf("%srepos/%s/releases/assets/%d", githubApiUrl, slug, assetId)

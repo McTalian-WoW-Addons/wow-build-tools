@@ -109,7 +109,7 @@ func CreateRelease(slug string, payload GitHubReleasePayload) (release *GitHubRe
 
 	err = json.NewDecoder(resp.Body).Decode(release)
 
-	return release, nil
+	return release, err
 }
 
 var ErrReleaseNotFound = fmt.Errorf("release not found")
@@ -118,6 +118,9 @@ func GetRelease(slug, tag string) (release *GitHubRelease, err error) {
 	url := fmt.Sprintf("%srepos/%s/releases/tags/%s", githubApiUrl, slug, tag)
 
 	req, err := http.NewRequest("GET", url, nil)
+	if err != nil {
+		return
+	}
 
 	addAcceptHeader(req)
 

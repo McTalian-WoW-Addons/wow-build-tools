@@ -212,29 +212,29 @@ func (i *Injector) findAndReplaceInFile(filePath string) error {
 	return nil
 }
 
-func (i *Injector) ensureLineEndings(filePath string) error {
-	input, err := os.ReadFile(filePath)
-	if err != nil {
-		return err
-	}
+// func (i *Injector) ensureLineEndings(filePath string) error {
+// 	input, err := os.ReadFile(filePath)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	output := string(input)
+// 	output := string(input)
 
-	if i.unixLineEndings {
-		i.logGroup.Verbose("Enforcing unix line endings on %s", filePath)
-		output = strings.ReplaceAll(output, "\r\n", "\n")
-	} else {
-		i.logGroup.Verbose("Enforcing windows line endings on %s", filePath)
-		output = strings.ReplaceAll(output, "\n", "\r\n")
-	}
+// 	if i.unixLineEndings {
+// 		i.logGroup.Verbose("Enforcing unix line endings on %s", filePath)
+// 		output = strings.ReplaceAll(output, "\r\n", "\n")
+// 	} else {
+// 		i.logGroup.Verbose("Enforcing windows line endings on %s", filePath)
+// 		output = strings.ReplaceAll(output, "\n", "\r\n")
+// 	}
 
-	err = os.WriteFile(filePath, []byte(output), 0644)
-	if err != nil {
-		return err
-	}
+// 	err = os.WriteFile(filePath, []byte(output), 0644)
+// 	if err != nil {
+// 		return err
+// 	}
 
-	return nil
-}
+// 	return nil
+// }
 
 func (i *Injector) Execute() error {
 	i.logGroup = logger.NewLogGroup(fmt.Sprintf("%sInjecting tokens into package directory", logger.Inject))
