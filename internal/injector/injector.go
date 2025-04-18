@@ -182,6 +182,19 @@ func (i *Injector) findAndReplaceInFile(filePath string) error {
 		output = strings.Join(newLines, "\n")
 	}
 
+	if strings.Contains(output, tokens.StripComments.NormalizeToken()) && filepath.Ext(filePath) == ".lua" {
+		i.logGroup.Verbose("Removing comments from %s", filePath)
+		lines := strings.Split(output, "\n")
+		var newLines []string
+		for _, line := range lines {
+			if strings.HasPrefix(strings.TrimSpace(line), "--") {
+				continue
+			}
+			newLines = append(newLines, line)
+		}
+		output = strings.Join(newLines, "\n")
+	}
+
 	if strings.Contains(output, tokens.NoLibStrip.NormalizeToken()) {
 		i.NoLibStripFiles = append(i.NoLibStripFiles, filePath)
 	}

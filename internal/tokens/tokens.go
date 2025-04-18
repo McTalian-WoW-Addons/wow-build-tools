@@ -62,6 +62,7 @@ const (
 	Classic        BuildTypeToken = "classic"
 	Debug          BuildTypeToken = "debug"
 	DoNotPackage   BuildTypeToken = "do-not-package"
+	StripComments  BuildTypeToken = "strip-comments"
 	NoLibStrip     BuildTypeToken = "no-lib-strip"
 	Retail         BuildTypeToken = "retail"
 	VersionRetail  BuildTypeToken = "version-retail"
@@ -112,6 +113,7 @@ var buildTypeTokens = []BuildTypeToken{
 	Debug,
 	DoNotPackage,
 	NoLibStrip,
+	StripComments,
 	Retail,
 	VersionRetail,
 	VersionClassic,
