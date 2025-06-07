@@ -108,28 +108,45 @@ const (
 	xptr          Flavor = "xptr"
 	classicPtr    Flavor = "classicPtr"
 	classicEraPtr Flavor = "classicEraPtr"
+	classicBeta   Flavor = "classicBeta"
 )
 
-var knownFlavors = []Flavor{retail, classic, classicEra, ptr, xptr, classicPtr, classicEraPtr}
+type FlavorDir string
+
+const (
+	unknownDir       FlavorDir = ""
+	retailDir        FlavorDir = "_retail_"
+	classicDir       FlavorDir = "_classic_"
+	classicEraDir    FlavorDir = "_classic_era_"
+	ptrDir           FlavorDir = "_ptr_"
+	xptrDir          FlavorDir = "_xptr_"
+	classicPtrDir    FlavorDir = "_classic_ptr_"
+	classicEraPtrDir FlavorDir = "_classic_era_ptr_"
+	classicBetaDir   FlavorDir = "_classic_beta_"
+)
+
+var knownFlavors = []Flavor{retail, classic, classicEra, ptr, xptr, classicPtr, classicEraPtr, classicBeta}
 
 func (f Flavor) ToDir() string {
 	switch f {
 	case retail:
-		return "_retail_"
+		return string(retailDir)
 	case classic:
-		return "_classic_"
+		return string(classicDir)
 	case classicEra:
-		return "_classic_era_"
+		return string(classicEraDir)
 	case ptr:
-		return "_ptr_"
+		return string(ptrDir)
 	case xptr:
-		return "_xptr_"
+		return string(xptrDir)
 	case classicPtr:
-		return "_classic_ptr_"
+		return string(classicPtrDir)
 	case classicEraPtr:
-		return "_classic_era_ptr_"
+		return string(classicEraPtrDir)
+	case classicBeta:
+		return string(classicBetaDir)
 	default:
-		return ""
+		return string(unknownDir)
 	}
 }
 
@@ -150,6 +167,8 @@ func StringToFlavor(s string) Flavor {
 		return classicPtr
 	case "classiceraptr":
 		return classicEraPtr
+	case "classicbeta":
+		return classicBeta
 	default:
 		return retail // Default to retail as a fallback
 	}
@@ -240,27 +259,32 @@ func setWoWPath(reader *bufio.Reader, value ...string) error {
 	}
 
 	for _, entry := range contents {
-		if entry.IsDir() && entry.Name() == "_retail_" {
+		if entry.IsDir() && entry.Name() == retail.ToDir() {
 			logger.Success("Found Retail World of Warcraft installation at: %s", filepath.Join(wowPath, entry.Name()))
 			viper.Set("wowPath.retail", filepath.Join(wowPath, entry.Name()))
-		} else if entry.IsDir() && entry.Name() == "_classic_" {
+		} else if entry.IsDir() && entry.Name() == classic.ToDir() {
 			logger.Success("Found Classic World of Warcraft installation at: %s", filepath.Join(wowPath, entry.Name()))
 			viper.Set("wowPath.classic", filepath.Join(wowPath, entry.Name()))
-		} else if entry.IsDir() && entry.Name() == "_classic_era_" {
+		} else if entry.IsDir() && entry.Name() == classicEra.ToDir() {
 			logger.Success("Found Classic Era World of Warcraft installation at: %s", filepath.Join(wowPath, entry.Name()))
 			viper.Set("wowPath.classicEra", filepath.Join(wowPath, entry.Name()))
-		} else if entry.IsDir() && entry.Name() == "_classic_era_ptr_" {
+		} else if entry.IsDir() && entry.Name() == classicEraPtr.ToDir() {
 			logger.Success("Found Classic Era PTR World of Warcraft installation at: %s", filepath.Join(wowPath, entry.Name()))
 			viper.Set("wowPath.classicEraPtr", filepath.Join(wowPath, entry.Name()))
-		} else if entry.IsDir() && entry.Name() == "_ptr_" {
+		} else if entry.IsDir() && entry.Name() == ptr.ToDir() {
 			logger.Success("Found PTR World of Warcraft installation at: %s", filepath.Join(wowPath, entry.Name()))
 			viper.Set("wowPath.ptr", filepath.Join(wowPath, entry.Name()))
-		} else if entry.IsDir() && entry.Name() == "_xptr_" {
+		} else if entry.IsDir() && entry.Name() == xptr.ToDir() {
 			logger.Success("Found XPTR World of Warcraft installation at: %s", filepath.Join(wowPath, entry.Name()))
 			viper.Set("wowPath.xptr", filepath.Join(wowPath, entry.Name()))
-		} else if entry.IsDir() && entry.Name() == "_classic_ptr_" {
+		} else if entry.IsDir() && entry.Name() == classicPtr.ToDir() {
 			logger.Success("Found Classic PTR World of Warcraft installation at: %s", filepath.Join(wowPath, entry.Name()))
 			viper.Set("wowPath.classicPtr", filepath.Join(wowPath, entry.Name()))
+		} else if entry.IsDir() && entry.Name() == classicBeta.ToDir() {
+			logger.Success("Found Classic Beta World of Warcraft installation at: %s", filepath.Join(wowPath, entry.Name()))
+			viper.Set("wowPath.classicBeta", filepath.Join(wowPath, entry.Name()))
+		} else {
+			logger.Warn("Found unknown directory: %s", entry.Name())
 		}
 	}
 

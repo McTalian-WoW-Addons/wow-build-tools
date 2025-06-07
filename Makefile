@@ -6,6 +6,7 @@ BINARY_NAME := wow-build-tools
 build:
 	mkdir -p $(OUTPUT_DIR)
 	go build -o $(OUTPUT_DIR)/$(BINARY_NAME)
+	GOARCH=amd64 GOOS=windows go build -o $(OUTPUT_DIR)/$(BINARY_NAME).exe
 
 # Define the clean command
 clean:
