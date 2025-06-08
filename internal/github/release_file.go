@@ -10,7 +10,7 @@ import (
 
 type metadata struct {
 	Flavor    string `json:"flavor"`
-	Interface string `json:"interface"`
+	Interface int    `json:"interface"`
 }
 
 type wbtRelease struct {
@@ -25,7 +25,7 @@ type wbtReleaseMetadata struct {
 	Releases []wbtRelease `json:"releases"`
 }
 
-func GetReleaseMetadataContents(name string, version string, gameVersions toc.GameVersions, zipFileNames ...string) (string, error) {
+func GetReleaseMetadataContents(name string, version string, gameInterfaces toc.GameInterfaces, zipFileNames ...string) (string, error) {
 	releaseMetadata := wbtReleaseMetadata{}
 	for _, zipFileName := range zipFileNames {
 		noLib := strings.Contains(zipFileName, "nolib")
@@ -36,7 +36,7 @@ func GetReleaseMetadataContents(name string, version string, gameVersions toc.Ga
 			NoLib:    noLib,
 		}
 
-		for flavor, versions := range gameVersions {
+		for flavor, versions := range gameInterfaces {
 			for _, v := range versions {
 				flavorStr := flavor.ToString()
 				if flavor == toc.Retail {

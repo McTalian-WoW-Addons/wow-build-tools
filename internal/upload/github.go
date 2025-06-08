@@ -118,12 +118,12 @@ func UploadToGitHub(args UploadGitHubArgs) error {
 		return err
 	}
 
-	gameVersions := toc.GetGameFlavorInterfacesMap()
+	gameInterfaces := toc.GetGameFlavorInterfacesMap()
 
 	releaseFileContents, err := github.GetReleaseMetadataContents(
 		args.ProjectName,
 		args.ProjectVersion,
-		gameVersions,
+		gameInterfaces,
 		args.ZipPaths...,
 	)
 	if err != nil {

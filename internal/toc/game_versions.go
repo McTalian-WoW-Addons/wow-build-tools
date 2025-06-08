@@ -53,11 +53,12 @@ func (g GameFlavor) ToString() string {
 }
 
 type GameVersions map[GameFlavor][]string
+type GameInterfaces map[GameFlavor][]int
 
 var gameVersions GameVersions = make(GameVersions)
-var gameInterfaces GameVersions = make(GameVersions)
+var gameInterfaces GameInterfaces = make(GameInterfaces)
 
-func AddGameInterface(flavor GameFlavor, version string) {
+func AddGameInterface(flavor GameFlavor, version int) {
 	gameInterfaces[flavor] = append(gameInterfaces[flavor], version)
 }
 
@@ -123,7 +124,8 @@ func parseGameVersionSegment(version string) error {
 		flavor := getFlavorFromMajorVersion(major)
 
 		AddGameVersion(flavor, fmt.Sprintf("%d.%d.%d", major, minor, patch))
-		AddGameInterface(flavor, fmt.Sprintf("%d%02d%02d", major, minor, patch))
+		interfaceVersion, err := strconv.Atoi(fmt.Sprintf("%d%02d%02d", major, minor, patch))
+		AddGameInterface(flavor, interfaceVersion)
 	}
 
 	return nil
@@ -163,11 +165,11 @@ func ParseGameVersionFlag(gameVersionFlag string) error {
 	return normalizeGameVersion(gameVersionFlag)
 }
 
-func GetGameFlavorVersionsMap() map[GameFlavor][]string {
+func GetGameFlavorVersionsMap() GameVersions {
 	return gameVersions
 }
 
-func GetGameFlavorInterfacesMap() map[GameFlavor][]string {
+func GetGameFlavorInterfacesMap() GameInterfaces {
 	return gameInterfaces
 }
 
