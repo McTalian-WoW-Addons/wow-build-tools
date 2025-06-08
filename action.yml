@@ -20,11 +20,8 @@ outputs:
   project-version:
     description: The determined version of the project.
 
-env:
-  IMAGE: ghcr.io/mctalian/wow-build-tools:${GITHUB_SHA}
-
 runs:
   using: docker
-  image: ${IMAGE}
+  image: Dockerfile
   args:
     - ${{ inputs.args }}
