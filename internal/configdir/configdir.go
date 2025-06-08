@@ -5,7 +5,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/McTalian/wow-build-tools/internal/github"
 	"github.com/McTalian/wow-build-tools/internal/logger"
 )
 
@@ -16,9 +15,9 @@ var cachePath = filepath.Join(configDir, ".cache")
 var externalsPath = filepath.Join(cachePath, "externals")
 
 func getHomeDir() (string, error) {
-	if github.IsGitHubAction() {
-		return github.GetRunnerTempDir()
-	}
+	// if github.IsGitHubAction() {
+	// 	return github.GetRunnerTempDir()
+	// }
 	return os.UserHomeDir()
 }
 
