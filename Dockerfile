@@ -32,6 +32,10 @@ RUN apk add --no-cache \
 # Create a non-root user
 RUN adduser -D -s /bin/bash github
 
+# Create cache directories with proper permissions
+RUN mkdir -p /home/github/.wow-build-tools/cache/externals && \
+    chown -R github:github /home/github/.wow-build-tools
+
 # Copy the built binary from builder stage
 COPY --from=builder /app/wow-build-tools /usr/local/bin/wow-build-tools
 
