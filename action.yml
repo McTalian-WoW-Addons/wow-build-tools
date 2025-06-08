@@ -22,6 +22,6 @@ outputs:
 
 runs:
   using: docker
-  image: Dockerfile
+  image: ghcr.io/mctalian/wow-build-tools:${{ github.action_ref }}
   args:
     - ${{ inputs.args }}
