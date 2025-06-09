@@ -125,6 +125,10 @@ func parseGameVersionSegment(version string) error {
 
 		AddGameVersion(flavor, fmt.Sprintf("%d.%d.%d", major, minor, patch))
 		interfaceVersion, err := strconv.Atoi(fmt.Sprintf("%d%02d%02d", major, minor, patch))
+		if err != nil {
+			logger.Error("%v", err)
+			return fmt.Errorf("Invalid argument for game version: %s", orig)
+		}
 		AddGameInterface(flavor, interfaceVersion)
 	}
 
