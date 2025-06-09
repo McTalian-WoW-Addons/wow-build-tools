@@ -1,3 +1,5 @@
+#checkov:skip=CKV_DOCKER_2: HEALTHCHECK is not applicable for a docker container action
+#checkov:skip=CKV_DOCKER_3: USER instructions should not be used for docker container actions
 # Use official Go image with specific version from go.mod
 FROM golang:1.23.6-alpine AS builder
 
