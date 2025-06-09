@@ -3,6 +3,7 @@ package github
 import (
 	"encoding/json"
 	"fmt"
+	"path/filepath"
 	"strings"
 
 	"github.com/McTalian/wow-build-tools/internal/toc"
@@ -32,7 +33,7 @@ func GetReleaseMetadataContents(name string, version string, gameInterfaces toc.
 		release := wbtRelease{
 			Name:     name,
 			Version:  version,
-			Filename: zipFileName,
+			Filename: filepath.Base(zipFileName),
 			NoLib:    noLib,
 		}
 
