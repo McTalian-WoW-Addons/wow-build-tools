@@ -244,6 +244,7 @@ func Build(args *BuildArgs) error {
 		tokens.VersionCata:   false,
 	}
 	tag := vR.GetCurrentTag()
+	l.Verbose("Current Tag: %s", tag)
 	if tag != "" {
 		if strings.Contains(tag, "alpha") {
 			flags[tokens.AlphaFlag] = "-alpha"
@@ -266,6 +267,7 @@ func Build(args *BuildArgs) error {
 		bTTM[tokens.Beta] = false
 		releaseType = "alpha"
 	}
+	l.Verbose("Release Type: %s", releaseType)
 	flavors := toc.GetGameFlavors()
 	if len(flavors) == 1 {
 		switch flavors[0] {

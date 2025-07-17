@@ -16,6 +16,10 @@ clean:
 run: build
 	./$(OUTPUT_DIR)/$(BINARY_NAME)
 
+release:
+	@cp -f ./$(OUTPUT_DIR)/$(BINARY_NAME) ~/bin/$(BINARY_NAME)
+	@cp -f ./$(OUTPUT_DIR)/$(BINARY_NAME).exe /mnt/c/Users/robpa/bin/$(BINARY_NAME).exe
+
 test:
 	@mkdir -p ./.coverage
 	@go test -tags="e2e" -v ./... -cover -coverpkg=./... -coverprofile="./.coverage/cover.out"

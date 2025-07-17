@@ -315,9 +315,9 @@ func newTagNameHash(name string, hash plumbing.Hash) tagNameHash {
 	return tagNameHash{Name: name, Hash: hash}
 }
 
-// GetProjectTag retrieves a tag associated with HEAD and provides both an “always” (fallback) and the most recent tag.
+// GetProjectTag retrieves a tag associated with HEAD and provides both an "always" (fallback) and the most recent tag.
 // It returns two values: siTag (for the exact tag) and siTagAbbrev (for the abbreviated form).
-func (gR *GitRepo) getProjectTag() (tag7 string, tag0 string, err error) {
+func (gR *GitRepo) getProjectTag() (tag7 string, tag0 string, tagCount int, err error) {
 	var githubRefName, githubTag7, githubTag0 string
 	if githubRef := os.Getenv("GITHUB_REF"); strings.HasPrefix(githubRef, "refs/tags/") {
 		logger.Warn("Detected GitHub Run")
@@ -326,12 +326,12 @@ func (gR *GitRepo) getProjectTag() (tag7 string, tag0 string, err error) {
 
 	refIter, err := gR.gitRepo.Tags()
 	if err != nil {
-		return "", "", fmt.Errorf("failed to get tag objects: %w", err)
+		return "", "", 0, fmt.Errorf("failed to get tag objects: %w", err)
 	}
 	defer refIter.Close()
 
 	matchingTags := make([]*plumbing.Reference, 0)
-	tagCount := 0
+	tagCount = 0
 	tagNameHashes := make([]tagNameHash, 0)
 	err = refIter.ForEach(func(t *plumbing.Reference) error {
 		tagCount++
@@ -365,7 +365,7 @@ func (gR *GitRepo) getProjectTag() (tag7 string, tag0 string, err error) {
 		return nil
 	})
 	if err != nil {
-		return "", "", fmt.Errorf("failed to iterate tags: %w", err)
+		return "", "", tagCount, fmt.Errorf("failed to iterate tags: %w", err)
 	}
 
 	if tagCount == 0 {
@@ -398,7 +398,7 @@ func (gR *GitRepo) getProjectTag() (tag7 string, tag0 string, err error) {
 			gR.previousVersionHash = tagNameHashes[matchingTagHashIndex+1].Hash.String()
 		}
 
-		return tag7, tag0, nil
+		return tag7, tag0, tagCount, nil
 	}
 
 	var latestTag tagNameHash
@@ -412,7 +412,7 @@ func (gR *GitRepo) getProjectTag() (tag7 string, tag0 string, err error) {
 	}
 	cIter, err := gR.gitRepo.Log(opts)
 	if err != nil {
-		return "", "", fmt.Errorf("failed to get commit log: %w", err)
+		return "", "", tagCount, fmt.Errorf("failed to get commit log: %w", err)
 	}
 	defer cIter.Close()
 
@@ -425,7 +425,7 @@ func (gR *GitRepo) getProjectTag() (tag7 string, tag0 string, err error) {
 		commitCount++
 		return nil
 	}); err != nil && err != ErrFoundLatestTag {
-		return "", "", fmt.Errorf("failed to count commits: %w", err)
+		return "", "", tagCount, fmt.Errorf("failed to count commits: %w", err)
 	}
 
 	tag7 = fmt.Sprintf("%s-%d-g%s", latestTag.Name, commitCount, gR.headRef.Hash().String()[:7])
@@ -433,7 +433,7 @@ func (gR *GitRepo) getProjectTag() (tag7 string, tag0 string, err error) {
 	gR.PreviousVersion = latestTag.Name
 	gR.previousVersionHash = latestTag.Hash.String()
 
-	return tag7, tag0, nil
+	return tag7, tag0, tagCount, nil
 }
 
 func (gR *GitRepo) buildChangelogHeader(title string) string {
@@ -541,11 +541,15 @@ func (gR *GitRepo) GetInjectionValues(stm *tokens.SimpleTokenMap) error {
 	}
 	stm.Add(tokens.ProjectRevision, strconv.Itoa(projectRevision))
 
-	tag7, tag0, err := gR.getProjectTag()
+	tag7, tag0, tagCount, err := gR.getProjectTag()
 	if err != nil {
 		return err
 	}
 	stm.Add(tokens.ProjectVersion, tag7)
+	if tagCount == 0 {
+		gR.CurrentTag = ""
+		return nil
+	}
 	if tag7 == tag0 {
 		gR.CurrentTag = tag0
 	}
