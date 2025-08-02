@@ -355,7 +355,7 @@ var watchCmd = &cobra.Command{
 		for _, file := range tree {
 			if filepath.Ext(file) == ".xml" {
 				l.Verbose("Walking XML file: %s", file)
-				xmlEntries, err := toc.WalkXmlFile(file)
+				xmlEntries, err := toc.WalkXmlFile(file, l)
 				if err != nil {
 					l.Error("Error walking XML file: %v", err)
 					return err

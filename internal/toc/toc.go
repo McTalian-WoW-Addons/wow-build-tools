@@ -208,9 +208,9 @@ func GetTocFileTree(path string) ([]string, error) {
 	return coveredFiles, nil
 }
 
-func WalkXmlFile(xmlFile string) ([]string, error) {
+func WalkXmlFile(xmlFile string, l *logger.Logger) ([]string, error) {
 	if _, err := os.Stat(xmlFile); os.IsNotExist(err) {
-		logger.Verbose("Could be an external lib file, skipping: %s", xmlFile)
+		l.Verbose("Could be an external lib file, skipping: %s", xmlFile)
 		return []string{}, nil
 	}
 
@@ -232,7 +232,9 @@ func WalkXmlFile(xmlFile string) ([]string, error) {
 			includeFile = strings.Split(includeFile, "\"")[0]
 			entries = append(entries, filepath.Join(filepath.Dir(xmlFile), includeFile))
 			if strings.Contains(includeFile, ".xml") {
-				recursiveEntries, err := WalkXmlFile(filepath.Join(filepath.Dir(xmlFile), includeFile))
+				withFixedPathSep := strings.ReplaceAll(includeFile, "/", string(os.PathSeparator))
+				withFixedPathSep = strings.ReplaceAll(withFixedPathSep, "\\", string(os.PathSeparator))
+				recursiveEntries, err := WalkXmlFile(filepath.Join(filepath.Dir(xmlFile), withFixedPathSep), l)
 				if err != nil {
 					return nil, fmt.Errorf("error walking XML file: %v", err)
 				}
