@@ -87,6 +87,10 @@ func copyFromCacheToPackageDir(destPath string, repoCachePath string, logGroup *
 func copyExternal(e *external.ExternalEntry, packageDir string) error {
 	repoCachePath := e.RepoCacheDir
 
+	if e.Path != "" && e.EType == external.Git {
+		repoCachePath = filepath.Join(repoCachePath, e.Path)
+	}
+
 	destPath := filepath.Join(packageDir, e.DestPath)
 
 	return copyFromCacheToPackageDir(destPath, repoCachePath, e.LogGroup)

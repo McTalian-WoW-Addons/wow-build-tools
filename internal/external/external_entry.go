@@ -200,6 +200,10 @@ func (e *ExternalEntry) determinePath() {
 			e.Path = segments[3]
 			e.URL = strings.TrimSuffix(e.URL, fmt.Sprintf("%s%s", urlPathSeparator, e.Path))
 		}
+
+		if e.Path == e.URL {
+			e.Path = ""
+		}
 	}
 }
 

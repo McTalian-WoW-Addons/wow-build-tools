@@ -320,7 +320,6 @@ func newTagNameHash(name string, hash plumbing.Hash) tagNameHash {
 func (gR *GitRepo) getProjectTag() (tag7 string, tag0 string, tagCount int, err error) {
 	var githubRefName, githubTag7, githubTag0 string
 	if githubRef := os.Getenv("GITHUB_REF"); strings.HasPrefix(githubRef, "refs/tags/") {
-		logger.Warn("Detected GitHub Run")
 		githubRefName = os.Getenv("GITHUB_REF_NAME")
 	}
 
