@@ -16,7 +16,7 @@ const (
 	TbcClassic
 	WotlkClassic
 	CataClassic
-	MopClassic
+	MistsClassic
 	WodClassic // Just a guess
 	LegionClassic
 	BfaClassic
@@ -35,7 +35,7 @@ func (g GameFlavor) ToString() string {
 		return "wrath"
 	case CataClassic:
 		return "cata"
-	case MopClassic:
+	case MistsClassic:
 		return "mists"
 	case WodClassic: // Just a guess
 		return "wod"
@@ -77,7 +77,7 @@ func getFlavorFromMajorVersion(majorVersion int) GameFlavor {
 	case 4:
 		return CataClassic
 	case 5:
-		return MopClassic
+		return MistsClassic
 	case 6:
 		return WodClassic // Just a guess
 	case 7:
@@ -96,7 +96,7 @@ func getFlavorFromMajorVersion(majorVersion int) GameFlavor {
 func parseGameVersionSegment(version string) error {
 	orig := strings.ToLower(version)
 	switch strings.ToLower(orig) {
-	case Retail.ToString(), ClassicEra.ToString(), TbcClassic.ToString(), WotlkClassic.ToString(), CataClassic.ToString(), MopClassic.ToString():
+	case Retail.ToString(), ClassicEra.ToString(), TbcClassic.ToString(), WotlkClassic.ToString(), CataClassic.ToString(), MistsClassic.ToString():
 		return nil
 	case "mainline":
 		return nil

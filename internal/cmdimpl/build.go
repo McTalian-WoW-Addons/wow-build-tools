@@ -283,8 +283,8 @@ func Build(args *BuildArgs) error {
 			bTTM[tokens.VersionWrath] = true
 		case toc.CataClassic:
 			bTTM[tokens.VersionCata] = true
-		case toc.MopClassic:
-			bTTM[tokens.VersionMop] = true
+		case toc.MistsClassic:
+			bTTM[tokens.VersionMists] = true
 		case toc.WodClassic:
 			bTTM[tokens.VersionWod] = true
 		case toc.LegionClassic:

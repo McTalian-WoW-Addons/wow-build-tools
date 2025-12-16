@@ -70,8 +70,8 @@ const (
 	VersionBcc     BuildTypeToken = "version-bcc"
 	VersionWrath   BuildTypeToken = "version-wrath"
 	VersionCata    BuildTypeToken = "version-cata"
-	VersionMop     BuildTypeToken = "version-mop" // Just guessing from here on
-	VersionWod     BuildTypeToken = "version-wod"
+	VersionMists   BuildTypeToken = "version-mists"
+	VersionWod     BuildTypeToken = "version-wod" // Just guessing from here on
 	VersionLegion  BuildTypeToken = "version-legion"
 	VersionBfa     BuildTypeToken = "version-bfa"
 	VersionSl      BuildTypeToken = "version-sl"
@@ -120,7 +120,7 @@ var buildTypeTokens = []BuildTypeToken{
 	VersionBcc,
 	VersionWrath,
 	VersionCata,
-	VersionMop,
+	VersionMists,
 	VersionWod,
 	VersionLegion,
 	VersionBfa,
