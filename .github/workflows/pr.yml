@@ -22,7 +22,7 @@ jobs:
 
       - name: Smoke test Docker image
         run: |
-          docker run --rm wow-build-tools:pr-${{ github.event.pull_request.number }} /build --help
+          docker run --volume $(pwd):/github/workspace --rm wow-build-tools:pr-${{ github.event.pull_request.number }} /build --help
 
   trunk-check:
     runs-on: ubuntu-latest
