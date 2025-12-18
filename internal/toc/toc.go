@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 
 	"github.com/McTalian/wow-build-tools/internal/logger"
@@ -23,6 +24,8 @@ type Toc struct {
 	Flavor                GameFlavor
 	tocSpecificInterfaces map[GameFlavor][]int
 }
+
+var l = logger.DefaultLogger
 
 func (t *Toc) addGameVersionsFromToc() map[GameFlavor][]string {
 	for _, interfaceVersion := range t.Interface {
@@ -67,7 +70,7 @@ func (t *Toc) getProductsToCheck(flavorReleaseInfo FlavorReleaseInfo) (productsT
 	if err != nil {
 		return
 	}
-	var releaseTypes []GameReleaseType = []GameReleaseType{FullRelease}
+	var releaseTypes []GameReleaseType = []GameReleaseType{LiveRelease}
 	if flavorReleaseInfo.IsBeta {
 		releaseTypes = append(releaseTypes, BetaRelease)
 	}
@@ -85,7 +88,7 @@ func (t *Toc) getProductsToCheck(flavorReleaseInfo FlavorReleaseInfo) (productsT
 			if exists {
 				productsToCheck = append(productsToCheck, products...)
 			} else {
-				fmt.Println("No products found for flavor release:", flavorRelease)
+				l.Warn("No products found for flavor release: %s", flavorRelease.ToString())
 			}
 		}
 	}
@@ -93,13 +96,13 @@ func (t *Toc) getProductsToCheck(flavorReleaseInfo FlavorReleaseInfo) (productsT
 	return
 }
 
-func (t *Toc) CheckForInterfaceBumps(flavorReleaseInfo FlavorReleaseInfo) (availableInterfaces map[GameFlavor]int, err error) {
+func (t *Toc) CheckForInterfaceBumps(flavorReleaseInfo FlavorReleaseInfo) (availableInterfaces map[Product]int, err error) {
 	productsToCheck, err := t.getProductsToCheck(flavorReleaseInfo)
 	if err != nil {
 		return
 	}
 
-	availableInterfaces = make(map[GameFlavor]int)
+	availableInterfaces = make(map[Product]int)
 
 	for _, product := range productsToCheck {
 		buildInfo, exists := (*cacheLatestBuilds)[product]
@@ -111,18 +114,7 @@ func (t *Toc) CheckForInterfaceBumps(flavorReleaseInfo FlavorReleaseInfo) (avail
 			return nil, fmt.Errorf("error parsing Interface version for product %s: %v", product, err)
 		}
 
-		// Determine the flavor for this interface version
-		majorVersion := interfaceVersion / 10000
-		flavor := getFlavorFromMajorVersion(majorVersion)
-		// Normalize MistsClassic to CurrentClassic
-		if flavor == MistsClassic {
-			flavor = CurrentClassic
-		}
-
-		// Keep the highest interface version for each flavor
-		if existing, exists := availableInterfaces[flavor]; !exists || interfaceVersion > existing {
-			availableInterfaces[flavor] = interfaceVersion
-		}
+		availableInterfaces[product] = interfaceVersion
 	}
 
 	return
@@ -174,21 +166,73 @@ func (t *Toc) UpdateInterfaceVersions(flavorReleaseInfo FlavorReleaseInfo) error
 				parts := strings.SplitN(trimmedLine, ":", 2)
 				if len(parts) == 2 {
 					// Extract the suffix (e.g., "Vanilla", "Classic", "Mainline", "Mists")
-					prefix := strings.TrimPrefix(parts[0], "## Interface-")
+					suffix := strings.TrimPrefix(parts[0], "## Interface-")
 					// TocFileToGameFlavor expects a filename-like string with dash/underscore
 					// So we prepend a dummy name to make it work
-					flavor, _ := TocFileToGameFlavor("Addon-" + prefix)
+					flavor, _ := TocFileToGameFlavor("Addon-" + suffix)
 
 					// Normalize MistsClassic to CurrentClassic for comparison
 					if flavor == MistsClassic {
 						flavor = CurrentClassic
 					}
 
-					// Only update if we have an interface version for this flavor
-					if iface, exists := availableInterfaces[flavor]; exists {
-						lines[i] = fmt.Sprintf("## Interface-%s: %d", prefix, iface)
+					var flavorReleases []GameFlavorRelease = []GameFlavorRelease{
+						{
+							Flavor:      flavor,
+							ReleaseType: LiveRelease,
+						},
 					}
-					// If no matching flavor found, we don't touch this line (e.g., Interface-Wrath when not active)
+					if flavorReleaseInfo.IsBeta {
+						flavorReleases = append(flavorReleases, GameFlavorRelease{
+							Flavor:      flavor,
+							ReleaseType: BetaRelease,
+						})
+					}
+					if flavorReleaseInfo.IsTest {
+						flavorReleases = append(flavorReleases, GameFlavorRelease{
+							Flavor:      flavor,
+							ReleaseType: TestRelease,
+						})
+					}
+
+					newIfaces := []int{}
+					products := []Product{}
+					for _, flavorRelease := range flavorReleases {
+						flavorProducts, exists := FlavorReleaseToProductMap[flavorRelease]
+						if exists {
+							products = append(products, flavorProducts...)
+						}
+					}
+
+					productMap := make(map[Product]bool)
+					for _, product := range products {
+						productMap[product] = true
+					}
+
+					for product := range productMap {
+						// Only update if we have an interface version for this flavor
+						if iface, exists := availableInterfaces[product]; exists {
+							newIfaces = append(newIfaces, iface)
+						}
+					}
+
+					// Only update the line if we found interface versions for this flavor
+					if len(newIfaces) > 0 {
+						iFaceMap := make(map[int]bool)
+						for _, iface := range newIfaces {
+							iFaceMap[iface] = true
+						}
+
+						// Remove duplicates, convert to strings
+						uniqueIfaces := []string{}
+						for iface := range iFaceMap {
+							uniqueIfaces = append(uniqueIfaces, strconv.Itoa(iface))
+						}
+
+						newIface := strings.Join(uniqueIfaces, ", ")
+						lines[i] = fmt.Sprintf("## Interface-%s: %s", suffix, newIface)
+					}
+					// If no new interfaces were found for this flavor, leave the line unchanged
 				}
 			}
 		}
@@ -201,6 +245,18 @@ func (t *Toc) UpdateInterfaceVersions(flavorReleaseInfo FlavorReleaseInfo) error
 				for _, iface := range availableInterfaces {
 					interfaces = append(interfaces, iface)
 				}
+
+				var iFaceMap = make(map[int]bool)
+				for _, iface := range interfaces {
+					iFaceMap[iface] = true
+				}
+
+				// Remove duplicates
+				interfaces = []int{}
+				for iface := range iFaceMap {
+					interfaces = append(interfaces, iface)
+				}
+
 				slices.Sort(interfaces)
 				var interfaceStrings []string
 				for _, iface := range interfaces {

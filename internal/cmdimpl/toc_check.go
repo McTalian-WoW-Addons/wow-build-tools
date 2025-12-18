@@ -127,10 +127,24 @@ func RunTocCheck() error {
 				iFaceMap[iface] = true
 			}
 
+			var tocFaceMap = make(map[int]bool)
+			for _, iface := range tocFile.Interface {
+				tocFaceMap[iface] = true
+			}
+
+			// Check for any interfaces in the TOC that are no longer the latest
 			for _, iface := range tocFile.Interface {
 				if !iFaceMap[iface] {
 					updateCount++
-					checkWarnings = append(checkWarnings, fmt.Sprintf("TOC file '%s' uses interface version %d which is no longer the latest available", tocFile.Filepath, iface))
+					checkWarnings = append(checkWarnings, fmt.Sprintf("TOC file '%s' uses interface version %d which is no longer a latest version", tocFile.Filepath, iface))
+				}
+			}
+
+			// Check for any interfaces that are available but not in the TOC
+			for iface := range iFaceMap {
+				if !tocFaceMap[iface] {
+					updateCount++
+					checkWarnings = append(checkWarnings, fmt.Sprintf("TOC file '%s' is missing available interface version upgrade %d", tocFile.Filepath, iface))
 				}
 			}
 		}

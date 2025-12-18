@@ -57,26 +57,43 @@ type FlavorReleaseInfo struct {
 type GameReleaseType int
 
 const (
-	FullRelease GameReleaseType = iota
+	LiveRelease GameReleaseType = iota
 	BetaRelease
 	TestRelease
 )
+
+func (gr GameReleaseType) ToString() string {
+	switch gr {
+	case LiveRelease:
+		return "live"
+	case BetaRelease:
+		return "beta"
+	case TestRelease:
+		return "test"
+	default:
+		return "unknown"
+	}
+}
 
 type GameFlavorRelease struct {
 	Flavor      GameFlavor
 	ReleaseType GameReleaseType
 }
 
+func (gr GameFlavorRelease) ToString() string {
+	return fmt.Sprintf("%s-%s", gr.Flavor.ToString(), gr.ReleaseType.ToString())
+}
+
 var (
-	RetailFlavorRelease     = GameFlavorRelease{Flavor: Retail, ReleaseType: FullRelease}
+	RetailFlavorRelease     = GameFlavorRelease{Flavor: Retail, ReleaseType: LiveRelease}
 	RetailBetaFlavorRelease = GameFlavorRelease{Flavor: Retail, ReleaseType: BetaRelease}
 	RetailTestFlavorRelease = GameFlavorRelease{Flavor: Retail, ReleaseType: TestRelease}
 
-	ClassicEraFlavorRelease     = GameFlavorRelease{Flavor: ClassicEra, ReleaseType: FullRelease}
+	ClassicEraFlavorRelease     = GameFlavorRelease{Flavor: ClassicEra, ReleaseType: LiveRelease}
 	ClassicEraBetaFlavorRelease = GameFlavorRelease{Flavor: ClassicEra, ReleaseType: BetaRelease}
 	ClassicEraTestFlavorRelease = GameFlavorRelease{Flavor: ClassicEra, ReleaseType: TestRelease}
 
-	ClassicFlavorRelease     = GameFlavorRelease{Flavor: CurrentClassic, ReleaseType: FullRelease}
+	ClassicFlavorRelease     = GameFlavorRelease{Flavor: CurrentClassic, ReleaseType: LiveRelease}
 	ClassicBetaFlavorRelease = GameFlavorRelease{Flavor: CurrentClassic, ReleaseType: BetaRelease}
 	ClassicTestFlavorRelease = GameFlavorRelease{Flavor: CurrentClassic, ReleaseType: TestRelease}
 )

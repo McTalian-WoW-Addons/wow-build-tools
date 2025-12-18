@@ -123,15 +123,19 @@ func parse(filePath, tocContents string) (*Toc, error) {
 				toc.Interface = append(toc.Interface, interfaceVersion)
 			}
 		} else if strings.HasPrefix(line, "## Interface-") {
-			// Parse suffixed Interface lines (e.g., "## Interface-Vanilla: 11505")
+			// Parse suffixed Interface lines (e.g., "## Interface-Vanilla: 11505" or "## Interface-Vanilla: 11505, 20505")
 			parts := strings.SplitN(line, ":", 2)
 			if len(parts) == 2 {
-				interfaceValue := strings.TrimSpace(parts[1])
-				interfaceVersion, err := strconv.Atoi(interfaceValue)
-				if err != nil {
-					return nil, fmt.Errorf("error parsing suffixed Interface version: %v", err)
+				interfaceLine := strings.TrimSpace(parts[1])
+				interfaceValues := strings.Split(interfaceLine, ",")
+				for _, interfaceValue := range interfaceValues {
+					interfaceValue = strings.TrimSpace(interfaceValue)
+					interfaceVersion, err := strconv.Atoi(interfaceValue)
+					if err != nil {
+						return nil, fmt.Errorf("error parsing suffixed Interface version: %v", err)
+					}
+					toc.Interface = append(toc.Interface, interfaceVersion)
 				}
-				toc.Interface = append(toc.Interface, interfaceVersion)
 			}
 		} else if strings.HasPrefix(line, "## Title:") {
 			toc.Title = strings.TrimPrefix(line, "## Title:")

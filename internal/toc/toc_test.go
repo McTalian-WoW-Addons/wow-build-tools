@@ -403,13 +403,13 @@ Core.lua`
 	}
 
 	// Check that newer versions are available (they should be greater than our test versions)
-	if retailIface, exists := availableInterfaces[Retail]; !exists || retailIface <= 110000 {
+	if retailIface, exists := availableInterfaces[ProductWow]; !exists || retailIface <= 110000 {
 		t.Errorf("Expected available interface version for retail to be greater than 110000, got %d", retailIface)
 	}
-	if classicIface, exists := availableInterfaces[CurrentClassic]; !exists || classicIface <= 50500 {
+	if classicIface, exists := availableInterfaces[ProductWowClassic]; !exists || classicIface <= 50500 {
 		t.Errorf("Expected available interface version for current classic to be greater than 50500, got %d", classicIface)
 	}
-	if eraIface, exists := availableInterfaces[ClassicEra]; !exists || eraIface <= 11000 {
+	if eraIface, exists := availableInterfaces[ProductWowClassicEra]; !exists || eraIface <= 11000 {
 		t.Errorf("Expected available interface version for classic era to be greater than 11000, got %d", eraIface)
 	}
 }
@@ -450,18 +450,26 @@ Core.lua`
 	// When IsTest is true, we should get the latest versions from test/PTR products
 	// Check that we have versions for all three flavors
 	if len(availableInterfaces) < 3 {
-		t.Errorf("Expected at least 3 flavors when IsTest=true, got %d", len(availableInterfaces))
+		t.Errorf("Expected at least 3 products when IsTest=true, got %d", len(availableInterfaces))
 	}
 
-	// Verify that we have entries for the expected flavors
-	if _, exists := availableInterfaces[Retail]; !exists {
-		t.Error("Expected Retail flavor in results")
+	// Verify that we have entries for the expected products (at least one from each flavor)
+	// For test/PTR, we expect ProductWowTest or ProductWowXPtr for retail
+	hasRetailTest := false
+	if _, exists := availableInterfaces[ProductWowTest]; exists {
+		hasRetailTest = true
 	}
-	if _, exists := availableInterfaces[CurrentClassic]; !exists {
-		t.Error("Expected CurrentClassic flavor in results")
+	if _, exists := availableInterfaces[ProductWowXPtr]; exists {
+		hasRetailTest = true
 	}
-	if _, exists := availableInterfaces[ClassicEra]; !exists {
-		t.Error("Expected ClassicEra flavor in results")
+	if !hasRetailTest {
+		t.Error("Expected Retail test product in results")
+	}
+	if _, exists := availableInterfaces[ProductWowClassicPtr]; !exists {
+		t.Error("Expected Classic PTR product in results")
+	}
+	if _, exists := availableInterfaces[ProductWowClassicEraPtr]; !exists {
+		t.Error("Expected Classic Era PTR product in results")
 	}
 }
 
@@ -501,18 +509,19 @@ Core.lua`
 	// When IsBeta is true, we should get the latest versions from beta products
 	// Check that we have versions for all three flavors
 	if len(availableInterfaces) < 3 {
-		t.Errorf("Expected at least 3 flavors when IsBeta=true, got %d", len(availableInterfaces))
+		t.Errorf("Expected at least 3 products when IsBeta=true, got %d", len(availableInterfaces))
 	}
 
-	// Verify that we have entries for the expected flavors
-	if _, exists := availableInterfaces[Retail]; !exists {
-		t.Error("Expected Retail flavor in results")
+	// Verify that we have entries for the expected products
+	if _, exists := availableInterfaces[ProductWowBeta]; !exists {
+		t.Error("Expected Retail beta product in results")
 	}
-	if _, exists := availableInterfaces[CurrentClassic]; !exists {
-		t.Error("Expected CurrentClassic flavor in results")
+	if _, exists := availableInterfaces[ProductWowClassicBeta]; !exists {
+		t.Error("Expected Classic beta product in results")
 	}
-	if _, exists := availableInterfaces[ClassicEra]; !exists {
-		t.Error("Expected ClassicEra flavor in results")
+	// Note: Classic Era doesn't have a separate beta product currently, uses PTR
+	if _, exists := availableInterfaces[ProductWowClassicEraPtr]; !exists {
+		t.Error("Expected Classic Era PTR product in results")
 	}
 }
 
@@ -549,20 +558,46 @@ Core.lua`
 		t.Error("Expected at least one available interface version")
 	}
 
-	// When both IsBeta and IsTest are true, we get the highest version from all release types
-	// Still expect one version per flavor (the highest found across all release types)
+	// When both IsBeta and IsTest are true, we get versions from all release types (live, beta, test)
+	// We should have multiple products represented
 	if len(availableInterfaces) < 3 {
-		t.Errorf("Expected at least 3 flavors when IsBeta=true and IsTest=true, got %d", len(availableInterfaces))
+		t.Errorf("Expected at least 3 products when IsBeta=true and IsTest=true, got %d", len(availableInterfaces))
 	}
 
-	// Verify that we have entries for the expected flavors
-	if _, exists := availableInterfaces[Retail]; !exists {
-		t.Error("Expected Retail flavor in results")
+	// Verify that we have entries for products from different flavors
+	// Should include at least one retail product
+	hasRetail := false
+	for product := range availableInterfaces {
+		if flavor, exists := ProductToFlavorMap[product]; exists && flavor == Retail {
+			hasRetail = true
+			break
+		}
 	}
-	if _, exists := availableInterfaces[CurrentClassic]; !exists {
-		t.Error("Expected CurrentClassic flavor in results")
+	if !hasRetail {
+		t.Error("Expected at least one Retail product in results")
 	}
-	if _, exists := availableInterfaces[ClassicEra]; !exists {
-		t.Error("Expected ClassicEra flavor in results")
+
+	// Should include at least one classic product
+	hasClassic := false
+	for product := range availableInterfaces {
+		if flavor, exists := ProductToFlavorMap[product]; exists && flavor == CurrentClassic {
+			hasClassic = true
+			break
+		}
+	}
+	if !hasClassic {
+		t.Error("Expected at least one CurrentClassic product in results")
+	}
+
+	// Should include at least one classic era product
+	hasClassicEra := false
+	for product := range availableInterfaces {
+		if flavor, exists := ProductToFlavorMap[product]; exists && flavor == ClassicEra {
+			hasClassicEra = true
+			break
+		}
+	}
+	if !hasClassicEra {
+		t.Error("Expected at least one ClassicEra product in results")
 	}
 }
