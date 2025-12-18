@@ -25,6 +25,8 @@ const (
 	Retail
 )
 
+const CurrentClassic GameFlavor = MistsClassic
+
 func (g GameFlavor) ToString() string {
 	switch g {
 	case ClassicEra:

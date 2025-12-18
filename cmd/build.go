@@ -84,8 +84,8 @@ var buildCmd = &cobra.Command{
 			SplitToc:         splitToc,
 			UnixLineEndings:  unixLineEndings,
 			GameVersion:      gameVersion,
-			LevelVerbose:     LevelVerbose,
-			LevelDebug:       LevelDebug,
+			LevelVerbose:     cmdimpl.RootParams.LevelVerbose,
+			LevelDebug:       cmdimpl.RootParams.LevelDebug,
 		}
 
 		return cmdimpl.Build(buildArgs)

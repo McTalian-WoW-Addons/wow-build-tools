@@ -1,0 +1,233 @@
+package toc
+
+import (
+	"encoding/json"
+	"fmt"
+	"net/http"
+	"strconv"
+	"strings"
+
+	"golang.org/x/exp/slices"
+)
+
+type BuildInfo struct {
+	Product       string `json:"product"`
+	Version       string `json:"version"`
+	CreatedAt     string `json:"created_at"`
+	BuildConfig   string `json:"build_config"`
+	ProductConfig string `json:"product_config"`
+	CdnConfig     string `json:"cdn_config"`
+}
+
+type Product string
+
+const (
+	ProductWow              Product = "wow"
+	ProductWowBeta          Product = "wow_beta"
+	ProductWowTest          Product = "wowt"
+	ProductWowXPtr          Product = "wowxptr"
+	ProductWowLiveTest      Product = "wowlivetest"
+	ProductWowZ             Product = "wowz"
+	ProductWowClassic       Product = "wow_classic"
+	ProductWowClassicBeta   Product = "wow_classic_beta"
+	ProductWowClassicPtr    Product = "wow_classic_ptr"
+	ProductWoWClassicTitan  Product = "wow_classic_titan"
+	ProductWowClassicEra    Product = "wow_classic_era"
+	ProductWowClassicEraPtr Product = "wow_classic_era_ptr"
+)
+
+var ProductToFlavorMap map[Product]GameFlavor = map[Product]GameFlavor{
+	ProductWow:              Retail,
+	ProductWowBeta:          Retail,
+	ProductWowTest:          Retail,
+	ProductWowXPtr:          Retail,
+	ProductWowLiveTest:      Retail, // Not sure about this one
+	ProductWowZ:             Retail, // Not sure about this one
+	ProductWowClassic:       CurrentClassic,
+	ProductWowClassicBeta:   CurrentClassic,
+	ProductWowClassicPtr:    CurrentClassic,
+	ProductWoWClassicTitan:  WotlkClassic, // This one's a bit more nuanced than that
+	ProductWowClassicEra:    ClassicEra,
+	ProductWowClassicEraPtr: ClassicEra,
+}
+
+type FlavorReleaseInfo struct {
+	IsBeta bool
+	IsTest bool
+}
+
+type GameReleaseType int
+
+const (
+	FullRelease GameReleaseType = iota
+	BetaRelease
+	TestRelease
+)
+
+type GameFlavorRelease struct {
+	Flavor      GameFlavor
+	ReleaseType GameReleaseType
+}
+
+var (
+	RetailFlavorRelease     = GameFlavorRelease{Flavor: Retail, ReleaseType: FullRelease}
+	RetailBetaFlavorRelease = GameFlavorRelease{Flavor: Retail, ReleaseType: BetaRelease}
+	RetailTestFlavorRelease = GameFlavorRelease{Flavor: Retail, ReleaseType: TestRelease}
+
+	ClassicEraFlavorRelease     = GameFlavorRelease{Flavor: ClassicEra, ReleaseType: FullRelease}
+	ClassicEraBetaFlavorRelease = GameFlavorRelease{Flavor: ClassicEra, ReleaseType: BetaRelease}
+	ClassicEraTestFlavorRelease = GameFlavorRelease{Flavor: ClassicEra, ReleaseType: TestRelease}
+
+	ClassicFlavorRelease     = GameFlavorRelease{Flavor: CurrentClassic, ReleaseType: FullRelease}
+	ClassicBetaFlavorRelease = GameFlavorRelease{Flavor: CurrentClassic, ReleaseType: BetaRelease}
+	ClassicTestFlavorRelease = GameFlavorRelease{Flavor: CurrentClassic, ReleaseType: TestRelease}
+)
+
+var FlavorReleaseToProductMap map[GameFlavorRelease][]Product = map[GameFlavorRelease][]Product{
+	RetailFlavorRelease:     {ProductWow},
+	RetailBetaFlavorRelease: {ProductWowBeta},
+	RetailTestFlavorRelease: {ProductWowTest, ProductWowXPtr},
+
+	ClassicEraFlavorRelease:     {ProductWowClassicEra},
+	ClassicEraBetaFlavorRelease: {ProductWowClassicEraPtr}, // Classic Era Beta doesn't really show up in build info right now
+	ClassicEraTestFlavorRelease: {ProductWowClassicEraPtr},
+
+	ClassicFlavorRelease:     {ProductWowClassic},
+	ClassicBetaFlavorRelease: {ProductWowClassicBeta},
+	ClassicTestFlavorRelease: {ProductWowClassicPtr},
+}
+
+type ProductBuilds = map[Product]BuildInfo
+
+var wagoApiUrl = "https://wago.tools/api"
+var latestBuilds = fmt.Sprintf("%s/builds/latest", wagoApiUrl)
+
+var cacheLatestBuilds *ProductBuilds = nil
+
+func GetLatestBuildInfo() (*ProductBuilds, error) {
+	// Return cached builds if available
+	if cacheLatestBuilds != nil {
+		return cacheLatestBuilds, nil
+	}
+
+	req, err := http.NewRequest("GET", latestBuilds, nil)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create request: %w", err)
+	}
+
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to perform request: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+	}
+
+	var builds ProductBuilds
+	err = json.NewDecoder(resp.Body).Decode(&builds)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode response: %w", err)
+	}
+
+	cacheLatestBuilds = &builds
+
+	// Implementation to fetch and parse latest build info from Wago API
+	return &builds, nil
+}
+
+func (b *BuildInfo) GetInterfaceVersion() (int, error) {
+	segments := strings.Split(b.Version, ".")
+	if len(segments) < 3 {
+		return 0, fmt.Errorf("invalid build version format: %s", b.Version)
+	}
+
+	major, err := strconv.Atoi(segments[0])
+	if err != nil {
+		return 0, fmt.Errorf("invalid major version in build version: %s", b.Version)
+	}
+
+	minor, err := strconv.Atoi(segments[1])
+	if err != nil {
+		return 0, fmt.Errorf("invalid minor version in build version: %s", b.Version)
+	}
+
+	patch, err := strconv.Atoi(segments[2])
+	if err != nil {
+		return 0, fmt.Errorf("invalid patch version in build version: %s", b.Version)
+	}
+
+	interfaceVersion, err := strconv.Atoi(fmt.Sprintf("%d%02d%02d", major, minor, patch))
+	if err != nil {
+		return 0, fmt.Errorf("failed to construct interface version: %w", err)
+	}
+
+	return interfaceVersion, nil
+}
+
+func getProductsToCheck(flavorReleaseInfo FlavorReleaseInfo) (productsToCheck []Product, err error) {
+	_, err = GetLatestBuildInfo()
+	if err != nil {
+		return
+	}
+	var releaseTypes []GameReleaseType = []GameReleaseType{FullRelease}
+	if flavorReleaseInfo.IsBeta {
+		releaseTypes = append(releaseTypes, BetaRelease)
+	}
+	if flavorReleaseInfo.IsTest {
+		releaseTypes = append(releaseTypes, TestRelease)
+	}
+
+	for flavor := range gameInterfaces {
+		for _, releaseType := range releaseTypes {
+			flavorRelease := GameFlavorRelease{
+				Flavor:      flavor,
+				ReleaseType: releaseType,
+			}
+			products, exists := FlavorReleaseToProductMap[flavorRelease]
+			if exists {
+				productsToCheck = append(productsToCheck, products...)
+			} else {
+				fmt.Println("No products found for flavor release:", flavorRelease)
+			}
+		}
+	}
+
+	return
+}
+
+func CheckForInterfaceBumps(flavorReleaseInfo FlavorReleaseInfo) (availableInterfaces []int, err error) {
+	productsToCheck, err := getProductsToCheck(flavorReleaseInfo)
+	if err != nil {
+		return
+	}
+
+	for _, product := range productsToCheck {
+		buildInfo, exists := (*cacheLatestBuilds)[product]
+		if !exists {
+			continue
+		}
+		interfaceVersion, err := buildInfo.GetInterfaceVersion()
+		if err != nil {
+			return nil, fmt.Errorf("error parsing Interface version for product %s: %v", product, err)
+		}
+
+		availableInterfaces = append(availableInterfaces, interfaceVersion)
+	}
+
+	var iFaceMap = make(map[int]bool)
+	for _, iface := range availableInterfaces {
+		iFaceMap[iface] = true
+	}
+
+	availableInterfaces = []int{}
+
+	for iface, _ := range iFaceMap {
+		availableInterfaces = append(availableInterfaces, iface)
+	}
+
+	slices.Sort(availableInterfaces)
+
+	return
+}

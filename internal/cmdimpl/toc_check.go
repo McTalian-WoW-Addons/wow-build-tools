@@ -10,45 +10,55 @@ import (
 )
 
 type TocCheckArgs struct {
-	AddonDir    string
-	IgnoreFiles []string
-
+	IgnoreFiles           []string
 	SkipInterfaceCheck    bool
 	SkipMissingFilesCheck bool
 	SkipNameCheck         bool
-
-	LevelVerbose bool
-	LevelDebug   bool
 }
 
 var addonDir string
 
 var TocCheckParams *TocCheckArgs = &TocCheckArgs{
-	AddonDir:    ".",
-	IgnoreFiles: []string{},
-
+	IgnoreFiles:           []string{},
 	SkipInterfaceCheck:    false,
 	SkipMissingFilesCheck: false,
 	SkipNameCheck:         false,
-
-	LevelVerbose: false,
-	LevelDebug:   false,
 }
 
 var l = logger.DefaultLogger
 
 func RunTocCheck() error {
+	l := logger.GetSubLog("TOC_CHECK")
+	if RootParams.LevelVerbose {
+		l.SetLogLevel(logger.VERBOSE)
+	} else if RootParams.LevelDebug {
+		l.SetLogLevel(logger.DEBUG)
+	} else {
+		l.SetLogLevel(logger.INFO)
+	}
+
+	addonDir := TocParams.AddonDir
 	checkErrors := []string{}
 	checkWarnings := []string{}
 
-	tocFilePaths, err := toc.FindTocFiles(TocCheckParams.AddonDir)
+	tocFilePaths, err := toc.FindTocFiles(addonDir)
 	if err != nil {
 		l.Error("TOC Error: %v", err)
 		return err
 	}
 
+	var tocFiles [](*toc.Toc)
+	for _, tocFilePath := range tocFilePaths {
+		tocFile, err := toc.NewToc(tocFilePath)
+		if err != nil {
+			l.Error("Could not parse TOC file '%s': %v", tocFilePath, err)
+			return err
+		}
+		tocFiles = append(tocFiles, tocFile)
+	}
+
 	addonName := toc.DetermineProjectName(tocFilePaths)
-	addonDirName := filepath.Base(TocCheckParams.AddonDir)
+	addonDirName := filepath.Base(addonDir)
 	if !TocCheckParams.SkipNameCheck {
 		if addonName != addonDirName {
 			checkErrors = append(checkErrors, fmt.Sprintf("Addon folder name '%s' does not match TOC file addon name '%s'", addonDirName, addonName))
@@ -59,7 +69,7 @@ func RunTocCheck() error {
 
 	if !TocCheckParams.SkipMissingFilesCheck {
 		var addonLuaFiles []string
-		err = filepath.Walk(TocCheckParams.AddonDir, func(path string, info os.FileInfo, err error) error {
+		err = filepath.Walk(addonDir, func(path string, info os.FileInfo, err error) error {
 			if err != nil {
 				return err
 			}
@@ -69,15 +79,15 @@ func RunTocCheck() error {
 			return nil
 		})
 		if err != nil {
-			l.Error("Error walking addon directory '%s': %v", TocCheckParams.AddonDir, err)
+			l.Error("Error walking addon directory '%s': %v", addonDir, err)
 			return err
 		}
 
 		var luaFilesInTocs []string
-		for _, tocFilePath := range tocFilePaths {
-			includedFiles, err := getIncludedFiles(addonDirName, tocFilePath, TocCheckParams.IgnoreFiles)
+		for _, tocFile := range tocFiles {
+			includedFiles, err := getIncludedFiles(addonDirName, tocFile, TocCheckParams.IgnoreFiles)
 			if err != nil {
-				checkErrors = append(checkErrors, fmt.Sprintf("Error checking TOC file '%s': %v", tocFilePath, err))
+				checkErrors = append(checkErrors, fmt.Sprintf("Error checking TOC file '%s': %v", tocFile.Filepath, err))
 				continue
 			}
 
@@ -100,7 +110,31 @@ func RunTocCheck() error {
 	}
 
 	if !TocCheckParams.SkipInterfaceCheck {
-		// TODO
+		availableInterfaces, err := toc.CheckForInterfaceBumps(toc.FlavorReleaseInfo{
+			IsBeta: TocParams.Beta,
+			IsTest: TocParams.Ptr,
+		})
+		if err != nil {
+			l.Error("Error checking for interface bumps: %v", err)
+			return err
+		}
+
+		var iFaceMap = make(map[int]bool)
+		for _, iface := range availableInterfaces {
+			iFaceMap[iface] = true
+		}
+
+		var updateCount int = 0
+		for _, tocFile := range tocFiles {
+			for _, iface := range tocFile.Interface {
+				if !iFaceMap[iface] {
+					updateCount++
+					checkWarnings = append(checkWarnings, fmt.Sprintf("TOC file '%s' uses interface version %d which is no longer the latest available", tocFile.Filepath, iface))
+				}
+			}
+		}
+
+		l.Info("Completed interface version check: %d interface version updates available", updateCount)
 	}
 
 	if len(checkErrors) > 0 {
@@ -145,16 +179,10 @@ func difference(a, b []string) (missingA []string, missingB []string) {
 	return
 }
 
-func getIncludedFiles(addonDir, tocFilePath string, ignoreFiles []string) ([]string, error) {
-	tocInstance, err := toc.NewToc(tocFilePath)
+func getIncludedFiles(addonDir string, tocFile *toc.Toc, ignoreFiles []string) ([]string, error) {
+	tree, err := tocFile.GetTocEntriesTree(addonDir, ignoreFiles, l)
 	if err != nil {
-		l.Error("Could not parse TOC file '%s': %v", tocFilePath, err)
-		return nil, err
-	}
-
-	tree, err := tocInstance.GetTocEntriesTree(addonDir, ignoreFiles, l)
-	if err != nil {
-		l.Error("Could not get TOC file tree for '%s': %v", tocFilePath, err)
+		l.Error("Could not get TOC file tree for '%s': %v", tocFile.Filepath, err)
 		return nil, err
 	}
 

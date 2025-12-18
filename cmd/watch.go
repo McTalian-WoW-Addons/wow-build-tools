@@ -212,9 +212,9 @@ var watchCmd = &cobra.Command{
 	`),
 	RunE: func(cmd *cobra.Command, args []string) error {
 		l := logger.GetSubLog("WATCH")
-		if LevelVerbose {
+		if cmdimpl.RootParams.LevelVerbose {
 			l.SetLogLevel(logger.VERBOSE)
-		} else if LevelDebug {
+		} else if cmdimpl.RootParams.LevelDebug {
 			l.SetLogLevel(logger.DEBUG)
 		} else {
 			l.SetLogLevel(logger.INFO)

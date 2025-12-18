@@ -22,38 +22,40 @@ THE SOFTWARE.
 package cmd
 
 import (
-	"fmt"
+	"github.com/spf13/cobra"
 
 	"github.com/McTalian/wow-build-tools/internal/cmdimpl"
-	"github.com/spf13/cobra"
 )
 
-// tocCmd represents the toc command
-var tocCmd = &cobra.Command{
-	Use:   "toc",
-	Short: "Tools related to the addon toc file",
-	Long:  `Verification tools and utilities for the addon toc file.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("toc called")
+// checkCmd represents the check command
+var checkCmd = &cobra.Command{
+	Use:   "check",
+	Short: "Check for common issues in the addon toc file",
+	Long: `Checks for common issues related to the addon toc file.
+
+- Check that the toc file and the addon folder have the same name.
+- Check that all of your files are included via the toc file or the tree of its included XML files.
+- Check for valid and outdated interface versions.`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return cmdimpl.RunTocCheck()
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(tocCmd)
+	tocCmd.AddCommand(checkCmd)
 
 	// Here you will define your flags and configuration settings.
 
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
-	// tocCmd.PersistentFlags().String("foo", "", "A help for foo")
-	tocCmd.PersistentFlags().StringVarP(&cmdimpl.TocParams.AddonDir, "addonDir", "a", ".", "Path to the addon directory (defaults to current working directory)")
-	tocCmd.PersistentFlags().StringVarP(&cmdimpl.TocParams.AddonDir, "topDir", "t", ".", "Path to the addon directory (defaults to current working directory)")
-	tocCmd.PersistentFlags().MarkDeprecated("topDir", "please use --addonDir instead")
-
-	tocCmd.PersistentFlags().BoolVarP(&cmdimpl.TocParams.Beta, "beta", "b", false, "Include beta versions in the TOC check")
-	tocCmd.PersistentFlags().BoolVarP(&cmdimpl.TocParams.Ptr, "ptr", "p", false, "Include PTR versions in the TOC check")
+	// checkCmd.PersistentFlags().String("foo", "", "A help for foo")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
-	// tocCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// checkCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	checkCmd.Flags().StringArrayVarP(&cmdimpl.TocCheckParams.IgnoreFiles, "ignore", "x", []string{}, "Files to ignore during the check (if XML are provided, their specified includes will also be ignored)")
+
+	checkCmd.Flags().BoolVarP(&cmdimpl.TocCheckParams.SkipInterfaceCheck, "skip-interface-check", "", false, "Skip checking the interface version")
+	checkCmd.Flags().BoolVarP(&cmdimpl.TocCheckParams.SkipMissingFilesCheck, "skip-missing-files-check", "", false, "Skip checking for missing files")
+	checkCmd.Flags().BoolVarP(&cmdimpl.TocCheckParams.SkipNameCheck, "skip-name-check", "", false, "Skip checking that the toc file and the addon folder have the same name")
 }

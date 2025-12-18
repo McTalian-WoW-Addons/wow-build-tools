@@ -24,4 +24,5 @@ runs:
   using: docker
   image: Dockerfile
   args:
+    - /build
     - ${{ inputs.args }}

@@ -5,6 +5,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 
 	"github.com/McTalian/wow-build-tools/internal/logger"
 )
@@ -57,6 +58,57 @@ func (t *Toc) GetTocEntriesTree(addonDir string, ignoredFiles []string, l *logge
 	}
 
 	return &tocTree, nil
+}
+
+func (t *Toc) UpdateInterfaceVersions(FlavorReleaseInfo FlavorReleaseInfo) error {
+	availableInterfaces, err := CheckForInterfaceBumps(FlavorReleaseInfo)
+	if err != nil {
+		return fmt.Errorf("error checking for interface bumps: %v", err)
+	}
+
+	// Update the toc file with the new interface versions
+	contents, err := os.ReadFile(t.Filepath)
+	if err != nil {
+		return fmt.Errorf("error reading TOC file: %v", err)
+	}
+
+	contentsStr := string(contents)
+	lines := strings.Split(contentsStr, "\n")
+	for i, line := range lines {
+		if strings.HasPrefix(line, "## Interface:") {
+			var interfaceStrings []string
+			for _, iface := range availableInterfaces {
+				interfaceStrings = append(interfaceStrings, fmt.Sprintf("%d", iface))
+			}
+			newInterfaceLine := "## Interface: " + strings.Join(interfaceStrings, ", ")
+			lines[i] = newInterfaceLine
+			break
+		}
+	}
+
+	newContents := strings.Join(lines, "\n")
+	err = os.WriteFile(t.Filepath, []byte(newContents), 0644)
+	if err != nil {
+		return fmt.Errorf("error writing updated TOC file: %v", err)
+	}
+
+	return nil
+}
+
+func (t *Toc) GetFlavorsFromInterfaces() []GameFlavor {
+	var flavors []GameFlavor
+	flavorSet := make(map[GameFlavor]bool)
+
+	for _, interfaceVersion := range t.Interface {
+		majorVersion := interfaceVersion / 10000
+		flavor := getFlavorFromMajorVersion(majorVersion)
+		if !flavorSet[flavor] {
+			flavors = append(flavors, flavor)
+			flavorSet[flavor] = true
+		}
+	}
+
+	return flavors
 }
 
 func NewToc(path string) (*Toc, error) {

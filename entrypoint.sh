@@ -10,12 +10,20 @@ export GITHUB_ACTIONS="true"
 
 # Get arguments passed from action.yml args section
 # $1 contains the args input from the action
-ARGS="$1"
-
-# Run wow-build-tools with the provided arguments
-echo "Running: wow-build-tools build ${ARGS}"
-wow-build-tools build ${ARGS}
-
+# If first arg starts with /, it's a subcommand (e.g., /toc/check)
+if [[ "$1" == /* ]]; then
+  # Remove leading slash and convert to command
+  # /toc/check -> toc check
+  COMMAND="${1#/}"
+  COMMAND="${COMMAND//\// }"
+  shift
+  echo "Running: wow-build-tools $COMMAND ${@}"
+  wow-build-tools $COMMAND "$@"
+else
+  # Default to build command
+  echo "Running: wow-build-tools build ${@}"
+  wow-build-tools build "$@"
+fi
 # Capture the exit code
 exit_code=$?
 
