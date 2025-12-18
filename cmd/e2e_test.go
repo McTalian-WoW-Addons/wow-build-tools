@@ -211,7 +211,7 @@ func TestAddonProcessing(t *testing.T) {
 				assert.NotEmpty(t, strContents)
 				assert.Contains(t, strContents, "MIT")
 				assert.Contains(t, strContents, strconv.Itoa(time.Now().UTC().Year()))
-				assert.Contains(t, strContents, "Rob Anderson")
+				assert.Contains(t, strContents, "Mctalian")
 				assert.NotContains(t, strContents, "<p>")
 			},
 		},

@@ -50,6 +50,7 @@ func downloadLicense(curseProjectId string) (string, error) {
 			//&lt;year&gt; &lt;copyright holders&gt
 			raw = strings.ReplaceAll(raw, "&lt;year&gt;", string(tokens.BuildYear.NormalizeToken()))
 			raw = strings.ReplaceAll(raw, "&lt;copyright holders&gt;", string(tokens.ProjectAuthor.NormalizeToken()))
+			raw = strings.ReplaceAll(raw, "&#34;", "\"")
 			return raw, nil
 		}
 	}

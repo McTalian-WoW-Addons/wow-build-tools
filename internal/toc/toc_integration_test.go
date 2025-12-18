@@ -247,15 +247,6 @@ func TestUpdateTocFiles_WithBetaFlag(t *testing.T) {
 	}
 }
 
-// formatInterfaceList formats a list of interface versions as a comma-separated string
-func formatInterfaceList(versions []int) string {
-	var strs []string
-	for _, v := range versions {
-		strs = append(strs, fmt.Sprintf("%d", v))
-	}
-	return strings.Join(strs, ", ")
-}
-
 // TestMultilineTocUpdate tests updating TOC files with multiple Interface directives
 func TestMultilineTocUpdate(t *testing.T) {
 	tempDir := t.TempDir()
@@ -264,13 +255,13 @@ func TestMultilineTocUpdate(t *testing.T) {
 	mockVer := getMockVersions()
 
 	// Create a multi-line TOC file
-	tocContent := fmt.Sprintf(`## Interface: 110000
+	tocContent := `## Interface: 110000
 ## Interface-Vanilla: 11500
 ## Interface-Classic: 11500
 ## Interface-Mists: 50000
 
 file.lua
-`)
+`
 
 	err := os.WriteFile(tocPath, []byte(tocContent), 0644)
 	if err != nil {

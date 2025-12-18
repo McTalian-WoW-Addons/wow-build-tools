@@ -16,8 +16,6 @@ type TocCheckArgs struct {
 	SkipNameCheck         bool
 }
 
-var addonDir string
-
 var TocCheckParams *TocCheckArgs = &TocCheckArgs{
 	IgnoreFiles:           []string{},
 	SkipInterfaceCheck:    false,
@@ -154,14 +152,14 @@ func RunTocCheck() error {
 
 	if len(checkErrors) > 0 {
 		for _, err := range checkErrors {
-			l.Error(err)
+			l.Error("%s", err)
 		}
 		return fmt.Errorf("TOC check failed with %d errors", len(checkErrors))
 	}
 
 	if len(checkWarnings) > 0 {
 		for _, warning := range checkWarnings {
-			l.Warn(warning)
+			l.Warn("%s", warning)
 		}
 	}
 

@@ -43,6 +43,14 @@ func (gR *GitRepo) GetGitHubSlug() string {
 	return gR.gitHubSlug
 }
 
+func (gR *GitRepo) GetGitHubOwnerAndRepo() (string, string) {
+	segments := strings.Split(gR.gitHubSlug, "/")
+	if len(segments) == 2 {
+		return segments[0], segments[1]
+	}
+	return "", ""
+}
+
 func (gR *GitRepo) GetCurrentTag() string {
 	return gR.CurrentTag
 }
@@ -179,6 +187,12 @@ func (gR *GitRepo) getProjectHash() (string, error) {
 }
 
 func (gR *GitRepo) getProjectAuthor() (string, error) {
+	if gR.IsGitHubHosted() {
+		author, repo := gR.GetGitHubOwnerAndRepo()
+		if author != "" && repo != "" {
+			return author, nil
+		}
+	}
 	return gR.commit.Author.Name, nil
 }
 

@@ -267,7 +267,7 @@ jobs:
           echo "It contains the Windows AMD64 binary within ${CMD}_windows_amd64.zip." >> bin/README.txt
           echo "" >> bin/README.txt
           echo "For more information, see the GitHub repository which has releases for other platforms as well as a Wiki." >> bin/README.txt
-          echo "https://github.com/Mctalian/${{ env.CMD }}" >> bin/README.txt
+          echo "https://github.com/McTalian/${{ env.CMD }}" >> bin/README.txt
           echo "" >> bin/README.txt
           echo "Also, the project is still in BETA, so please report any issues you find." >> bin/README.txt
           echo "Thank you for reading this and for your interest in ${{ env.CMD }} :)" >> bin/README.txt

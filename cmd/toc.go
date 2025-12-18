@@ -48,7 +48,9 @@ func init() {
 	// tocCmd.PersistentFlags().String("foo", "", "A help for foo")
 	tocCmd.PersistentFlags().StringVarP(&cmdimpl.TocParams.AddonDir, "addonDir", "a", ".", "Path to the addon directory (defaults to current working directory)")
 	tocCmd.PersistentFlags().StringVarP(&cmdimpl.TocParams.AddonDir, "topDir", "t", ".", "Path to the addon directory (defaults to current working directory)")
-	tocCmd.PersistentFlags().MarkDeprecated("topDir", "please use --addonDir instead")
+	if tocCmd.PersistentFlags().MarkDeprecated("topDir", "please use --addonDir instead") != nil {
+		panic("failed to mark 'topDir' flag as deprecated")
+	}
 
 	tocCmd.PersistentFlags().BoolVarP(&cmdimpl.TocParams.Beta, "beta", "b", false, "Include beta versions in the TOC check")
 	tocCmd.PersistentFlags().BoolVarP(&cmdimpl.TocParams.Ptr, "ptr", "p", false, "Include PTR versions in the TOC check")
