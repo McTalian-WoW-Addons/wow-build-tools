@@ -6,8 +6,6 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-
-	"golang.org/x/exp/slices"
 )
 
 type BuildInfo struct {
@@ -164,70 +162,4 @@ func (b *BuildInfo) GetInterfaceVersion() (int, error) {
 	}
 
 	return interfaceVersion, nil
-}
-
-func getProductsToCheck(flavorReleaseInfo FlavorReleaseInfo) (productsToCheck []Product, err error) {
-	_, err = GetLatestBuildInfo()
-	if err != nil {
-		return
-	}
-	var releaseTypes []GameReleaseType = []GameReleaseType{FullRelease}
-	if flavorReleaseInfo.IsBeta {
-		releaseTypes = append(releaseTypes, BetaRelease)
-	}
-	if flavorReleaseInfo.IsTest {
-		releaseTypes = append(releaseTypes, TestRelease)
-	}
-
-	for flavor := range gameInterfaces {
-		for _, releaseType := range releaseTypes {
-			flavorRelease := GameFlavorRelease{
-				Flavor:      flavor,
-				ReleaseType: releaseType,
-			}
-			products, exists := FlavorReleaseToProductMap[flavorRelease]
-			if exists {
-				productsToCheck = append(productsToCheck, products...)
-			} else {
-				fmt.Println("No products found for flavor release:", flavorRelease)
-			}
-		}
-	}
-
-	return
-}
-
-func CheckForInterfaceBumps(flavorReleaseInfo FlavorReleaseInfo) (availableInterfaces []int, err error) {
-	productsToCheck, err := getProductsToCheck(flavorReleaseInfo)
-	if err != nil {
-		return
-	}
-
-	for _, product := range productsToCheck {
-		buildInfo, exists := (*cacheLatestBuilds)[product]
-		if !exists {
-			continue
-		}
-		interfaceVersion, err := buildInfo.GetInterfaceVersion()
-		if err != nil {
-			return nil, fmt.Errorf("error parsing Interface version for product %s: %v", product, err)
-		}
-
-		availableInterfaces = append(availableInterfaces, interfaceVersion)
-	}
-
-	var iFaceMap = make(map[int]bool)
-	for _, iface := range availableInterfaces {
-		iFaceMap[iface] = true
-	}
-
-	availableInterfaces = []int{}
-
-	for iface, _ := range iFaceMap {
-		availableInterfaces = append(availableInterfaces, iface)
-	}
-
-	slices.Sort(availableInterfaces)
-
-	return
 }

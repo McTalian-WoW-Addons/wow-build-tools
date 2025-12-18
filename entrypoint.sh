@@ -18,11 +18,11 @@ if [[ "$1" == /* ]]; then
   COMMAND="${COMMAND//\// }"
   shift
   echo "Running: wow-build-tools $COMMAND ${@}"
-  wow-build-tools $COMMAND "$@"
+  wow-build-tools $COMMAND $@
 else
   # Default to build command
   echo "Running: wow-build-tools build ${@}"
-  wow-build-tools build "$@"
+  wow-build-tools build $@
 fi
 # Capture the exit code
 exit_code=$?

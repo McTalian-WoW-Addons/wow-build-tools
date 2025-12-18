@@ -146,7 +146,8 @@ func TestToc_addGameVersionsFromToc(t *testing.T) {
 	gameInterfaces = make(map[GameFlavor][]int)
 
 	toc := &Toc{
-		Interface: []int{111000, 40400, 11502}, // Retail, Classic Era, TBC Classic
+		Interface:             []int{111000, 50500, 11502}, // Retail, Current Classic, Classic Era
+		tocSpecificInterfaces: make(map[GameFlavor][]int),
 	}
 
 	result := toc.addGameVersionsFromToc()
@@ -279,7 +280,7 @@ func TestNewToc_ClassicFlavor(t *testing.T) {
 	tempDir := t.TempDir()
 	tocPath := filepath.Join(tempDir, "TestAddon-Classic.toc")
 
-	tocContent := `## Interface: 11502
+	tocContent := `## Interface: 50000
 ## Title: Classic Test Addon
 
 Core.lua`
@@ -294,8 +295,8 @@ Core.lua`
 		t.Fatalf("NewToc failed: %v", err)
 	}
 
-	if toc.Flavor != ClassicEra {
-		t.Errorf("Expected Flavor %v for Classic TOC, got %v", ClassicEra, toc.Flavor)
+	if toc.Flavor != CurrentClassic {
+		t.Errorf("Expected Flavor %v for Classic TOC (CurrentClassic), got %v", CurrentClassic, toc.Flavor)
 	}
 }
 
@@ -361,5 +362,207 @@ Utils.lua
 
 	if toc.Notes != "Test notes" {
 		t.Errorf("Expected Notes %q, got %q", "Test notes", toc.Notes)
+	}
+}
+
+func TestToc_CheckForInterfaceBumpsNormal(t *testing.T) {
+	tempDir := t.TempDir()
+	tocPath := filepath.Join(tempDir, "TestAddon.toc")
+
+	tocContent := `## Interface: 110000, 50500, 11000
+## Title: Test Addon
+
+Core.lua`
+
+	err := os.WriteFile(tocPath, []byte(tocContent), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create test TOC file: %v", err)
+	}
+
+	toc, err := NewToc(tocPath)
+	if err != nil {
+		t.Fatalf("NewToc failed: %v", err)
+	}
+
+	flavorReleaseInfo := FlavorReleaseInfo{
+		IsBeta: false,
+		IsTest: false,
+	}
+
+	availableInterfaces, err := toc.CheckForInterfaceBumps(flavorReleaseInfo)
+	if err != nil {
+		t.Fatalf("CheckForInterfaceBumps failed: %v", err)
+	}
+
+	if len(availableInterfaces) == 0 {
+		t.Error("Expected at least one available interface version")
+	}
+
+	if len(availableInterfaces) != 3 {
+		t.Errorf("Expected exactly three available interface versions, got %d", len(availableInterfaces))
+	}
+
+	// Check that newer versions are available (they should be greater than our test versions)
+	if retailIface, exists := availableInterfaces[Retail]; !exists || retailIface <= 110000 {
+		t.Errorf("Expected available interface version for retail to be greater than 110000, got %d", retailIface)
+	}
+	if classicIface, exists := availableInterfaces[CurrentClassic]; !exists || classicIface <= 50500 {
+		t.Errorf("Expected available interface version for current classic to be greater than 50500, got %d", classicIface)
+	}
+	if eraIface, exists := availableInterfaces[ClassicEra]; !exists || eraIface <= 11000 {
+		t.Errorf("Expected available interface version for classic era to be greater than 11000, got %d", eraIface)
+	}
+}
+
+func TestToc_CheckForInterfaceBumpsPtr(t *testing.T) {
+	tempDir := t.TempDir()
+	tocPath := filepath.Join(tempDir, "TestAddon.toc")
+
+	tocContent := `## Interface: 110205, 50010, 11010
+## Title: Test Addon
+
+Core.lua`
+
+	err := os.WriteFile(tocPath, []byte(tocContent), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create test TOC file: %v", err)
+	}
+
+	toc, err := NewToc(tocPath)
+	if err != nil {
+		t.Fatalf("NewToc failed: %v", err)
+	}
+
+	flavorReleaseInfo := FlavorReleaseInfo{
+		IsBeta: false,
+		IsTest: true,
+	}
+
+	availableInterfaces, err := toc.CheckForInterfaceBumps(flavorReleaseInfo)
+	if err != nil {
+		t.Fatalf("CheckForInterfaceBumps failed: %v", err)
+	}
+
+	if len(availableInterfaces) == 0 {
+		t.Error("Expected at least one available interface version")
+	}
+
+	// When IsTest is true, we should get the latest versions from test/PTR products
+	// Check that we have versions for all three flavors
+	if len(availableInterfaces) < 3 {
+		t.Errorf("Expected at least 3 flavors when IsTest=true, got %d", len(availableInterfaces))
+	}
+
+	// Verify that we have entries for the expected flavors
+	if _, exists := availableInterfaces[Retail]; !exists {
+		t.Error("Expected Retail flavor in results")
+	}
+	if _, exists := availableInterfaces[CurrentClassic]; !exists {
+		t.Error("Expected CurrentClassic flavor in results")
+	}
+	if _, exists := availableInterfaces[ClassicEra]; !exists {
+		t.Error("Expected ClassicEra flavor in results")
+	}
+}
+
+func TestToc_CheckForInterfaceBumpsBeta(t *testing.T) {
+	tempDir := t.TempDir()
+	tocPath := filepath.Join(tempDir, "TestAddon.toc")
+
+	tocContent := `## Interface: 110205, 50010, 11010
+## Title: Test Addon
+
+Core.lua`
+
+	err := os.WriteFile(tocPath, []byte(tocContent), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create test TOC file: %v", err)
+	}
+
+	toc, err := NewToc(tocPath)
+	if err != nil {
+		t.Fatalf("NewToc failed: %v", err)
+	}
+
+	flavorReleaseInfo := FlavorReleaseInfo{
+		IsBeta: true,
+		IsTest: false,
+	}
+
+	availableInterfaces, err := toc.CheckForInterfaceBumps(flavorReleaseInfo)
+	if err != nil {
+		t.Fatalf("CheckForInterfaceBumps failed: %v", err)
+	}
+
+	if len(availableInterfaces) == 0 {
+		t.Error("Expected at least one available interface version")
+	}
+
+	// When IsBeta is true, we should get the latest versions from beta products
+	// Check that we have versions for all three flavors
+	if len(availableInterfaces) < 3 {
+		t.Errorf("Expected at least 3 flavors when IsBeta=true, got %d", len(availableInterfaces))
+	}
+
+	// Verify that we have entries for the expected flavors
+	if _, exists := availableInterfaces[Retail]; !exists {
+		t.Error("Expected Retail flavor in results")
+	}
+	if _, exists := availableInterfaces[CurrentClassic]; !exists {
+		t.Error("Expected CurrentClassic flavor in results")
+	}
+	if _, exists := availableInterfaces[ClassicEra]; !exists {
+		t.Error("Expected ClassicEra flavor in results")
+	}
+}
+
+func TestToc_CheckForInterfaceBumpsBetaAndPtr(t *testing.T) {
+	tempDir := t.TempDir()
+	tocPath := filepath.Join(tempDir, "TestAddon.toc")
+
+	tocContent := `## Interface: 110205, 50010, 11010
+## Title: Test Addon
+
+Core.lua`
+
+	err := os.WriteFile(tocPath, []byte(tocContent), 0644)
+	if err != nil {
+		t.Fatalf("Failed to create test TOC file: %v", err)
+	}
+
+	toc, err := NewToc(tocPath)
+	if err != nil {
+		t.Fatalf("NewToc failed: %v", err)
+	}
+
+	flavorReleaseInfo := FlavorReleaseInfo{
+		IsBeta: true,
+		IsTest: true,
+	}
+
+	availableInterfaces, err := toc.CheckForInterfaceBumps(flavorReleaseInfo)
+	if err != nil {
+		t.Fatalf("CheckForInterfaceBumps failed: %v", err)
+	}
+
+	if len(availableInterfaces) == 0 {
+		t.Error("Expected at least one available interface version")
+	}
+
+	// When both IsBeta and IsTest are true, we get the highest version from all release types
+	// Still expect one version per flavor (the highest found across all release types)
+	if len(availableInterfaces) < 3 {
+		t.Errorf("Expected at least 3 flavors when IsBeta=true and IsTest=true, got %d", len(availableInterfaces))
+	}
+
+	// Verify that we have entries for the expected flavors
+	if _, exists := availableInterfaces[Retail]; !exists {
+		t.Error("Expected Retail flavor in results")
+	}
+	if _, exists := availableInterfaces[CurrentClassic]; !exists {
+		t.Error("Expected CurrentClassic flavor in results")
+	}
+	if _, exists := availableInterfaces[ClassicEra]; !exists {
+		t.Error("Expected ClassicEra flavor in results")
 	}
 }

@@ -9,7 +9,7 @@ func TestTocFileToGameFlavor(t *testing.T) {
 		suffix   string
 		expected GameFlavor
 	}{
-		{"TestAddon_Classic", ClassicEra},
+		{"TestAddon_Classic", CurrentClassic},
 		{"TestAddon-Vanilla", ClassicEra},
 		{"TestAddon_TBC", TbcClassic},
 		{"TestAddon-Bcc", TbcClassic},

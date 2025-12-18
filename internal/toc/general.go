@@ -27,8 +27,10 @@ func TocFileToGameFlavor(noExt string) (flavor GameFlavor, suffix string) {
 	normalSuffix := strings.ToLower(suffix)
 
 	switch normalSuffix {
-	case "classic", "vanilla":
+	case "vanilla":
 		flavor = ClassicEra
+	case "classic":
+		flavor = CurrentClassic // Classic progression server (currently Mists)
 	case "tbc", "bcc":
 		flavor = TbcClassic
 	case "wrath", "wotlk", "wotlkc":
@@ -36,7 +38,7 @@ func TocFileToGameFlavor(noExt string) (flavor GameFlavor, suffix string) {
 	case "cata":
 		flavor = CataClassic
 	case "mists":
-		flavor = MistsClassic // Just a guess
+		flavor = MistsClassic
 	case "wod":
 		flavor = WodClassic
 	case "legion":
@@ -107,7 +109,8 @@ func parse(filePath, tocContents string) (*Toc, error) {
 	lines := strings.Split(tocContents, "\n")
 	for _, line := range lines {
 		line = strings.TrimSpace(line)
-		if strings.HasPrefix(line, "## Interface:") {
+		if strings.HasPrefix(line, "## Interface:") && !strings.Contains(line, "## Interface-") {
+			// Parse unsuffixed Interface lines (e.g., "## Interface: 110007" or "## Interface: 11505, 50000, 110007")
 			interfaceLine := strings.TrimPrefix(line, "## Interface:")
 			interfaceLine = strings.TrimSpace(interfaceLine)
 			interfaceValues := strings.Split(interfaceLine, ",")
@@ -116,6 +119,17 @@ func parse(filePath, tocContents string) (*Toc, error) {
 				interfaceVersion, err := strconv.Atoi(interfaceValue)
 				if err != nil {
 					return nil, fmt.Errorf("error parsing Interface version: %v", err)
+				}
+				toc.Interface = append(toc.Interface, interfaceVersion)
+			}
+		} else if strings.HasPrefix(line, "## Interface-") {
+			// Parse suffixed Interface lines (e.g., "## Interface-Vanilla: 11505")
+			parts := strings.SplitN(line, ":", 2)
+			if len(parts) == 2 {
+				interfaceValue := strings.TrimSpace(parts[1])
+				interfaceVersion, err := strconv.Atoi(interfaceValue)
+				if err != nil {
+					return nil, fmt.Errorf("error parsing suffixed Interface version: %v", err)
 				}
 				toc.Interface = append(toc.Interface, interfaceVersion)
 			}
@@ -145,6 +159,8 @@ func parse(filePath, tocContents string) (*Toc, error) {
 			toc.WagoId = strings.TrimSpace(toc.WagoId)
 		}
 	}
+
+	toc.tocSpecificInterfaces = make(map[GameFlavor][]int)
 
 	toc.addGameVersionsFromToc()
 

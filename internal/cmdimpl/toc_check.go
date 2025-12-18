@@ -110,22 +110,23 @@ func RunTocCheck() error {
 	}
 
 	if !TocCheckParams.SkipInterfaceCheck {
-		availableInterfaces, err := toc.CheckForInterfaceBumps(toc.FlavorReleaseInfo{
+		flavorReleaseInfo := toc.FlavorReleaseInfo{
 			IsBeta: TocParams.Beta,
 			IsTest: TocParams.Ptr,
-		})
-		if err != nil {
-			l.Error("Error checking for interface bumps: %v", err)
-			return err
 		}
-
-		var iFaceMap = make(map[int]bool)
-		for _, iface := range availableInterfaces {
-			iFaceMap[iface] = true
-		}
-
 		var updateCount int = 0
 		for _, tocFile := range tocFiles {
+			availableInterfaces, err := tocFile.CheckForInterfaceBumps(flavorReleaseInfo)
+			if err != nil {
+				l.Error("Error checking for interface bumps: %v", err)
+				return err
+			}
+
+			var iFaceMap = make(map[int]bool)
+			for _, iface := range availableInterfaces {
+				iFaceMap[iface] = true
+			}
+
 			for _, iface := range tocFile.Interface {
 				if !iFaceMap[iface] {
 					updateCount++
