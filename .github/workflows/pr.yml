@@ -5,6 +5,25 @@ on:
 permissions: {}
 
 jobs:
+  trunk-check:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Trunk Cache
+        uses: actions/cache@v4
+        with:
+          key: trunk-cache-${{ hashFiles('**/trunk.yaml') }}
+          path: ~/.cache/trunk
+
+      - name: Trunk Code Quality
+        uses: trunk-io/trunk-action@v1
+
   test:
     runs-on: ubuntu-latest
     permissions:
