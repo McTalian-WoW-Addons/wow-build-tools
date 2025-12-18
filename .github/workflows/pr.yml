@@ -20,6 +20,10 @@ jobs:
         run: |
           docker buildx build --cache-from type=gha --cache-to type=gha,mode=max --load --tag wow-build-tools:pr-${{ github.event.pull_request.number }} .
 
+      - name: Smoke test Docker image
+        run: |
+          docker run --rm wow-build-tools:pr-${{ github.event.pull_request.number }} /build --help
+
   trunk-check:
     runs-on: ubuntu-latest
     permissions:
