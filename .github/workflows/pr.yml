@@ -18,12 +18,7 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker buildx build \
-            --tag wow-build-tools:pr-${{ github.event.pull_request.number }} \  
-            --cache-from type=gha \  
-            --cache-to type=gha,mode=max \  
-            --load \
-            .
+          docker buildx build --cache-from type=gha --cache-to type=gha,mode=max --load --tag wow-build-tools:pr-${{ github.event.pull_request.number }} .
 
   trunk-check:
     runs-on: ubuntu-latest
