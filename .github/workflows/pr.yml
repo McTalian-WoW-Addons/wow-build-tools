@@ -10,6 +10,7 @@ jobs:
     permissions:
       contents: read
       actions: write
+      id-token: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -18,8 +19,13 @@ jobs:
         uses: docker/setup-buildx-action@v3
 
       - name: Build Docker image
-        run: |
-          docker buildx build --cache-from type=gha --cache-to type=gha,mode=max --load --tag wow-build-tools:pr-${{ github.event.pull_request.number }} .
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: false
+          tags: wow-build-tools:pr-${{ github.event.pull_request.number }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Smoke test Docker image
         run: |
