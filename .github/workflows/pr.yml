@@ -26,6 +26,7 @@ jobs:
           tags: wow-build-tools:pr-${{ github.event.pull_request.number }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
+          load: true
 
       - name: Smoke test Docker image
         run: |
