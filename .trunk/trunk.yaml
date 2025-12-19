@@ -12,14 +12,9 @@ plugins:
 # Many linters and tools depend on runtimes - configure them here. (https://docs.trunk.io/runtimes)
 runtimes:
   enabled:
-    - go@>=1.25.5
+    - go@1.24.11
     - node@>=22.0.0
     - python@3.10.8
-  definitions:
-    - type: go
-      system_version: allowed
-    - type: node
-      system_version: allowed
 # This is the section where you manage your linters. (https://docs.trunk.io/check/configuration)
 lint:
   enabled:
