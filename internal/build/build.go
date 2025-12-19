@@ -1,4 +1,4 @@
-package cmdimpl
+package build
 
 import (
 	"fmt"
@@ -9,7 +9,8 @@ import (
 	"time"
 
 	"github.com/McTalian/wow-build-tools/internal/changelog"
-	"github.com/McTalian/wow-build-tools/internal/configdir"
+	"github.com/McTalian/wow-build-tools/internal/cmdargs"
+	"github.com/McTalian/wow-build-tools/internal/config"
 	"github.com/McTalian/wow-build-tools/internal/external"
 	"github.com/McTalian/wow-build-tools/internal/github"
 	"github.com/McTalian/wow-build-tools/internal/injector"
@@ -20,7 +21,6 @@ import (
 	"github.com/McTalian/wow-build-tools/internal/toc"
 	"github.com/McTalian/wow-build-tools/internal/tokens"
 	"github.com/McTalian/wow-build-tools/internal/upload"
-	"github.com/McTalian/wow-build-tools/internal/zipper"
 )
 
 type BuildArgs struct {
@@ -29,9 +29,7 @@ type BuildArgs struct {
 	PkgmetaFile string
 	GameVersion string
 
-	WatchMode    bool
-	LevelVerbose bool
-	LevelDebug   bool
+	WatchMode bool
 
 	CurseId string
 	WagoId  string
@@ -54,6 +52,8 @@ type BuildArgs struct {
 	UnixLineEndings bool
 }
 
+var BuildParams = &BuildArgs{}
+
 // Build is the implementation of the build command.
 func Build(args *BuildArgs) error {
 	start := time.Now()
@@ -62,9 +62,9 @@ func Build(args *BuildArgs) error {
 
 	if args.WatchMode {
 		l.SetLogLevel(logger.WARN)
-	} else if args.LevelVerbose {
+	} else if cmdargs.RootParams.LevelVerbose {
 		l.SetLogLevel(logger.VERBOSE)
-	} else if args.LevelDebug {
+	} else if cmdargs.RootParams.LevelDebug {
 		l.SetLogLevel(logger.DEBUG)
 	} else {
 		l.SetLogLevel(logger.INFO)
@@ -98,7 +98,7 @@ func Build(args *BuildArgs) error {
 	buildYear := timeNowUtc.Format("2006")
 	topDir := args.TopDir
 
-	if _, err := configdir.CreateExternalsCache(); err != nil {
+	if _, err := config.CreateExternalsCache(); err != nil {
 		l.Error("Cache Error: %v", err)
 		return err
 	}
@@ -367,7 +367,7 @@ func Build(args *BuildArgs) error {
 		zipFilePath := filepath.Join(args.ReleaseDir, zipFileName+".zip")
 		flags[tokens.NoLibFlag] = "-nolib"
 		noLibFileName := templateTokens.GetFileName(&tokenMap, flags)
-		z := zipper.NewZipper(packageDir, args.ReleaseDir, topDir, args.UnixLineEndings)
+		z := NewZipper(packageDir, args.ReleaseDir, topDir, args.UnixLineEndings)
 		zipWGroup.Add(1)
 		go func() {
 			defer zipWGroup.Done()

@@ -22,8 +22,6 @@ THE SOFTWARE.
 package cmd
 
 import (
-	"fmt"
-
 	"github.com/spf13/cobra"
 )
 
@@ -43,8 +41,8 @@ var uploadCmd = &cobra.Command{
     - WoWInterface (https://www.wowinterface.com/)
     - CurseForge (https://www.curseforge.com/wow)
     - Wago (https://addons.wago.io/)`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("upload called")
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return cmd.Help()
 	},
 }
 

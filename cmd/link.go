@@ -22,20 +22,10 @@ THE SOFTWARE.
 package cmd
 
 import (
-	"fmt"
-	"os"
-	"path/filepath"
-	"slices"
-
-	"github.com/McTalian/wow-build-tools/internal/logger"
+	"github.com/McTalian/wow-build-tools/internal/build"
 	"github.com/lithammer/dedent"
 	"github.com/spf13/cobra"
-	"github.com/spf13/viper"
 )
-
-var wslPathToAddonReleaseDir string
-var forceLink bool
-var onlyFlavors []string
 
 // linkCmd represents the link command
 var linkCmd = &cobra.Command{
@@ -50,120 +40,12 @@ var linkCmd = &cobra.Command{
 		You will also need to provide the path to the addon release directory in WSL using the --wsl-path-to-addon-release-dir flag.
 		From WSL, run "wslpath -w <path_to_your_releasedir>" to get the Windows path to your release directory.`),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		l := logger.GetSubLog("link")
-
-		if cmd.Flags().Changed("topDir") && !cmd.Flags().Changed("releaseDir") {
-			releaseDir = filepath.Join(topDir, ".release")
-		}
-
-		var flavors = []Flavor{retail, classic, classicEra, ptr, xptr, classicPtr, classicEraPtr, classicBeta}
-		// Filter flavors if specific ones are requested
-		if len(onlyFlavors) > 0 {
-			filteredFlavors := map[Flavor]bool{
-				retail:        false,
-				classic:       false,
-				classicEra:    false,
-				ptr:           false,
-				xptr:          false,
-				classicPtr:    false,
-				classicEraPtr: false,
-				classicBeta:   false,
-			}
-			for _, flavorStr := range onlyFlavors {
-				flavor := StringToFlavor(flavorStr)
-				if !slices.Contains(knownFlavors, flavor) {
-					l.Warn("Unknown flavor: %s", flavorStr)
-					continue
-				}
-				filteredFlavors[flavor] = true
-				flavors = []Flavor{}
-			}
-
-			for filteredFlavor, include := range filteredFlavors {
-				if include {
-					flavors = append(flavors, filteredFlavor)
-				}
-			}
-		}
-
-		wowPaths := viper.GetStringMapString("wowPath")
-		if len(wowPaths) <= 1 {
-			l.Error("Please run `wow-build-tools config` to set up your World of Warcraft paths.")
-			return fmt.Errorf("no World of Warcraft paths set")
-		}
-
-		if wslPathToAddonReleaseDir != "" {
-			l.Debug("Using wslPathToAddonReleaseDir to determine WSL path to addon release directory")
-			releaseDir = wslPathToAddonReleaseDir
-		}
-
-		l.Debug("Creating symlinks pointing to addons in %s", releaseDir)
-		dirEntries, err := os.ReadDir(releaseDir)
-		if err != nil {
-			l.Error("Error reading release directory: %v", err)
-			return err
-		}
-
-		addonDirs = []string{}
-		for _, entry := range dirEntries {
-			if entry.IsDir() {
-				addonDirs = append(addonDirs, entry.Name())
-			}
-		}
-
-		if len(addonDirs) == 0 {
-			l.Error("No addon directories found in release directory, please run a build first")
-			return fmt.Errorf("no addon directories found in release directory")
-		}
-
-		for k, wowPath := range wowPaths {
-			if k == "base" {
-				continue
-			}
-
-			if !slices.Contains(flavors, StringToFlavor(k)) {
-				l.Debug("Skipping flavor %s", k)
-				continue
-			}
-
-			if _, err := os.Stat(filepath.Join(wowPath)); os.IsNotExist(err) {
-				l.Error("World of Warcraft path %s does not exist", wowPath)
-				return err
-			}
-
-			if _, err := os.Stat(filepath.Join(wowPath, "Interface", "AddOns")); os.IsNotExist(err) {
-				l.Warn("No AddOns directory found in %s, creating it", wowPath)
-				err = os.MkdirAll(filepath.Join(wowPath, "Interface", "AddOns"), 0755)
-				if err != nil {
-					l.Error("Error creating AddOns directory: %v", err)
-					return err
-				}
-			}
-			for _, addonDir := range addonDirs {
-				if forceLink {
-					l.Debug("Removing existing symlink %s", filepath.Join(wowPath, "Interface", "AddOns", addonDir))
-					err = os.RemoveAll(filepath.Join(wowPath, "Interface", "AddOns", addonDir))
-					if err != nil && !os.IsNotExist(err) {
-						l.Error("Error removing existing symlink: %v", err)
-						return err
-					}
-				}
-				source := filepath.Join(releaseDir, addonDir)
-				target := filepath.Join(wowPath, "Interface", "AddOns", addonDir)
-				l.Info("Linking %s to %s", source, target)
-				err = os.Symlink(source, target)
-				if err != nil {
-					l.Error("Error creating symlink: %v", err)
-					return err
-				}
-			}
-		}
-		return nil
+		return build.Link()
 	},
 }
 
 func init() {
-	rootCmd.AddCommand(linkCmd)
+	buildCmd.AddCommand(linkCmd)
 
 	// Here you will define your flags and configuration settings.
 
@@ -174,9 +56,7 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// linkCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	linkCmd.Flags().StringVarP(&topDir, "topDir", "t", ".", "Path to the top level directory of the addon")
-	linkCmd.Flags().StringVarP(&releaseDir, "releaseDir", "r", "", "Path to the release directory of the addon")
-	linkCmd.Flags().StringVarP(&wslPathToAddonReleaseDir, "wsl-path-to-addon-release-dir", "w", "", "Path to the addon release directory in WSL")
-	linkCmd.Flags().BoolVarP(&forceLink, "force", "f", false, "Force linking even if the destination exists (will overwrite)")
-	linkCmd.Flags().StringSliceVar(&onlyFlavors, "flavor", []string{}, "Only create links in the specified flavor installations")
+	linkCmd.Flags().StringVarP(&build.LinkParams.WSLPathToAddonReleaseDir, "wsl-path-to-addon-release-dir", "w", "", "Path to the addon release directory in WSL")
+	linkCmd.Flags().BoolVarP(&build.LinkParams.Force, "force", "f", false, "Force linking even if the destination exists (will overwrite)")
+	linkCmd.Flags().StringSliceVar(&build.LinkParams.OnlyFlavors, "flavor", []string{}, "Only create links in the specified flavor installations")
 }

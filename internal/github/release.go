@@ -129,7 +129,8 @@ func GetRelease(slug, tag string) (release *GitHubRelease, err error) {
 		return
 	}
 
-	resp, err := http.Get(url)
+	client := &http.Client{}
+	resp, err := client.Do(req)
 	if err != nil {
 		return
 	}

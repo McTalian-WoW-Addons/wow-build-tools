@@ -13,7 +13,10 @@ import (
 	"github.com/McTalian/wow-build-tools/internal/toc"
 )
 
-func shouldSkip(repo repo.VcsRepo, logGroup *logger.LogGroup) bool {
+// Default client used for production code
+var defaultGitHubClient = github.NewDefaultClient()
+
+func shouldSkip(repo repo.VcsRepo, client github.Client, logGroup *logger.LogGroup) bool {
 	if !repo.IsGitHubHosted() {
 		logGroup.Verbose("Repository is not hosted on GitHub, skipping")
 		return true
@@ -29,7 +32,7 @@ func shouldSkip(repo repo.VcsRepo, logGroup *logger.LogGroup) bool {
 		return true
 	}
 
-	if !github.IsTokenSet() {
+	if !client.IsTokenSet() {
 		logGroup.Verbose("GITHUB_OAUTH not set, skipping")
 		return true
 	}
@@ -37,8 +40,8 @@ func shouldSkip(repo repo.VcsRepo, logGroup *logger.LogGroup) bool {
 	return false
 }
 
-func GetOrCreateRelease(repo repo.VcsRepo, prerelease bool, changelogContents string, logGroup *logger.LogGroup) (release *github.GitHubRelease, err error) {
-	release, err = github.GetRelease(repo.GetGitHubSlug(), repo.GetCurrentTag())
+func GetOrCreateRelease(repo repo.VcsRepo, client github.Client, prerelease bool, changelogContents string, logGroup *logger.LogGroup) (release *github.GitHubRelease, err error) {
+	release, err = client.GetRelease(repo.GetGitHubSlug(), repo.GetCurrentTag())
 	if err != nil && err != github.ErrReleaseNotFound {
 		logGroup.Error("Could not get the release: %v", err)
 		return
@@ -51,7 +54,7 @@ func GetOrCreateRelease(repo repo.VcsRepo, prerelease bool, changelogContents st
 			Body:       string(changelogContents),
 			Draft:      false,
 		}
-		release, err = github.CreateRelease(repo.GetGitHubSlug(), *payload)
+		release, err = client.CreateRelease(repo.GetGitHubSlug(), *payload)
 		if err != nil {
 			logGroup.Error("Could not create the release: %v", err)
 			return
@@ -90,7 +93,7 @@ func UploadToGitHub(args UploadGitHubArgs) error {
 
 	repo := args.Repo
 
-	if shouldSkip(repo, logGroup) {
+	if shouldSkip(repo, defaultGitHubClient, logGroup) {
 		return nil
 	}
 
@@ -112,7 +115,7 @@ func UploadToGitHub(args UploadGitHubArgs) error {
 		return err
 	}
 
-	release, err := GetOrCreateRelease(repo, prerelease, string(changelogContents), logGroup)
+	release, err := GetOrCreateRelease(repo, defaultGitHubClient, prerelease, string(changelogContents), logGroup)
 	if err != nil {
 		logGroup.Error("Could not get or create the release: %v", err)
 		return err
@@ -120,7 +123,7 @@ func UploadToGitHub(args UploadGitHubArgs) error {
 
 	gameInterfaces := toc.GetGameFlavorInterfacesMap()
 
-	releaseFileContents, err := github.GetReleaseMetadataContents(
+	releaseFileContents, err := defaultGitHubClient.GetReleaseMetadataContents(
 		args.ProjectName,
 		args.ProjectVersion,
 		gameInterfaces,

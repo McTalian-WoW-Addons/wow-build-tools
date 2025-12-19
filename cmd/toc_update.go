@@ -24,7 +24,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/McTalian/wow-build-tools/internal/cmdimpl"
+	"github.com/McTalian/wow-build-tools/internal/toc"
 )
 
 // tocUpdateCmd represents the tocUpdate command
@@ -34,7 +34,7 @@ var tocUpdateCmd = &cobra.Command{
 	Long: `Parses the addon toc file and updates the interface versions to the latest available
 versions based on the selected release channel(s) (normal, beta, and/or PTR).`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return cmdimpl.RunTocUpdate()
+		return toc.RunTocUpdate()
 	},
 }
 

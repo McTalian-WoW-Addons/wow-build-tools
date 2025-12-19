@@ -24,12 +24,18 @@ package cmd
 import (
 	"os"
 
-	"github.com/McTalian/wow-build-tools/internal/cmdimpl"
-	"github.com/McTalian/wow-build-tools/internal/configdir"
+	"github.com/McTalian/wow-build-tools/internal/cmdargs"
+	"github.com/McTalian/wow-build-tools/internal/config"
 	"github.com/McTalian/wow-build-tools/internal/logger"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+)
+
+var (
+	curseId string
+	wowiId  string
+	wagoId  string
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -56,29 +62,28 @@ func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
-	configDir, err := configdir.GetConfigDir()
+	configDir, err := config.GetConfigDir()
 	if err != nil {
 		logger.Error("Failed to determine configuration directory: %v", err)
 		os.Exit(1)
 	}
 
 	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.wow-build-tools.yaml)")
-	rootCmd.PersistentFlags().BoolVarP(&cmdimpl.RootParams.LevelVerbose, "verbose", "V", false, "Enable verbose output")
-	rootCmd.PersistentFlags().BoolVarP(&cmdimpl.RootParams.LevelDebug, "debug", "v", false, "Enable debug output")
-	rootCmd.PersistentFlags().BoolVar(&cmdimpl.RootParams.NoEmoji, "no-emoji", false, "Disable emoji output")
-	rootCmd.PersistentFlags().BoolVar(&cmdimpl.RootParams.NoColor, "no-color", false, "Disable color output")
-	rootCmd.PersistentFlags().BoolVar(&cmdimpl.RootParams.Boring, "boring", false, "Disable emoji and color output")
-
+	rootCmd.PersistentFlags().BoolVarP(&cmdargs.RootParams.LevelVerbose, "verbose", "V", false, "Enable verbose output")
+	rootCmd.PersistentFlags().BoolVarP(&cmdargs.RootParams.LevelDebug, "debug", "v", false, "Enable debug output")
+	rootCmd.PersistentFlags().BoolVar(&cmdargs.RootParams.NoEmoji, "no-emoji", false, "Disable emoji output")
+	rootCmd.PersistentFlags().BoolVar(&cmdargs.RootParams.NoColor, "no-color", false, "Disable color output")
+	rootCmd.PersistentFlags().BoolVar(&cmdargs.RootParams.Boring, "boring", false, "Disable emoji and color output")
 	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
-		if cmdimpl.RootParams.NoEmoji || cmdimpl.RootParams.Boring {
+		if cmdargs.RootParams.NoEmoji || cmdargs.RootParams.Boring {
 			logger.DisableEmoji()
 		}
-		if cmdimpl.RootParams.NoColor || cmdimpl.RootParams.Boring {
+		if cmdargs.RootParams.NoColor || cmdargs.RootParams.Boring {
 			color.NoColor = true
 		}
-		if cmdimpl.RootParams.LevelVerbose {
+		if cmdargs.RootParams.LevelVerbose {
 			logger.SetLogLevel(logger.VERBOSE)
-		} else if cmdimpl.RootParams.LevelDebug {
+		} else if cmdargs.RootParams.LevelDebug {
 			logger.SetLogLevel(logger.DEBUG)
 		} else {
 			logger.SetLogLevel(logger.INFO)

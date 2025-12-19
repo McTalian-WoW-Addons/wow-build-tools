@@ -27,30 +27,7 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"github.com/McTalian/wow-build-tools/internal/cmdimpl"
-)
-
-var (
-	topDir           string
-	releaseDir       string
-	pkgmetaFile      string
-	keepPackageDir   bool
-	createNoLib      bool
-	curseId          string
-	wowiId           string
-	wagoId           string
-	skipCopy         bool
-	skipChangelog    bool
-	skipExternals    bool
-	forceExternals   bool
-	skipZip          bool
-	skipUpload       bool
-	nameTemplate     string
-	skipLocalization bool
-	onlyLocalization bool
-	splitToc         bool
-	unixLineEndings  bool
-	gameVersion      string
+	"github.com/McTalian/wow-build-tools/internal/build"
 )
 
 // buildCmd represents the build command
@@ -59,62 +36,40 @@ var buildCmd = &cobra.Command{
 	Short: "Builds a World of Warcraft addon",
 	Long:  `This command packages the addon as specified via a pkgmeta file.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		if cmd.Flags().Changed("topDir") && !cmd.Flags().Changed("releaseDir") {
-			releaseDir = filepath.Join(topDir, ".release")
-		}
-
-		buildArgs := &cmdimpl.BuildArgs{
-			TopDir:           topDir,
-			ReleaseDir:       releaseDir,
-			CurseId:          curseId,
-			WowiId:           wowiId,
-			WagoId:           wagoId,
-			PkgmetaFile:      pkgmetaFile,
-			KeepPackageDir:   keepPackageDir,
-			CreateNoLib:      createNoLib,
-			SkipCopy:         skipCopy,
-			SkipChangelog:    skipChangelog,
-			SkipExternals:    skipExternals,
-			ForceExternals:   forceExternals,
-			SkipZip:          skipZip,
-			SkipUpload:       skipUpload,
-			NameTemplate:     nameTemplate,
-			SkipLocalization: skipLocalization,
-			OnlyLocalization: onlyLocalization,
-			SplitToc:         splitToc,
-			UnixLineEndings:  unixLineEndings,
-			GameVersion:      gameVersion,
-			LevelVerbose:     cmdimpl.RootParams.LevelVerbose,
-			LevelDebug:       cmdimpl.RootParams.LevelDebug,
-		}
-
-		return cmdimpl.Build(buildArgs)
+		return build.Build(build.BuildParams)
 	},
 }
 
 func init() {
 	rootCmd.AddCommand(buildCmd)
 
+	buildCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		if cmd.Flags().Changed("topDir") && !cmd.Flags().Changed("releaseDir") {
+			build.BuildParams.ReleaseDir = filepath.Join(build.BuildParams.TopDir, ".release")
+		}
+		return nil
+	}
+
 	buildCmd.Flags().SortFlags = false
 
-	buildCmd.Flags().StringVarP(&topDir, "topDir", "t", ".", "The top level directory of the addon")
-	buildCmd.Flags().StringVarP(&releaseDir, "releaseDir", "r", topDir+string(os.PathSeparator)+".release", "The directory to output the release files.")
-	buildCmd.Flags().StringVarP(&pkgmetaFile, "pkgmetaFile", "m", "", "Set the pkgmeta file to use. (Defaults to {topDir}/pkgmeta.yml, {topDir}/pkgmeta.yaml, or {topDir}/.pkgmeta if one exists.)")
-	buildCmd.Flags().BoolVarP(&keepPackageDir, "keepPackageDir", "o", false, "Keep existing package directory, overwriting its contents.")
-	buildCmd.Flags().BoolVarP(&createNoLib, "createNoLib", "s", false, "Create a stripped-down \"nolib\" package.")
-	buildCmd.Flags().StringVarP(&curseId, "curseId", "p", "", "Set the CurseForge project ID for localization and uploading. (Use 0 to unset the TOC value)")
-	buildCmd.Flags().StringVarP(&wowiId, "wowiId", "w", "", "Set the WoWInterface project ID for uploading. (Use 0 to unset the TOC value)")
-	buildCmd.Flags().StringVarP(&wagoId, "wagoId", "a", "", "Set the Wago project ID for uploading. (Use 0 to unset the TOC value)")
-	buildCmd.Flags().BoolVarP(&skipCopy, "skipCopy", "c", false, "Skip copying the files to the output directory.")
-	buildCmd.Flags().BoolVar(&skipChangelog, "skipChangelog", false, "Skip changelog generation.")
-	buildCmd.Flags().BoolVarP(&skipExternals, "skipExternals", "e", false, "Skip fetching externals.")
-	buildCmd.Flags().BoolVarP(&forceExternals, "forceExternals", "E", false, "Force fetching externals, bypassing the cache.")
-	buildCmd.Flags().BoolVarP(&skipZip, "skipZip", "z", false, "Skip zipping the package (and uploading).")
-	buildCmd.Flags().BoolVarP(&skipUpload, "skipUpload", "d", false, "Skip uploading.")
-	buildCmd.Flags().StringVarP(&nameTemplate, "nameTemplate", "n", "", "Set the name template to use for the release file. Use \"-n help\" for more info.")
-	buildCmd.Flags().BoolVarP(&skipLocalization, "skipLocalization", "l", false, "Skip @localization@ keyword replacement.")
-	buildCmd.Flags().BoolVarP(&onlyLocalization, "onlyLocalization", "L", false, "Only do @localization@ keyword replacement (skip upload to CurseForge).")
-	buildCmd.Flags().BoolVarP(&splitToc, "splitToc", "S", false, "Create a package supporting multiple game types from a single TOC file.")
-	buildCmd.Flags().BoolVarP(&unixLineEndings, "unixLineEndings", "u", false, "Use Unix line endings in TOC and XML files.")
-	buildCmd.Flags().StringVarP(&gameVersion, "gameVersion", "g", "", "Set the game version to use for uploading.")
+	buildCmd.PersistentFlags().StringVarP(&build.BuildParams.TopDir, "topDir", "t", ".", "The top level directory of the addon")
+	buildCmd.PersistentFlags().StringVarP(&build.BuildParams.ReleaseDir, "releaseDir", "r", build.BuildParams.TopDir+string(os.PathSeparator)+".release", "The directory to output the release files.")
+	buildCmd.Flags().StringVarP(&build.BuildParams.PkgmetaFile, "pkgmetaFile", "m", "", "Set the pkgmeta file to use. (Defaults to {topDir}/pkgmeta.yml, {topDir}/pkgmeta.yaml, or {topDir}/.pkgmeta if one exists.)")
+	buildCmd.Flags().BoolVarP(&build.BuildParams.KeepPackageDir, "keepPackageDir", "o", false, "Keep existing package directory, overwriting its contents.")
+	buildCmd.Flags().BoolVarP(&build.BuildParams.CreateNoLib, "createNoLib", "s", false, "Create a stripped-down \"nolib\" package.")
+	buildCmd.Flags().StringVarP(&build.BuildParams.CurseId, "curseId", "p", "", "Set the CurseForge project ID for localization and uploading. (Use 0 to unset the TOC value)")
+	buildCmd.Flags().StringVarP(&build.BuildParams.WowiId, "wowiId", "w", "", "Set the WoWInterface project ID for uploading. (Use 0 to unset the TOC value)")
+	buildCmd.Flags().StringVarP(&build.BuildParams.WagoId, "wagoId", "a", "", "Set the Wago project ID for uploading. (Use 0 to unset the TOC value)")
+	buildCmd.Flags().BoolVarP(&build.BuildParams.SkipCopy, "skipCopy", "c", false, "Skip copying the files to the output directory.")
+	buildCmd.Flags().BoolVar(&build.BuildParams.SkipChangelog, "skipChangelog", false, "Skip changelog generation.")
+	buildCmd.Flags().BoolVarP(&build.BuildParams.SkipExternals, "skipExternals", "e", false, "Skip fetching externals.")
+	buildCmd.Flags().BoolVarP(&build.BuildParams.ForceExternals, "forceExternals", "E", false, "Force fetching externals, bypassing the cache.")
+	buildCmd.Flags().BoolVarP(&build.BuildParams.SkipZip, "skipZip", "z", false, "Skip zipping the package (and uploading).")
+	buildCmd.Flags().BoolVarP(&build.BuildParams.SkipUpload, "skipUpload", "d", false, "Skip uploading.")
+	buildCmd.Flags().StringVarP(&build.BuildParams.NameTemplate, "nameTemplate", "n", "", "Set the name template to use for the release file. Use \"-n help\" for more info.")
+	buildCmd.Flags().BoolVarP(&build.BuildParams.SkipLocalization, "skipLocalization", "l", false, "Skip @localization@ keyword replacement.")
+	buildCmd.Flags().BoolVarP(&build.BuildParams.OnlyLocalization, "onlyLocalization", "L", false, "Only do @localization@ keyword replacement (skip upload to CurseForge).")
+	buildCmd.Flags().BoolVarP(&build.BuildParams.SplitToc, "splitToc", "S", false, "Create a package supporting multiple game types from a single TOC file.")
+	buildCmd.Flags().BoolVarP(&build.BuildParams.UnixLineEndings, "unixLineEndings", "u", false, "Use Unix line endings in TOC and XML files.")
+	buildCmd.Flags().StringVarP(&build.BuildParams.GameVersion, "gameVersion", "g", "", "Set the game version to use for uploading.")
 }

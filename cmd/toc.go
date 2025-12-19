@@ -22,9 +22,8 @@ THE SOFTWARE.
 package cmd
 
 import (
-	"fmt"
+	"github.com/McTalian/wow-build-tools/internal/toc"
 
-	"github.com/McTalian/wow-build-tools/internal/cmdimpl"
 	"github.com/spf13/cobra"
 )
 
@@ -33,8 +32,8 @@ var tocCmd = &cobra.Command{
 	Use:   "toc",
 	Short: "Tools related to the addon toc file",
 	Long:  `Verification tools and utilities for the addon toc file.`,
-	Run: func(cmd *cobra.Command, args []string) {
-		fmt.Println("toc called")
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return cmd.Help()
 	},
 }
 
@@ -46,14 +45,14 @@ func init() {
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
 	// tocCmd.PersistentFlags().String("foo", "", "A help for foo")
-	tocCmd.PersistentFlags().StringVarP(&cmdimpl.TocParams.AddonDir, "addonDir", "a", ".", "Path to the addon directory (defaults to current working directory)")
-	tocCmd.PersistentFlags().StringVarP(&cmdimpl.TocParams.AddonDir, "topDir", "t", ".", "Path to the addon directory (defaults to current working directory)")
+	tocCmd.PersistentFlags().StringVarP(&toc.TocParams.AddonDir, "addonDir", "a", ".", "Path to the addon directory (defaults to current working directory)")
+	tocCmd.PersistentFlags().StringVarP(&toc.TocParams.AddonDir, "topDir", "t", ".", "Path to the addon directory (defaults to current working directory)")
 	if tocCmd.PersistentFlags().MarkDeprecated("topDir", "please use --addonDir instead") != nil {
 		panic("failed to mark 'topDir' flag as deprecated")
 	}
 
-	tocCmd.PersistentFlags().BoolVarP(&cmdimpl.TocParams.Beta, "beta", "b", false, "Include beta versions in the TOC check")
-	tocCmd.PersistentFlags().BoolVarP(&cmdimpl.TocParams.Ptr, "ptr", "p", false, "Include PTR versions in the TOC check")
+	tocCmd.PersistentFlags().BoolVarP(&toc.TocParams.Beta, "beta", "b", false, "Include beta versions in the TOC check")
+	tocCmd.PersistentFlags().BoolVarP(&toc.TocParams.Ptr, "ptr", "p", false, "Include PTR versions in the TOC check")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
