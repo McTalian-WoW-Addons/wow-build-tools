@@ -110,6 +110,7 @@ var buildTokens = []ValidToken{
 
 var buildTypeTokens = []BuildTypeToken{
 	Alpha,
+	Beta,
 	Debug,
 	DoNotPackage,
 	NoLibStrip,
