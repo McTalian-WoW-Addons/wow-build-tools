@@ -4,7 +4,7 @@
 FROM golang:1.25.5-alpine AS builder
 
 # Install build dependencies
-RUN apk add --no-cache git
+RUN apk add --no-cache git=2.52.0-r0
 
 # Set working directory
 WORKDIR /app
@@ -26,10 +26,10 @@ FROM alpine:3.23
 
 # Install runtime dependencies
 RUN apk add --no-cache \
-    git \
-    subversion \
-    ca-certificates \
-    bash
+    git=2.52.0-r0 \
+    subversion=1.14.5-r1 \
+    ca-certificates=20251003-r0 \
+    bash=5.3.3-r1
 
 # Copy the built binary from builder stage
 COPY --from=builder /app/wow-build-tools /usr/local/bin/wow-build-tools
