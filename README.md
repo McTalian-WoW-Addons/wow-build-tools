@@ -1,5 +1,6 @@
 # wow-build-tools
 
+<!-- markdownlint-disable-next-line MD033 -->
 <img src="icon.jpg" alt="wow-build-tools" width="200">
 
 This repository aims to be a collection of tools to help with the development of World of Warcraft addons. The main focus is on speed and ease of use, with the goal of making the development process as smooth as possible.
