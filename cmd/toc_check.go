@@ -24,7 +24,7 @@ package cmd
 import (
 	"github.com/spf13/cobra"
 
-	"github.com/McTalian/wow-build-tools/internal/cmdimpl"
+	"github.com/McTalian/wow-build-tools/internal/toc"
 )
 
 // checkCmd represents the check command
@@ -37,7 +37,7 @@ var checkCmd = &cobra.Command{
 - Check that all of your files are included via the toc file or the tree of its included XML files.
 - Check for valid and outdated interface versions.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return cmdimpl.RunTocCheck()
+		return toc.RunTocCheck()
 	},
 }
 
@@ -53,9 +53,9 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// checkCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-	checkCmd.Flags().StringArrayVarP(&cmdimpl.TocCheckParams.IgnoreFiles, "ignore", "x", []string{}, "Files to ignore during the check (if XML are provided, their specified includes will also be ignored)")
+	checkCmd.Flags().StringArrayVarP(&toc.TocCheckParams.IgnoreFiles, "ignore", "x", []string{}, "Files to ignore during the check (if XML are provided, their specified includes will also be ignored)")
 
-	checkCmd.Flags().BoolVarP(&cmdimpl.TocCheckParams.SkipInterfaceCheck, "skip-interface-check", "", false, "Skip checking the interface version")
-	checkCmd.Flags().BoolVarP(&cmdimpl.TocCheckParams.SkipMissingFilesCheck, "skip-missing-files-check", "", false, "Skip checking for missing files")
-	checkCmd.Flags().BoolVarP(&cmdimpl.TocCheckParams.SkipNameCheck, "skip-name-check", "", false, "Skip checking that the toc file and the addon folder have the same name")
+	checkCmd.Flags().BoolVarP(&toc.TocCheckParams.SkipInterfaceCheck, "skip-interface-check", "", false, "Skip checking the interface version")
+	checkCmd.Flags().BoolVarP(&toc.TocCheckParams.SkipMissingFilesCheck, "skip-missing-files-check", "", false, "Skip checking for missing files")
+	checkCmd.Flags().BoolVarP(&toc.TocCheckParams.SkipNameCheck, "skip-name-check", "", false, "Skip checking that the toc file and the addon folder have the same name")
 }

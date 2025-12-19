@@ -8,7 +8,7 @@ import (
 	"github.com/fatih/color"
 	"gopkg.in/yaml.v3"
 
-	"github.com/McTalian/wow-build-tools/internal/configdir"
+	"github.com/McTalian/wow-build-tools/internal/config"
 	"github.com/McTalian/wow-build-tools/internal/logger"
 )
 
@@ -211,7 +211,7 @@ func (e *ExternalEntry) determinePath() {
 }
 
 func (e *ExternalEntry) GetRepoCachePath() string {
-	cacheDir, _ := configdir.GetExternalsCache()
+	cacheDir, _ := config.GetExternalsCache()
 
 	safeName := strings.ReplaceAll(e.URL+"_"+e.Tag, urlPathSeparator, "_")
 	return filepath.Join(cacheDir, safeName)

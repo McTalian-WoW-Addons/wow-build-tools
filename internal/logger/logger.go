@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 
+	"github.com/McTalian/wow-build-tools/internal/cmdargs"
 	"github.com/fatih/color"
 )
 
@@ -40,7 +41,15 @@ func (l *Logger) SetLogLevel(newLevel LogLevel) {
 
 // GetSubLog creates a sub-logger with a specific prefix
 func GetSubLog(prefix string) *Logger {
-	return &Logger{prefix: prefix, level: currentLevel, timings: []string{}, warningsEncountered: []string{}}
+	l := &Logger{prefix: prefix, level: currentLevel, timings: []string{}, warningsEncountered: []string{}}
+	if cmdargs.RootParams.LevelVerbose {
+		l.SetLogLevel(VERBOSE)
+	} else if cmdargs.RootParams.LevelDebug {
+		l.SetLogLevel(DEBUG)
+	} else {
+		l.SetLogLevel(INFO)
+	}
+	return l
 }
 
 func handleFormat(format string, v ...interface{}) string {

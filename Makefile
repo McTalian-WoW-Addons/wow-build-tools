@@ -22,9 +22,12 @@ release:
 
 test:
 	@mkdir -p ./.coverage
-	@go test -tags="e2e" -v ./... -cover -coverpkg=./... -coverprofile="./.coverage/cover.out"
-	@go tool cover -html="./.coverage/cover.out" -o "./.coverage/report.html"
-	@echo "Coverage report generated at ./.coverage/report.html"
+	@go test -tags="e2e" -v ./... -coverpkg=./... -coverprofile="./.coverage/cover.out" -json > .coverage/test-report.json || true
+	@gopogh -in .coverage/test-report.json -out_html .coverage/test-report.html -out_summary .coverage/test-summary.json 2>&1 > /dev/null
+	@go tool cover -html=./.coverage/cover.out -o .coverage/cover.html
+	@covreport -i .coverage/cover.out -o .coverage/report.html
+	@echo "Test report: file:///.coverage/test-report.html";
+	@echo "Coverage report: file:///.coverage/report.html";
 
 # Define the default target
 .PHONY: all

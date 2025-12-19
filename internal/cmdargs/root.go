@@ -1,4 +1,4 @@
-package cmdimpl
+package cmdargs
 
 type RootArgs struct {
 	LevelVerbose bool
