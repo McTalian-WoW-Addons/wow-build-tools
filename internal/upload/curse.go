@@ -229,7 +229,7 @@ func (c *curseUpload) validateGameVersions(gameVersions []string) (err error) {
 		c.logGroup.Error("Could not fetch game versions: %v", err)
 		return
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		c.logGroup.Error("Could not fetch game versions: %v", resp.Status)
@@ -282,7 +282,7 @@ func (c *curseUpload) upload() (err error) {
 	if err != nil {
 		return fmt.Errorf("failed to open zip file: %w", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	// Create a buffer and multipart writer for the request body
 	var body bytes.Buffer

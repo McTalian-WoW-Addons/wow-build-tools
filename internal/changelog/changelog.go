@@ -49,8 +49,8 @@ func (c *Changelog) Cleanup() {
 	}
 }
 
-var ErrManualChangelogNotFound = fmt.Errorf("Manual changelog file not found")
-var ErrInvalidMarkupType = fmt.Errorf("Invalid markup type")
+var ErrManualChangelogNotFound = fmt.Errorf("manual changelog file not found")
+var ErrInvalidMarkupType = fmt.Errorf("invalid markup type")
 
 func (c *Changelog) verifyManualChangelog() error {
 	if c.PreExistingFilePath == "" {
@@ -125,7 +125,7 @@ func (c *Changelog) GetChangelog() error {
 		logger.Error("Could not create the changelog file: %v", err)
 		return err
 	}
-	defer f.Close()
+	defer func() { _ = f.Close() }()
 
 	contents, err := c.repo.GetChangelog(c.title)
 	if err != nil {
@@ -157,35 +157,35 @@ func NewChangelog(repo repo.VcsRepo, pkgMeta *pkg.PkgMeta, title string, pkgDir 
 		if tag == "" {
 			tag = repo.GetPreviousVersion()
 			if tag == "" {
-				return nil, fmt.Errorf("Could not get a valid tag, can't get the changelog from the release")
+				return nil, fmt.Errorf("could not get a valid tag, can't get the changelog from the release")
 			}
 		}
 
 		slug := repo.GetGitHubSlug()
 		if slug == "" {
-			return nil, fmt.Errorf("Could not get the GitHub slug, can't get the changelog from the release")
+			return nil, fmt.Errorf("could not get the GitHub slug, can't get the changelog from the release")
 		}
 
 		release, err := github.GetRelease(slug, tag)
 		if err != nil {
-			return nil, fmt.Errorf("Could not get the release: %w", err)
+			return nil, fmt.Errorf("could not get the release: %w", err)
 		}
 
 		// Write the release body to the cache directory
 		releaseBodyPath := filepath.Join(pkgDir, "CHANGELOG.md")
 		f, err := os.OpenFile(releaseBodyPath, os.O_CREATE|os.O_WRONLY, 0644)
 		if err != nil {
-			return nil, fmt.Errorf("Could not create the temporary github changelog file: %w", err)
+			return nil, fmt.Errorf("could not create the temporary github changelog file: %w", err)
 		}
-		defer f.Close()
+		defer func() { _ = f.Close() }()
 
 		_, err = f.WriteString(release.Body)
 		if err != nil {
-			return nil, fmt.Errorf("Could not write the release body to the temporary github changelog file: %w", err)
+			return nil, fmt.Errorf("could not write the release body to the temporary github changelog file: %w", err)
 		}
 
 		if err = f.Sync(); err != nil {
-			return nil, fmt.Errorf("Could not sync the temporary github changelog file: %w", err)
+			return nil, fmt.Errorf("could not sync the temporary github changelog file: %w", err)
 		}
 
 		changelog = &Changelog{

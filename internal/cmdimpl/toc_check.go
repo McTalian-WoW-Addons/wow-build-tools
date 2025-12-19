@@ -112,7 +112,7 @@ func RunTocCheck() error {
 			IsBeta: TocParams.Beta,
 			IsTest: TocParams.Ptr,
 		}
-		var updateCount int = 0
+		var updateCount = 0
 		for _, tocFile := range tocFiles {
 			availableInterfaces, err := tocFile.CheckForInterfaceBumps(flavorReleaseInfo)
 			if err != nil {

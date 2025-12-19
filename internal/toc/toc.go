@@ -70,7 +70,7 @@ func (t *Toc) getProductsToCheck(flavorReleaseInfo FlavorReleaseInfo) (productsT
 	if err != nil {
 		return
 	}
-	var releaseTypes []GameReleaseType = []GameReleaseType{LiveRelease}
+	var releaseTypes = []GameReleaseType{LiveRelease}
 	if flavorReleaseInfo.IsBeta {
 		releaseTypes = append(releaseTypes, BetaRelease)
 	}
@@ -176,7 +176,7 @@ func (t *Toc) UpdateInterfaceVersions(flavorReleaseInfo FlavorReleaseInfo) error
 						flavor = CurrentClassic
 					}
 
-					var flavorReleases []GameFlavorRelease = []GameFlavorRelease{
+					var flavorReleases = []GameFlavorRelease{
 						{
 							Flavor:      flavor,
 							ReleaseType: LiveRelease,

@@ -103,7 +103,7 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer srcFile.Close()
+	defer func() { _ = srcFile.Close() }()
 
 	// Ensure the destination directory exists.
 	if err := os.MkdirAll(filepath.Dir(dst), os.ModePerm); err != nil && !os.IsExist(err) {
@@ -114,7 +114,7 @@ func copyFile(src, dst string) error {
 	if err != nil {
 		return err
 	}
-	defer dstFile.Close()
+	defer func() { _ = dstFile.Close() }()
 
 	// Copy file contents.
 	_, err = io.Copy(dstFile, srcFile)
@@ -267,7 +267,7 @@ var watchCmd = &cobra.Command{
 			l.Error("Error creating watcher: %v", err)
 			return err
 		}
-		defer watcher.Close()
+		defer func() { _ = watcher.Close() }()
 
 		if copyToWowDirs {
 			wowPaths = viper.GetStringMapString("wowPath")

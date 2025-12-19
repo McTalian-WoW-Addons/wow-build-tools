@@ -56,7 +56,7 @@ var linkCmd = &cobra.Command{
 			releaseDir = filepath.Join(topDir, ".release")
 		}
 
-		var flavors []Flavor = []Flavor{retail, classic, classicEra, ptr, xptr, classicPtr, classicEraPtr, classicBeta}
+		var flavors = []Flavor{retail, classic, classicEra, ptr, xptr, classicPtr, classicEraPtr, classicBeta}
 		// Filter flavors if specific ones are requested
 		if len(onlyFlavors) > 0 {
 			filteredFlavors := map[Flavor]bool{

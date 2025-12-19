@@ -49,11 +49,11 @@ func (z *Zipper) ZipFiles(srcPath string, destPath string, noLibArgs ...[]string
 	if err != nil {
 		return err
 	}
-	defer zipFile.Close()
+	defer func() { _ = zipFile.Close() }()
 
 	// Initialize the zip writer
 	zipWriter := zip.NewWriter(zipFile)
-	defer zipWriter.Close()
+	defer func() { _ = zipWriter.Close() }()
 
 	// Walk the source directory
 	return filepath.Walk(srcPath, func(path string, info os.FileInfo, err error) error {
@@ -161,7 +161,7 @@ func (z *Zipper) ZipFiles(srcPath string, destPath string, noLibArgs ...[]string
 		if err != nil {
 			return err
 		}
-		defer file.Close()
+		defer func() { _ = file.Close() }()
 
 		// Copy the file content into the zip writer
 		_, err = io.Copy(writer, file)

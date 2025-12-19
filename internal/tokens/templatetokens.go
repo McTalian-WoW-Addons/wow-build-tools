@@ -151,7 +151,7 @@ func (n *NameTemplate) GetFileName(stm *SimpleTokenMap, flags FlagMap) string {
 	filename := n.FileTemplate
 
 	for key, value := range flags {
-		filename = strings.Replace(filename, key.NormalizeTemplateToken(), value, -1)
+		filename = strings.ReplaceAll(filename, key.NormalizeTemplateToken(), value)
 	}
 
 	for _, value := range ttm {
@@ -168,7 +168,7 @@ func (n *NameTemplate) GetLabel(stm *SimpleTokenMap, flags FlagMap) string {
 	label := n.LabelTemplate
 
 	for key, value := range flags {
-		label = strings.Replace(label, key.NormalizeTemplateToken(), value, -1)
+		label = strings.ReplaceAll(label, key.NormalizeTemplateToken(), value)
 	}
 
 	for _, value := range ttm {

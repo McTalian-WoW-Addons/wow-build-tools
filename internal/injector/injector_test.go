@@ -111,7 +111,7 @@ func TestInjector_FindAndReplaceInFile(t *testing.T) {
 			}
 		})
 	}
-	os.Remove(filePath)
+	_ = os.Remove(filePath)
 }
 
 func TestInjector_FindAndReplaceInFile_BuildTypeTokens(t *testing.T) {
@@ -272,7 +272,7 @@ func TestInjector_FindAndReplaceInFile_BuildTypeTokens(t *testing.T) {
 			contents, err := os.ReadFile(filePath)
 			assert.NoError(t, err)
 			assert.Equal(t, tt.expected, string(contents))
-			os.Remove(filePath)
+			_ = os.Remove(filePath)
 		})
 	}
 }

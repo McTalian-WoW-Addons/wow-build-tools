@@ -51,7 +51,7 @@ func TestCreate(t *testing.T) {
 	}
 
 	// Clean up
-	os.RemoveAll(expectedDir)
+	_ = os.RemoveAll(expectedDir)
 }
 
 func TestDelete(t *testing.T) {

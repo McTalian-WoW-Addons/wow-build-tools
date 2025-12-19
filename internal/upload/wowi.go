@@ -115,7 +115,7 @@ func (w *wowiUpload) validateGameVersions(gameVersions []string) error {
 		w.logGroup.Error("Could not fetch game versions: %v", err)
 		return err
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		w.logGroup.Error("Could not fetch game versions: %v", err)
@@ -152,7 +152,7 @@ func (w *wowiUpload) upload() error {
 	if err != nil {
 		return fmt.Errorf("could not open zip file: %v", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	var body bytes.Buffer
 	writer := multipart.NewWriter(&body)

@@ -15,7 +15,7 @@ func TestGetLatestBuildInfo(t *testing.T) {
 	// Check for at least one product and one build info
 	assert.Greater(t, len(*builds), 0, "Expected at least one product in builds")
 
-	var products []toc.Product = []toc.Product{}
+	var products = []toc.Product{}
 	for product, buildInfos := range *builds {
 		products = append(products, product)
 		assert.NotEmpty(t, buildInfos, "Expected non-empty BuildInfo for product %s", product)

@@ -111,7 +111,7 @@ func CopySingleFile(path string, destPath string, logGroup *logger.LogGroup, arg
 	if err != nil {
 		return fmt.Errorf("error opening file %s: %v", path, err)
 	}
-	defer srcFile.Close()
+	defer func() { _ = srcFile.Close() }()
 
 	// Get file info for mode preservation
 	srcFileInfo, err := srcFile.Stat()
@@ -124,7 +124,7 @@ func CopySingleFile(path string, destPath string, logGroup *logger.LogGroup, arg
 	if err != nil {
 		return fmt.Errorf("error creating file %s: %v", destPath, err)
 	}
-	defer destFile.Close()
+	defer func() { _ = destFile.Close() }()
 
 	// Copy file contents
 	_, err = io.Copy(destFile, srcFile)

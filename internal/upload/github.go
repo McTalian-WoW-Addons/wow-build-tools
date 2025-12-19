@@ -137,8 +137,10 @@ func UploadToGitHub(args UploadGitHubArgs) error {
 		logGroup.Error("Could not create the release metadata file: %v", err)
 		return err
 	}
-	defer os.Remove(releaseFile.Name())
-	defer releaseFile.Close()
+	defer func() {
+		_ = releaseFile.Close()
+		_ = os.Remove(releaseFile.Name())
+	}()
 
 	_, err = releaseFile.WriteString(releaseFileContents)
 	if err != nil {

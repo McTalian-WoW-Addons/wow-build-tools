@@ -19,7 +19,7 @@ import (
 
 var ErrNoWagoId = fmt.Errorf("no Wago ID provided")
 var ErrMultipleWagoIds = fmt.Errorf("multiple Wago IDs found")
-var ErrNoWagoUpload = fmt.Errorf("Wago upload is disabled")
+var ErrNoWagoUpload = fmt.Errorf("wago upload is disabled")
 var ErrNoWagoApiKey = fmt.Errorf("WAGO_API_TOKEN not set")
 
 var wagoApiUrl = "https://addons.wago.io/api/"
@@ -146,7 +146,7 @@ func (w *wagoUpload) validateGameVersions(gameVersions []string) (err error) {
 		w.logGroup.Error("Could not fetch game versions: %v", err)
 		return
 	}
-	defer resp.Body.Close()
+	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
 		err = fmt.Errorf("could not fetch game versions: %v", resp.Status)
@@ -244,7 +244,7 @@ func (w *wagoUpload) upload() error {
 	if err != nil {
 		return fmt.Errorf("could not open zip file: %v", err)
 	}
-	defer file.Close()
+	defer func() { _ = file.Close() }()
 
 	var body bytes.Buffer
 	writer := multipart.NewWriter(&body)

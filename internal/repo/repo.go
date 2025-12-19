@@ -99,15 +99,7 @@ func NewRepo(topDir string) (*Repo, error) {
 	logger.Verbose("Checking directory: %s", dirToCheck)
 
 	iterations := 0
-	for {
-		if dirToCheck == "" {
-			break
-		}
-
-		if iterations > 3 {
-			break
-		}
-
+	for dirToCheck != "" && iterations <= 3 {
 		// Check if the directory is a git repository
 		if _, err := os.Stat(filepath.Join(dirToCheck, ".git")); err == nil {
 			repoVcsType = external.Git

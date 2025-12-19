@@ -166,7 +166,7 @@ func Build(args *BuildArgs) error {
 	}
 
 	if pkgMeta.PackageAs != "" && projectName != pkgMeta.PackageAs {
-		err = fmt.Errorf("Project name (%s) from TOC filename(s) does not match `package-as` name in pkgmeta file (%s)", projectName, pkgMeta.PackageAs)
+		err = fmt.Errorf("project name (%s) from TOC filename(s) does not match `package-as` name in pkgmeta file (%s)", projectName, pkgMeta.PackageAs)
 		return err
 	}
 

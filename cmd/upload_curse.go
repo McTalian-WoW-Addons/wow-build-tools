@@ -49,8 +49,10 @@ var curseCmd = &cobra.Command{
 			logger.Error("Could not create temporary TOC file: %v", err)
 			return err
 		}
-		defer os.Remove(tmpToc.Name())
-		defer tmpToc.Close()
+		defer func() {
+			_ = tmpToc.Close()
+			_ = os.Remove(tmpToc.Name())
+		}()
 
 		changelogPath := UploadChangelog
 		if UploadChangelog == "" {
@@ -59,8 +61,10 @@ var curseCmd = &cobra.Command{
 				logger.Error("Could not create temporary changelog file: %v", err)
 				return err
 			}
-			defer os.Remove(tmpChangelog.Name())
-			defer tmpChangelog.Close()
+			defer func() {
+				_ = tmpChangelog.Close()
+				_ = os.Remove(tmpChangelog.Name())
+			}()
 
 			_, err = tmpChangelog.WriteString("No changelog provided")
 			if err != nil {
@@ -87,7 +91,7 @@ var curseCmd = &cobra.Command{
 		}
 
 		interfaceString := strings.Join(interfaceStringList, ",")
-		_, err = tmpToc.WriteString(fmt.Sprintf("## Interface: %s", interfaceString))
+		_, err = fmt.Fprintf(tmpToc, "## Interface: %s", interfaceString)
 		if err != nil {
 			logger.Error("Could not write to temporary TOC file: %v", err)
 			return err

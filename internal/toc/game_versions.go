@@ -105,22 +105,22 @@ func parseGameVersionSegment(version string) error {
 	default:
 		segments := strings.Split(orig, ".")
 		if len(segments) < 3 {
-			return fmt.Errorf("Invalid argument for game version: %s", orig)
+			return fmt.Errorf("invalid argument for game version: %s", orig)
 		}
 		major, err := strconv.Atoi(segments[0])
 		if err != nil {
 			logger.Error("%v", err)
-			return fmt.Errorf("Invalid argument for game version: %s", orig)
+			return fmt.Errorf("invalid argument for game version: %s", orig)
 		}
 		minor, err := strconv.Atoi(segments[1])
 		if err != nil {
 			logger.Error("%v", err)
-			return fmt.Errorf("Invalid argument for game version: %s", orig)
+			return fmt.Errorf("invalid argument for game version: %s", orig)
 		}
 		patch, err := strconv.Atoi(segments[2])
 		if err != nil {
 			logger.Error("%v", err)
-			return fmt.Errorf("Invalid argument for game version: %s", orig)
+			return fmt.Errorf("invalid argument for game version: %s", orig)
 		}
 
 		flavor := getFlavorFromMajorVersion(major)
@@ -129,7 +129,7 @@ func parseGameVersionSegment(version string) error {
 		interfaceVersion, err := strconv.Atoi(fmt.Sprintf("%d%02d%02d", major, minor, patch))
 		if err != nil {
 			logger.Error("%v", err)
-			return fmt.Errorf("Invalid argument for game version: %s", orig)
+			return fmt.Errorf("invalid argument for game version: %s", orig)
 		}
 		AddGameInterface(flavor, interfaceVersion)
 	}

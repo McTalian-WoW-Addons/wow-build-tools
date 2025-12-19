@@ -64,9 +64,10 @@ var protocolSeparator = "://"
 
 // UnmarshalYAML allows ExternalEntry to handle both string and object forms.
 func (e *ExternalEntry) UnmarshalYAML(value *yaml.Node) error {
-	if value.Kind == yaml.ScalarNode {
+	switch value.Kind {
+	case yaml.ScalarNode:
 		e.URL = value.Value
-	} else if value.Kind == yaml.MappingNode {
+	case yaml.MappingNode:
 		type Alias ExternalEntry
 		var alias Alias
 		if err := value.Decode(&alias); err != nil {
@@ -82,7 +83,7 @@ func (e *ExternalEntry) UnmarshalYAML(value *yaml.Node) error {
 			e.CheckoutType = "commit"
 			e.Tag = e.Commit
 		}
-	} else {
+	default:
 		return fmt.Errorf("invalid external entry format")
 	}
 
@@ -157,12 +158,14 @@ func (e *ExternalEntry) handleCurseUrl() {
 			svnPathParts := strings.SplitN(parts[1], urlPathSeparator, 2)
 			svnRoot := svnPathParts[0] // "trunk" or "tags/<tag>"
 
-			if svnRoot == "trunk" {
+			switch svnRoot {
+			case "trunk":
 				e.EType = Svn
 				if len(svnPathParts) > 1 {
 					e.Path = svnPathParts[1] // Gets "path/to/addon"
 				}
-			} else if svnRoot == "tags" {
+				return
+			case "tags":
 				e.EType = Svn
 
 				// Extract the tag name

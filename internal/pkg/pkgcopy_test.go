@@ -15,7 +15,7 @@ func TestClearDestDir(t *testing.T) {
 	testDir := "testdir"
 	err := os.Mkdir(testDir, 0755)
 	require.NoError(t, err)
-	defer os.RemoveAll(testDir)
+	defer func() { _ = os.RemoveAll(testDir) }()
 
 	err = clearDestDir(testDir)
 	require.NoError(t, err)
@@ -27,7 +27,7 @@ func TestClearDestDir(t *testing.T) {
 
 func TestCreateDestDir(t *testing.T) {
 	testDir := "testdir"
-	defer os.RemoveAll(testDir)
+	defer func() { _ = os.RemoveAll(testDir) }()
 
 	err := createDestDir(testDir)
 	if err != nil {
@@ -42,8 +42,8 @@ func TestCreateDestDir(t *testing.T) {
 func TestCopyFromCacheToPackageDir(t *testing.T) {
 	destDir := "destdir"
 	cacheDir := "cachedir"
-	defer os.RemoveAll(destDir)
-	defer os.RemoveAll(cacheDir)
+	defer func() { _ = os.RemoveAll(destDir) }()
+	defer func() { _ = os.RemoveAll(cacheDir) }()
 
 	err := os.Mkdir(cacheDir, 0755)
 	require.NoError(t, err)
@@ -62,8 +62,8 @@ func TestCopyFromCacheToPackageDir(t *testing.T) {
 func TestCopyExternal(t *testing.T) {
 	packageDir := "packagedir"
 	cacheDir := "cachedir"
-	defer os.RemoveAll(packageDir)
-	defer os.RemoveAll(cacheDir)
+	defer func() { _ = os.RemoveAll(packageDir) }()
+	defer func() { _ = os.RemoveAll(cacheDir) }()
 
 	err := os.Mkdir(cacheDir, 0755)
 	require.NoError(t, err)
@@ -89,8 +89,8 @@ func TestCopyExternal(t *testing.T) {
 func TestCopyToPackageDir(t *testing.T) {
 	topDir := "topdir"
 	packageDir := "packagedir"
-	defer os.RemoveAll(topDir)
-	defer os.RemoveAll(packageDir)
+	defer func() { _ = os.RemoveAll(topDir) }()
+	defer func() { _ = os.RemoveAll(packageDir) }()
 
 	err := os.Mkdir(topDir, 0755)
 	require.NoError(t, err)
