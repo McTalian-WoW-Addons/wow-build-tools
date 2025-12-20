@@ -33,8 +33,8 @@ runs:
         if [ -z "${{ inputs.args }}" ]; then
           INPUT_ARGS=""
         else
-
-        INPUT_ARGS="${{ inputs.args }}"
+          INPUT_ARGS="${{ inputs.args }}"
+        fi
 
         echo "INPUT_ARGS=${INPUT_ARGS}" >> $GITHUB_OUTPUT
     - name: Run wow-build-tools
