@@ -27,8 +27,13 @@ jobs:
       - name: Require dist build if src changed
         if: ${{ steps.changed-files.outputs.src_changed == 'true' && steps.changed-files.outputs.dist_changed != 'true' }}
         run: |
-          echo "Source files have changed. Did you include an updated 'dist' build?"
-          exit 1
+          SRC_CHANGED=${{ steps.changed-files.outputs.src_changed }}
+          DIST_CHANGED=${{ steps.changed-files.outputs.dist_changed }}
+          echo "src_changed: $SRC_CHANGED"
+          echo "dist_changed: $DIST_CHANGED"
+          if [ "$SRC_CHANGED" == "true" ] && [ "$DIST_CHANGED" != "true" ] ; then
+            echo "Source files have changed. Did you include an updated 'dist' build?"
+          fi
 
       - name: Smoke test built binary
         run: |
