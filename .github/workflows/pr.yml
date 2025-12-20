@@ -22,12 +22,12 @@ jobs:
 
       - name: Build binary
         run: |
-          go build -o dist/wow-build-tools
+          make build-for-commit
 
       - name: Verify 'dist' is up to date
         run: |
           if [[ -n $(git status --porcelain) ]]; then
-            echo "Error: 'dist' directory is not up to date. Please run 'go build -o dist/wow-build-tools' and commit the changes."
+            echo "Error: 'dist' directory is not up to date. Please run 'make build-for-commit' and commit the changes."
             git status --porcelain
             exit 1
           else
