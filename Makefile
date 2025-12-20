@@ -3,12 +3,10 @@ OUTPUT_DIR := dist
 BINARY_NAME := wow-build-tools
 
 # Define the build command
-build: build-for-commit
-	GOARCH=amd64 GOOS=windows go build -o $(OUTPUT_DIR)/$(BINARY_NAME).exe
-
-build-for-commit:
+build:
 	mkdir -p $(OUTPUT_DIR)
-	go build -trimpath -ldflags="-buildid=" -o $(OUTPUT_DIR)/$(BINARY_NAME)
+	go build -o $(OUTPUT_DIR)/$(BINARY_NAME)
+	GOARCH=amd64 GOOS=windows go build -o $(OUTPUT_DIR)/$(BINARY_NAME).exe
 
 # Define the clean command
 clean:

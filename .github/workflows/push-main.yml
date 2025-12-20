@@ -1,4 +1,4 @@
-name: Semantic Release
+name: Verify, Build, and Release
 on:
   push:
     branches: [main, beta, alpha]
