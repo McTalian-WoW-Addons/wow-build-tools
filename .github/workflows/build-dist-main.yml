@@ -7,10 +7,6 @@ on:
 
 permissions: {}
 
-concurrency:
-  group: build-dist-main
-  cancel-in-progress: true
-
 jobs:
   build-dist:
     permissions:
