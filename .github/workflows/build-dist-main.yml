@@ -9,7 +9,7 @@ permissions: {}
 
 jobs:
   build-dist:
-    name: Build Linux Binary for Action
+    name: Build Binary for Action
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -17,6 +17,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
+          token: ${{ secrets.GH_PAT }}
           fetch-depth: 0
 
       - name: Set up Go
@@ -38,8 +39,6 @@ jobs:
           ./dist/wow-build-tools --help
 
       - name: Commit and push dist
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
@@ -52,7 +51,7 @@ jobs:
           fi
 
   release:
-    name: Semantic Release
+    name: Create
     needs: [build-dist]
     runs-on: ubuntu-latest
     permissions:
