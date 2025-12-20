@@ -1,7 +1,8 @@
 .coverage/
 .test-results/
 .release/
-dist/
+dist/*
+!dist/wow-build-tools
 node_modules/
 
 .env
