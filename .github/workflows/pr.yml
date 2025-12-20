@@ -42,12 +42,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # - name: Trunk Cache
-      #   uses: actions/cache@v5
-      #   with:
-      #     key: trunk-cache-${{ hashFiles('**/trunk.yaml') }}
-      #     path: ~/.cache/trunk
-
       - name: Trunk Code Quality
         uses: trunk-io/trunk-action@v1
 
@@ -69,12 +63,13 @@ jobs:
       - name: Go cache paths
         id: go-cache-paths
         run: |
+          GOPATHBIN=$(go env GOPATH)/bin
           [ -d $(go env GOCACHE) ] && chmod -R 0755 $(go env GOCACHE)
           [ -d $(go env GOMODCACHE) ] && chmod -R 0755 $(go env GOMODCACHE)
-          [ -d $(go env GOTOOLDIR) ] && chmod -R 0755 $(go env GOTOOLDIR)
+          [ -d $GOPATHBIN ] && chmod -R 0755 $GOPATHBIN
           echo "go-build=$(go env GOCACHE)" >> $GITHUB_OUTPUT
           echo "go-mod=$(go env GOMODCACHE)" >> $GITHUB_OUTPUT
-          echo "go-tool=$(go env GOTOOLDIR)" >> $GITHUB_OUTPUT
+          echo "go-tool=$GOPATHBIN" >> $GITHUB_OUTPUT
 
       # Cache go build cache, used to speedup go test
       - name: Go Build Cache
@@ -112,6 +107,9 @@ jobs:
             go install "$tool"
           done
 
+          which gopogh
+          which covreport
+
       - name: Run tests
         run: |
           echo "Creating coverage directory"
@@ -119,7 +117,7 @@ jobs:
           echo "Running tests with coverage"
           go test -v ./... -coverpkg=./... -coverprofile="./.coverage/cover.out" -json > .coverage/test-report.json || true
           echo "Generating test report"
-          gopogh -in .coverage/test-report.json -out_summary .coverage/test-summary.json 2>&1 > /dev/null
+          gopogh -in .coverage/test-report.json -out_summary .coverage/test-summary.json
           echo "Generating coverage reports: Cover"
           go tool cover -html=./.coverage/cover.out -o .coverage/cover.html
           echo "Generating coverage reports: Covreport"
