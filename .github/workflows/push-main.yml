@@ -8,6 +8,10 @@ on:
 
 permissions: {}
 
+concurrency:
+  group: push-main
+  cancel-in-progress: false
+
 jobs:
   trunk-check:
     runs-on: ubuntu-latest
@@ -79,5 +83,5 @@ jobs:
 
   trigger-dist:
     needs: [trunk-check, test]
-    uses: McTalian/wow-build-tools/.github/workflows/build-dist-main.yml@main
+    uses: ./.github/workflows/build-dist-main.yml
     secrets: inherit
