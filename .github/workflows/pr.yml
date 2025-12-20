@@ -88,24 +88,14 @@ jobs:
       - name: Install Go dependencies
         run: go mod download
 
-      - name: Declare Tools
-        id: declare-tools
-        run: |
-          touch go.tools.txt
-          echo "github.com/medyagh/gopogh/cmd/gopogh@1885ea840fbc9b32f018d792342adb919b7b9009" >> go.tools.txt
-          echo "github.com/cancue/covreport@3fe392bcb4a978ff1f94dbf1367d992c4b3a67d6" >> go.tools.txt
-
       - name: Go Tool Cache
         uses: actions/cache@v5
         with:
           path: ${{ steps.go-cache-paths.outputs.go-tool }}
-          key: ${{ runner.os }}-go-tools-${{ hashFiles('**/go.tools.txt') }}
+          key: ${{ runner.os }}-go-tools-${{ hashFiles('**/tools.go') }}
 
       - name: Install tools
-        run: |
-          for tool in $(cat go.tools.txt); do
-            go install "$tool"
-          done
+        run: go install $(go list -f '{{join .Imports " "}}' tools.go)
 
       - name: Run tests
         run: |
