@@ -2,6 +2,9 @@ name: Semantic Release
 on:
   push:
     branches: [main, beta, alpha]
+    paths:
+      - "**/*"
+      - "!dist/**"
 
 permissions: {}
 
@@ -74,39 +77,7 @@ jobs:
           path: ./.coverage
           include-hidden-files: true
 
-  check-dist:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Smoke test built binary
-        run: |
-          dist/wow-build-tools build --help
-
-  release:
-    needs: [trunk-check, test, check-dist]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version-file: .nvmrc
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Run semantic-release
-        id: release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-        run: npx semantic-release
+  trigger-dist:
+    needs: [trunk-check, test]
+    uses: McTalian/wow-build-tools/.github/workflows/build-dist-main.yml@main
+    secrets: inherit

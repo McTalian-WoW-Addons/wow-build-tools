@@ -9,40 +9,6 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  check-dist:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Get changed files
-        id: changed-files
-        uses: tj-actions/changed-files@24d32ffd492484c1d75e0c0b894501ddb9d30d62
-        with:
-          files_yaml: |
-            src:
-              - '**/*.go'
-              - '!**/*_test.go'
-            dist:
-              - 'dist/**'
-
-      - name: Require dist build if src changed
-        if: ${{ steps.changed-files.outputs.src_changed == 'true' && steps.changed-files.outputs.dist_changed != 'true' }}
-        run: |
-          SRC_CHANGED=${{ steps.changed-files.outputs.src_changed }}
-          DIST_CHANGED=${{ steps.changed-files.outputs.dist_changed }}
-          echo "src_changed: $SRC_CHANGED"
-          echo "dist_changed: $DIST_CHANGED"
-          if [ "$SRC_CHANGED" == "true" ] && [ "$DIST_CHANGED" != "true" ] ; then
-            echo "Source files have changed. Did you include an updated 'dist' build?"
-          fi
-
-      - name: Smoke test built binary
-        run: |
-          dist/wow-build-tools build --help
-
   trunk-check:
     runs-on: ubuntu-latest
     permissions:
@@ -125,7 +91,7 @@ jobs:
     name: Passing PR Checks
     runs-on: ubuntu-latest
     if: always()
-    needs: [check-dist, trunk-check, test]
+    needs: [trunk-check, test]
     steps:
       - name: Export needs results as JSON
         id: export-needs
