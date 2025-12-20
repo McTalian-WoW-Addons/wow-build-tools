@@ -33,9 +33,8 @@ import (
 )
 
 var (
-	curseId string
-	wowiId  string
-	wagoId  string
+	wowiId string
+	wagoId string
 )
 
 // rootCmd represents the base command when called without any subcommands

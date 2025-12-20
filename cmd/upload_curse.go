@@ -50,7 +50,7 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 
-	curseCmd.Flags().StringVarP(&curseId, "curseId", "p", "", "Set the CurseForge project ID for localization and uploading. (Use 0 to unset the TOC value)")
+	curseCmd.Flags().StringVarP(&upload.UploadCurseParams.CurseId, "curseId", "p", "", "Set the CurseForge project ID for localization and uploading. (Use 0 to unset the TOC value)")
 	err := curseCmd.MarkFlagRequired("curseId")
 	if err != nil {
 		panic(err)

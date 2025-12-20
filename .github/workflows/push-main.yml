@@ -2,6 +2,9 @@ name: Semantic Release
 on:
   push:
     branches: [main, beta, alpha]
+    paths:
+      - "**/*"
+      - "!dist/**"
 
 permissions: {}
 
@@ -39,26 +42,8 @@ jobs:
         id: go-cache-paths
         run: |
           GOPATHBIN=$(go env GOPATH)/bin
-          [ -d $(go env GOCACHE) ] && chmod -R 0755 $(go env GOCACHE)
-          [ -d $(go env GOMODCACHE) ] && chmod -R 0755 $(go env GOMODCACHE)
           [ -d $GOPATHBIN ] && chmod -R 0755 $GOPATHBIN
-          echo "go-build=$(go env GOCACHE)" >> $GITHUB_OUTPUT
-          echo "go-mod=$(go env GOMODCACHE)" >> $GITHUB_OUTPUT
           echo "go-tool=$GOPATHBIN" >> $GITHUB_OUTPUT
-
-      # Cache go build cache, used to speedup go test
-      - name: Go Build Cache
-        uses: actions/cache@v5
-        with:
-          path: ${{ steps.go-cache-paths.outputs.go-build }}
-          key: ${{ runner.os }}-go-build-${{ hashFiles('**/go.sum') }}
-
-      # Cache go mod cache, used to speedup builds
-      - name: Go Mod Cache
-        uses: actions/cache@v5
-        with:
-          path: ${{ steps.go-cache-paths.outputs.go-mod }}
-          key: ${{ runner.os }}-go-mod-${{ hashFiles('**/go.sum') }}
 
       - name: Install Go dependencies
         run: go mod download
@@ -92,54 +77,7 @@ jobs:
           path: ./.coverage
           include-hidden-files: true
 
-  docker-build:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-      actions: write
-      id-token: write
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build Docker image
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          push: false
-          tags: wow-build-tools:pr-${{ github.event.pull_request.number }}
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-          load: true
-
-      - name: Smoke test Docker image
-        run: |
-          docker run --volume $(pwd):/github/workspace --rm wow-build-tools:pr-${{ github.event.pull_request.number }} /build --help
-
-  release:
-    needs: [trunk-check, test, docker-build]
-    runs-on: ubuntu-latest
-    permissions:
-      contents: write
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version-file: .nvmrc
-
-      - name: Install dependencies
-        run: npm install
-
-      - name: Run semantic-release
-        id: release
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-        run: npx semantic-release
+  trigger-dist:
+    needs: [trunk-check, test]
+    uses: McTalian/wow-build-tools/.github/workflows/build-dist-main.yml@main
+    secrets: inherit
