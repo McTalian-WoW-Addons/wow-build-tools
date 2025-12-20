@@ -60,7 +60,13 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
         with:
+          token: ${{ secrets.GH_PAT }}
           fetch-depth: 0
+          ref: beta # Explicitly fetch the latest from the branch
+
+      - name: Pull latest changes
+        run: |
+          git pull origin beta
 
       - name: Setup Node.js
         uses: actions/setup-node@v6
