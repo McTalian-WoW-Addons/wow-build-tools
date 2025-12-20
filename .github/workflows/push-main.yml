@@ -82,6 +82,8 @@ jobs:
           include-hidden-files: true
 
   trigger-dist:
+    permissions:
+      contents: write
     needs: [trunk-check, test]
     uses: ./.github/workflows/build-dist-main.yml
     secrets: inherit
