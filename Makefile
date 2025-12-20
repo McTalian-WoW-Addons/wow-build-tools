@@ -29,6 +29,13 @@ test:
 	@echo "Test report: file:///.coverage/test-report.html";
 	@echo "Coverage report: file:///.coverage/report.html";
 
+test-ci:
+	@mkdir -p ./.coverage
+	@go test -v ./... -coverpkg=./... -coverprofile="./.coverage/cover.out" -json > .coverage/test-report.json || true
+	@gopogh -in .coverage/test-report.json -out_summary .coverage/test-summary.json 2>&1 > /dev/null
+	@go tool cover -html=./.coverage/cover.out -o .coverage/cover.html
+	@covreport -i .coverage/cover.out -o .coverage/report.html
+
 # Define the default target
 .PHONY: all
 all: build

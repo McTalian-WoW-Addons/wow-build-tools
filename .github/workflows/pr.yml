@@ -91,15 +91,22 @@ jobs:
       - name: Install Go dependencies
         run: go mod download
 
+      - name: Install tools
+        run: |
+          go install github.com/medyagh/gopogh/cmd/gopogh@1885ea840fbc9b32f018d792342adb919b7b9009
+          go install github.com/cancue/covreport@3fe392bcb4a978ff1f94dbf1367d992c4b3a67d6
+
       - name: Run tests
         run: |
-          echo "Creating temp directories..."
-          mkdir -p ./.coverage
-          # mkdir -p ./.test-results
-          echo "Running tests..."
-          go test -v ./... -cover -coverpkg=./... -coverprofile="./.coverage/.cover.out"
-          echo "Generating coverage report..."
-          go tool cover -html="./.coverage/.cover.out" -o "./.coverage/report.html"
+          make test-ci
+          NumberPassed=$(cat ./.coverage/test-summary.json | jq '.NumberOfPass')
+          NumFailed=$(cat ./.coverage/test-summary.json | jq '.NumberOfFail')
+          TotalTests=$(cat ./.coverage/test-summary.json | jq '.NumberOfTests')
+          TotalTime=$(cat ./.coverage/test-summary.json | jq '.TotalDuration')
+          echo "Tests passed: $NumberPassed / $TotalTests in $TotalTime seconds."
+          if [ "$NumFailed" -ne "0" ]; then
+            exit 1
+          fi
 
       - name: Upload coverage
         uses: actions/upload-artifact@v4
@@ -107,3 +114,26 @@ jobs:
           name: coverage
           path: ./.coverage
           include-hidden-files: true
+
+  all_pr_checks:
+    name: Passing PR Checks
+    runs-on: ubuntu-latest
+    if: always()
+    needs: [trunk-check, test, docker-build]
+    steps:
+      - name: Export needs results as JSON
+        id: export-needs
+        run: echo '${{ toJSON(needs) }}' > needs.json
+
+      - name: Check if all jobs passed or were skipped
+        run: |
+          needs=$(cat needs.json)
+          for job in $(echo "$needs" | jq -r 'keys[]'); do
+            result=$(echo "$needs" | jq -r ".\"$job\".result")
+            if [[ "$result" != "success" && "$result" != "skipped" ]]; then
+              echo "Job $job failed."
+              exit 1
+            fi
+          done
+          echo "All jobs passed or were skipped."
+        shell: bash
