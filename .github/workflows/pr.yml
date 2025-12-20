@@ -109,23 +109,22 @@ jobs:
 
       - name: Run tests
         run: |
-          echo "Creating coverage directory"
           mkdir -p ./.coverage
           echo "Running tests with coverage"
           go test -v ./... -coverpkg=./... -coverprofile="./.coverage/cover.out" -json > .coverage/test-report.json || true
-          echo "Generating test report"
-          gopogh -in .coverage/test-report.json -out_summary .coverage/test-summary.json -out_html .coverage/test-report.html
-          echo "Generating coverage reports: Cover"
+          echo "Generating reports"
+          gopogh -in .coverage/test-report.json -out_summary .coverage/test-summary.json -out_html .coverage/test-report.html 1> /dev/null
           go tool cover -html=./.coverage/cover.out -o .coverage/cover.html
-          echo "Generating coverage reports: Covreport"
           covreport -i .coverage/cover.out -o .coverage/report.html
-          echo "Test Summary:"
           NumberPassed=$(cat ./.coverage/test-summary.json | jq '.NumberOfPass')
           NumFailed=$(cat ./.coverage/test-summary.json | jq '.NumberOfFail')
           TotalTests=$(cat ./.coverage/test-summary.json | jq '.NumberOfTests')
           TotalTime=$(cat ./.coverage/test-summary.json | jq '.TotalDuration')
+
+          echo ""
           echo "Tests passed: $NumberPassed / $TotalTests in $TotalTime seconds."
           if [ "$NumFailed" -ne "0" ]; then
+            echo "Tests failed: $NumFailed"
             exit 1
           fi
 

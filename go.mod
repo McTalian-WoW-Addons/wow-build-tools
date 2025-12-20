@@ -1,6 +1,6 @@
 module github.com/McTalian/wow-build-tools
 
-go 1.25.5
+go 1.24.11
 
 require (
 	github.com/blang/semver v3.5.1+incompatible
