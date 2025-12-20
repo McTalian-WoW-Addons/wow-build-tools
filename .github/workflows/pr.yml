@@ -107,9 +107,6 @@ jobs:
             go install "$tool"
           done
 
-          which gopogh
-          which covreport
-
       - name: Run tests
         run: |
           echo "Creating coverage directory"
@@ -117,7 +114,7 @@ jobs:
           echo "Running tests with coverage"
           go test -v ./... -coverpkg=./... -coverprofile="./.coverage/cover.out" -json > .coverage/test-report.json || true
           echo "Generating test report"
-          gopogh -in .coverage/test-report.json -out_summary .coverage/test-summary.json
+          gopogh -in .coverage/test-report.json -out_summary .coverage/test-summary.json -out_html .coverage/test-report.html
           echo "Generating coverage reports: Cover"
           go tool cover -html=./.coverage/cover.out -o .coverage/cover.html
           echo "Generating coverage reports: Covreport"
@@ -132,7 +129,7 @@ jobs:
             exit 1
           fi
 
-      - name: Upload coverage
+      - name: Upload test and coverage reports
         uses: actions/upload-artifact@v4
         with:
           name: coverage
