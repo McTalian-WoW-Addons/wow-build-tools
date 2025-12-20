@@ -19,15 +19,15 @@ jobs:
         with:
           files_yaml: |
             src:
-              - **/*.go
-              - !**/*_test.go
+              - '**/*.go'
+              - '!**/*_test.go'
             dist:
-              - dist/**
+              - 'dist/**'
 
       - name: Require dist build if src changed
         if: ${{ steps.changed-files.outputs.src_changed == 'true' && steps.changed-files.outputs.dist_changed != 'true' }}
         run: |
-          echo "Source files have changed; did you include an updated 'dist' build?"
+          echo "Source files have changed. Did you include an updated 'dist' build?"
           exit 1
 
       - name: Smoke test built binary
