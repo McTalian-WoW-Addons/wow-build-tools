@@ -22,14 +22,6 @@ THE SOFTWARE.
 package cmd
 
 import (
-	"fmt"
-	"os"
-	"strings"
-
-	"github.com/McTalian/wow-build-tools/internal/changelog"
-	"github.com/McTalian/wow-build-tools/internal/logger"
-	"github.com/McTalian/wow-build-tools/internal/pkg"
-	"github.com/McTalian/wow-build-tools/internal/toc"
 	"github.com/McTalian/wow-build-tools/internal/upload"
 	"github.com/spf13/cobra"
 )
@@ -43,90 +35,7 @@ var curseCmd = &cobra.Command{
 	Input, label, interface versions, and CurseForge project ID are required.
 	The CF_API_KEY environment variable must also be set.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		tmp := os.TempDir()
-		tmpToc, err := os.CreateTemp(tmp, "wbt*.toc")
-		if err != nil {
-			logger.Error("Could not create temporary TOC file: %v", err)
-			return err
-		}
-		defer func() {
-			_ = tmpToc.Close()
-			_ = os.Remove(tmpToc.Name())
-		}()
-
-		changelogPath := UploadChangelog
-		if UploadChangelog == "" {
-			tmpChangelog, err := os.CreateTemp(tmp, "wbtChangelog*.md")
-			if err != nil {
-				logger.Error("Could not create temporary changelog file: %v", err)
-				return err
-			}
-			defer func() {
-				_ = tmpChangelog.Close()
-				_ = os.Remove(tmpChangelog.Name())
-			}()
-
-			_, err = tmpChangelog.WriteString("No changelog provided")
-			if err != nil {
-				logger.Error("Could not write to temporary changelog file: %v", err)
-				return err
-			}
-			err = tmpChangelog.Sync()
-			if err != nil {
-				logger.Error("Could not sync temporary changelog file: %v", err)
-				return err
-			}
-
-			changelogPath = tmpChangelog.Name()
-		}
-
-		changelog := &changelog.Changelog{
-			PreExistingFilePath: changelogPath,
-			MarkupType:          changelog.MarkdownMT,
-		}
-
-		interfaceStringList := []string{}
-		for _, i := range UploadInterfaceVersions {
-			interfaceStringList = append(interfaceStringList, fmt.Sprintf("%d", i))
-		}
-
-		interfaceString := strings.Join(interfaceStringList, ",")
-		_, err = fmt.Fprintf(tmpToc, "## Interface: %s", interfaceString)
-		if err != nil {
-			logger.Error("Could not write to temporary TOC file: %v", err)
-			return err
-		}
-		err = tmpToc.Sync()
-		if err != nil {
-			logger.Error("Could not sync temporary TOC file: %v", err)
-			return err
-		}
-
-		tocFile, err := toc.NewToc(tmpToc.Name())
-		if err != nil {
-			logger.Error("Could not create TOC file: %v", err)
-			return err
-		}
-
-		pkgMeta := &pkg.PkgMeta{}
-
-		curseArgs := upload.UploadCurseArgs{
-			TocFiles:    []*toc.Toc{tocFile},
-			ZipPath:     UploadInput,
-			FileLabel:   UploadLabel,
-			PkgMeta:     pkgMeta,
-			Changelog:   changelog,
-			ReleaseType: UploadReleaseType,
-			CurseId:     curseId,
-		}
-
-		err = upload.UploadToCurse(curseArgs)
-		if err != nil {
-			logger.Error("Could not upload to curse: %v", err)
-			return err
-		}
-
-		return nil
+		return upload.RunUploadCurse()
 	},
 }
 
