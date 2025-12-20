@@ -5,8 +5,8 @@ on:
     paths:
       - "**/*.go"
       - "!**/*_test.go"
-      - "go.mod"
-      - "go.sum"
+      - go.mod
+      - go.sum
 
 permissions:
   contents: write
