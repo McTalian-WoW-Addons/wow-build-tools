@@ -71,8 +71,10 @@ jobs:
         run: |
           [ -d $(go env GOCACHE) ] && chmod -R 0755 $(go env GOCACHE)
           [ -d $(go env GOMODCACHE) ] && chmod -R 0755 $(go env GOMODCACHE)
+          [ -d $(go env GOTOOLDIR) ] && chmod -R 0755 $(go env GOTOOLDIR)
           echo "go-build=$(go env GOCACHE)" >> $GITHUB_OUTPUT
           echo "go-mod=$(go env GOMODCACHE)" >> $GITHUB_OUTPUT
+          echo "go-tool=$(go env GOTOOLDIR)" >> $GITHUB_OUTPUT
 
       # Cache go build cache, used to speedup go test
       - name: Go Build Cache
@@ -91,14 +93,32 @@ jobs:
       - name: Install Go dependencies
         run: go mod download
 
+      - name: Declare Tools
+        id: declare-tools
+        run: |
+          touch go.tools.txt
+          echo "github.com/medyagh/gopogh/cmd/gopogh@1885ea840fbc9b32f018d792342adb919b7b9009" >> go.tools.txt
+          echo "github.com/cancue/covreport@3fe392bcb4a978ff1f94dbf1367d992c4b3a67d6" >> go.tools.txt
+
+      - name: Go Tool Cache
+        uses: actions/cache@v5
+        with:
+          path: ${{ steps.go-cache-paths.outputs.go-tool }}
+          key: ${{ runner.os }}-go-tools-${{ hashFiles('**/go.tools.txt') }}
+
       - name: Install tools
         run: |
-          go install github.com/medyagh/gopogh/cmd/gopogh@1885ea840fbc9b32f018d792342adb919b7b9009
-          go install github.com/cancue/covreport@3fe392bcb4a978ff1f94dbf1367d992c4b3a67d6
+          for tool in $(cat go.tools.txt); do
+            go install "$tool"
+          done
 
       - name: Run tests
         run: |
-          make test-ci
+          mkdir -p ./.coverage
+          go test -v ./... -coverpkg=./... -coverprofile="./.coverage/cover.out" -json > .coverage/test-report.json || true
+          gopogh -in .coverage/test-report.json -out_summary .coverage/test-summary.json 2>&1 > /dev/null
+          go tool cover -html=./.coverage/cover.out -o .coverage/cover.html
+          covreport -i .coverage/cover.out -o .coverage/report.html
           NumberPassed=$(cat ./.coverage/test-summary.json | jq '.NumberOfPass')
           NumFailed=$(cat ./.coverage/test-summary.json | jq '.NumberOfFail')
           TotalTests=$(cat ./.coverage/test-summary.json | jq '.NumberOfTests')
