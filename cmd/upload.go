@@ -22,15 +22,8 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"github.com/McTalian/wow-build-tools/internal/upload"
 	"github.com/spf13/cobra"
-)
-
-var (
-	UploadInput             string
-	UploadLabel             string
-	UploadInterfaceVersions []int
-	UploadChangelog         string
-	UploadReleaseType       string
 )
 
 // uploadCmd represents the upload command
@@ -54,7 +47,7 @@ func init() {
 	// Cobra supports Persistent Flags which will work for this command
 	// and all subcommands, e.g.:
 	// uploadCmd.PersistentFlags().String("foo", "", "A help for foo")
-	uploadCmd.PersistentFlags().StringVarP(&UploadInput, "input", "i", "", "Path to the addon zip file to upload")
+	uploadCmd.PersistentFlags().StringVarP(&upload.UploadParams.Input, "input", "i", "", "Path to the addon zip file to upload")
 	err := uploadCmd.MarkPersistentFlagFilename("input")
 	if err != nil {
 		panic(err)
@@ -63,22 +56,22 @@ func init() {
 	if err != nil {
 		panic(err)
 	}
-	uploadCmd.PersistentFlags().StringVarP(&UploadLabel, "label", "l", "", "Label for the uploaded file")
+	uploadCmd.PersistentFlags().StringVarP(&upload.UploadParams.Label, "label", "l", "", "Label for the uploaded file")
 	err = uploadCmd.MarkPersistentFlagRequired("label")
 	if err != nil {
 		panic(err)
 	}
-	uploadCmd.PersistentFlags().IntSliceVar(&UploadInterfaceVersions, "interface-versions", []int{}, "Interface versions that your addon supports.")
+	uploadCmd.PersistentFlags().IntSliceVar(&upload.UploadParams.InterfaceVersions, "interface-versions", []int{}, "Interface versions that your addon supports.")
 	err = uploadCmd.MarkPersistentFlagRequired("interface-versions")
 	if err != nil {
 		panic(err)
 	}
-	uploadCmd.PersistentFlags().StringVarP(&UploadChangelog, "changelog", "c", "", "Path to the changelog file")
+	uploadCmd.PersistentFlags().StringVarP(&upload.UploadParams.Changelog, "changelog", "c", "", "Path to the changelog file")
 	err = uploadCmd.MarkPersistentFlagFilename("changelog")
 	if err != nil {
 		panic(err)
 	}
-	uploadCmd.PersistentFlags().StringVarP(&UploadReleaseType, "release-type", "r", "alpha", "Release type for the uploaded file")
+	uploadCmd.PersistentFlags().StringVarP(&upload.UploadParams.ReleaseType, "release-type", "r", "alpha", "Release type for the uploaded file")
 
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:

@@ -53,8 +53,8 @@ var wagoCmd = &cobra.Command{
 			_ = os.Remove(tmpToc.Name())
 		}()
 
-		changelogPath := UploadChangelog
-		if UploadChangelog == "" {
+		changelogPath := upload.UploadParams.Changelog
+		if upload.UploadParams.Changelog == "" {
 			tmpChangelog, err := os.CreateTemp(tmp, "wbtChangelog*.md")
 			if err != nil {
 				logger.Error("Could not create temporary changelog file: %v", err)
@@ -85,7 +85,7 @@ var wagoCmd = &cobra.Command{
 		}
 
 		interfaceStringList := []string{}
-		for _, i := range UploadInterfaceVersions {
+		for _, i := range upload.UploadParams.InterfaceVersions {
 			interfaceStringList = append(interfaceStringList, fmt.Sprintf("%d", i))
 		}
 
@@ -108,9 +108,9 @@ var wagoCmd = &cobra.Command{
 		}
 
 		wagoArgs := upload.UploadWagoArgs{
-			ZipPath:     UploadInput,
-			FileLabel:   UploadLabel,
-			ReleaseType: UploadReleaseType,
+			ZipPath:     upload.UploadParams.Input,
+			FileLabel:   upload.UploadParams.Label,
+			ReleaseType: upload.UploadParams.ReleaseType,
 			TocFiles:    []*toc.Toc{tocFile},
 			Changelog:   changelog,
 			WagoId:      wagoId,

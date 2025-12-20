@@ -55,8 +55,8 @@ var wowiCmd = &cobra.Command{
 			_ = os.Remove(tmpToc.Name())
 		}()
 
-		changelogPath := UploadChangelog
-		if UploadChangelog == "" {
+		changelogPath := upload.UploadParams.Changelog
+		if upload.UploadParams.Changelog == "" {
 			tmpChangelog, err := os.CreateTemp(tmp, "wbtChangelog*.md")
 			if err != nil {
 				logger.Error("Could not create temporary changelog file: %v", err)
@@ -87,7 +87,7 @@ var wowiCmd = &cobra.Command{
 		}
 
 		interfaceStringList := []string{}
-		for _, i := range UploadInterfaceVersions {
+		for _, i := range upload.UploadParams.InterfaceVersions {
 			interfaceStringList = append(interfaceStringList, fmt.Sprintf("%d", i))
 		}
 
@@ -112,8 +112,8 @@ var wowiCmd = &cobra.Command{
 		w := upload.UploadWowiArgs{
 			TocFiles:       []*toc.Toc{tocFile},
 			ProjectVersion: UploadProjectVersion,
-			ZipPath:        UploadInput,
-			FileLabel:      UploadLabel,
+			ZipPath:        upload.UploadParams.Input,
+			FileLabel:      upload.UploadParams.Label,
 			Changelog:      changelog,
 			WowiId:         wowiId,
 		}
