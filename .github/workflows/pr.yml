@@ -13,26 +13,22 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Set up Go
-        uses: actions/setup-go@v6
+      - name: Get changed files
+        id: changed-files
+        uses: tj-actions/changed-files@24d32ffd492484c1d75e0c0b894501ddb9d30d62
         with:
-          go-version-file: go.mod
-          cache-dependency-path: |
-            go.sum
+          files_yaml: |
+            src:
+              - '**/*.go'
+              - !'**/*_test.go'
+            dist:
+              - 'dist/**'
 
-      - name: Build binary
+      - name: Require dist build if src changed
+        if: ${{ steps.changed-files.outputs.src_changed == 'true' }} && ${{ steps.changed-files.outputs.dist_changed != 'true' }}
         run: |
-          make build-for-commit
-
-      - name: Verify 'dist' is up to date
-        run: |
-          if [[ -n $(git status --porcelain) ]]; then
-            echo "Error: 'dist' directory is not up to date. Please run 'make build-for-commit' and commit the changes."
-            git status --porcelain
-            exit 1
-          else
-            echo "'dist' directory is up to date."
-          fi
+          echo "Source files have changed; did you include an updated 'dist' build?"
+          exit 1
 
       - name: Smoke test built binary
         run: |

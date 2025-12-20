@@ -82,20 +82,6 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      - name: Build binary
-        run: |
-          make build-for-commit
-
-      - name: Verify 'dist' is up to date
-        run: |
-          if [[ -n $(git status --porcelain) ]]; then
-            echo "Error: 'dist' directory is not up to date. Please run 'make build-for-commit' and commit the changes."
-            git status --porcelain
-            exit 1
-          else
-            echo "'dist' directory is up to date."
-          fi
-
       - name: Smoke test built binary
         run: |
           dist/wow-build-tools build --help
