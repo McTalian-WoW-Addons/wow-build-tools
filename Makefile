@@ -26,8 +26,14 @@ test:
 	@gopogh -in .coverage/test-report.json -out_html .coverage/test-report.html -out_summary .coverage/test-summary.json 2>&1 > /dev/null
 	@go tool cover -html=./.coverage/cover.out -o .coverage/cover.html
 	@covreport -i .coverage/cover.out -o .coverage/report.html
-	@echo "Test report: file:///.coverage/test-report.html";
-	@echo "Coverage report: file:///.coverage/report.html";
+	@NumberPassed=$$(cat ./.coverage/test-summary.json | jq '.NumberOfPass'); \
+	NumFailed=$$(cat ./.coverage/test-summary.json | jq '.NumberOfFail'); \
+	TotalTests=$$(cat ./.coverage/test-summary.json | jq '.NumberOfTests'); \
+	TotalTime=$$(cat ./.coverage/test-summary.json | jq '.TotalDuration'); \
+	echo ""; \
+	echo "Tests passed: $$NumberPassed / $$TotalTests in $$TotalTime seconds."; \
+	echo "Test report: file:///.coverage/test-report.html"; \
+	echo "Coverage report: file:///.coverage/report.html";
 
 # Define the default target
 .PHONY: all
