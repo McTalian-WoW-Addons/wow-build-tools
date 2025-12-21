@@ -16,21 +16,21 @@ import (
 
 type Flavor = flavor.Flavor
 
-var globalConfig bool = true
+var globalOnly bool = true
 var configType string
 var configFile string
 
 var ErrConfigCreationAborted = fmt.Errorf("configuration file creation aborted")
 
-func createConfigFileIfNotExist(localPath string) error {
+func promptCreateConfigFileIfNotExist(localPath string) error {
 	configDir, err := GetConfigDir()
 	if err != nil {
 		logger.Error("Failed to determine configuration directory: %v", err)
 		return err
 	}
 
-	if configFile == "" || (globalConfig && configFile == localPath) {
-		if configFile == localPath {
+	if configFile == "" || (globalOnly && configFile == localPath) {
+		if configFile == localPath && !globalOnly {
 			logger.Info("Local configuration file already exists and will take precedence: %s", configFile)
 		}
 
@@ -42,33 +42,10 @@ func createConfigFileIfNotExist(localPath string) error {
 		if err != nil {
 			return err
 		}
-		response = strings.TrimSpace(response)
+		response = strings.ToUpper(strings.TrimSpace(response))
 
-		if response == "y" || response == "Y" {
-			if globalConfig {
-				logger.Info("Creating global configuration file...")
-				err := os.MkdirAll(configDir, 0755)
-				if err != nil && !os.IsExist(err) {
-					return err
-				}
-				err = viper.SafeWriteConfig()
-				if err != nil {
-					return err
-				}
-				err = viper.ReadInConfig()
-				if err != nil {
-					return err
-				}
-				logger.Success("Configuration file created: %s", viper.ConfigFileUsed())
-			} else {
-				logger.Info("--global flag not set, creating local configuration file...")
-				logger.Info("If you want to create a global configuration file instead, run `wow-build-tools config --global`.")
-				err := viper.SafeWriteConfigAs(".wbt.yaml")
-				if err != nil {
-					return err
-				}
-				logger.Success("Configuration file created: %s", localPath)
-			}
+		if response == "Y" {
+			return createConfigFile(configDir, localPath)
 		} else {
 			fmt.Println()
 			logger.Info("Configuration file creation aborted.")
@@ -78,14 +55,35 @@ func createConfigFileIfNotExist(localPath string) error {
 	return nil
 }
 
-func capitalize(s string) string {
-	if len(s) == 0 {
-		return s
+func createConfigFile(configDir, localPath string) error {
+	if globalOnly {
+		logger.Info("Creating global configuration file...")
+		err := os.MkdirAll(configDir, 0755)
+		if err != nil && !os.IsExist(err) {
+			return err
+		}
+		err = viper.SafeWriteConfig()
+		if err != nil {
+			return err
+		}
+		err = viper.ReadInConfig()
+		if err != nil {
+			return err
+		}
+		logger.Success("Configuration file created: %s", viper.ConfigFileUsed())
+	} else {
+		logger.Info("--global flag not set, creating local configuration file...")
+		logger.Info("If you want to create a global configuration file instead, run `wow-build-tools config --global`.")
+		err := viper.SafeWriteConfigAs(".wbt.yaml")
+		if err != nil {
+			return err
+		}
+		logger.Success("Configuration file created: %s", localPath)
 	}
-	return strings.ToUpper(s[:1]) + s[1:]
+	return nil
 }
 
-func setFlavorPath(reader *bufio.Reader, flavor Flavor, value ...string) error {
+func setFlavorPath(reader *bufio.Reader, f Flavor, value ...string) error {
 	var flavorPath string
 	var err error
 	if len(value) == 1 {
@@ -101,13 +99,13 @@ func setFlavorPath(reader *bufio.Reader, flavor Flavor, value ...string) error {
 			defaultPath = "/mnt/c/Program Files (x86)/World of Warcraft/"
 		}
 
-		if viper.Get("wowPath."+string(flavor)) != nil {
-			defaultPath = viper.GetString("wowPath." + string(flavor))
+		if viper.Get("wowPath."+f.Id) != nil {
+			defaultPath = viper.GetString("wowPath." + f.Id)
 		} else {
-			defaultPath += flavor.ToDir()
+			defaultPath += f.SubDir
 		}
 
-		logger.Prompt("Enter the path to your %s WoW installation [%s]: ", capitalize(string(flavor)), defaultPath)
+		logger.Prompt("Enter the path to your %s WoW installation [%s]: ", f.Name, defaultPath)
 		flavorPath, err = reader.ReadString('\n')
 		if err != nil {
 			return err
@@ -118,8 +116,8 @@ func setFlavorPath(reader *bufio.Reader, flavor Flavor, value ...string) error {
 		}
 	}
 
-	viper.Set("wowPath."+string(flavor), flavorPath)
-	logger.Success("%s World of Warcraft installation path set to: %s", capitalize(string(flavor)), flavorPath)
+	viper.Set("wowPath."+f.Id, flavorPath)
+	logger.Success("%s World of Warcraft installation path set to: %s", f.Name, flavorPath)
 
 	return nil
 }
@@ -163,33 +161,20 @@ func setWoWPath(reader *bufio.Reader, value ...string) error {
 	}
 
 	for _, entry := range contents {
-		if entry.IsDir() && entry.Name() == flavor.Retail.ToDir() {
-			logger.Success("Found Retail World of Warcraft installation at: %s", filepath.Join(wowPath, entry.Name()))
-			viper.Set("wowPath.retail", filepath.Join(wowPath, entry.Name()))
-		} else if entry.IsDir() && entry.Name() == flavor.Classic.ToDir() {
-			logger.Success("Found Classic World of Warcraft installation at: %s", filepath.Join(wowPath, entry.Name()))
-			viper.Set("wowPath.classic", filepath.Join(wowPath, entry.Name()))
-		} else if entry.IsDir() && entry.Name() == flavor.ClassicEra.ToDir() {
-			logger.Success("Found Classic Era World of Warcraft installation at: %s", filepath.Join(wowPath, entry.Name()))
-			viper.Set("wowPath.classicEra", filepath.Join(wowPath, entry.Name()))
-		} else if entry.IsDir() && entry.Name() == flavor.ClassicEraPtr.ToDir() {
-			logger.Success("Found Classic Era PTR World of Warcraft installation at: %s", filepath.Join(wowPath, entry.Name()))
-			viper.Set("wowPath.classicEraPtr", filepath.Join(wowPath, entry.Name()))
-		} else if entry.IsDir() && entry.Name() == flavor.Ptr.ToDir() {
-			logger.Success("Found PTR World of Warcraft installation at: %s", filepath.Join(wowPath, entry.Name()))
-			viper.Set("wowPath.ptr", filepath.Join(wowPath, entry.Name()))
-		} else if entry.IsDir() && entry.Name() == flavor.Xptr.ToDir() {
-			logger.Success("Found XPTR World of Warcraft installation at: %s", filepath.Join(wowPath, entry.Name()))
-			viper.Set("wowPath.xptr", filepath.Join(wowPath, entry.Name()))
-		} else if entry.IsDir() && entry.Name() == flavor.ClassicPtr.ToDir() {
-			logger.Success("Found Classic PTR World of Warcraft installation at: %s", filepath.Join(wowPath, entry.Name()))
-			viper.Set("wowPath.classicPtr", filepath.Join(wowPath, entry.Name()))
-		} else if entry.IsDir() && entry.Name() == flavor.ClassicBeta.ToDir() {
-			logger.Success("Found Classic Beta World of Warcraft installation at: %s", filepath.Join(wowPath, entry.Name()))
-			viper.Set("wowPath.classicBeta", filepath.Join(wowPath, entry.Name()))
-		} else {
-			logger.Warn("Found unknown directory: %s", entry.Name())
+		if !entry.IsDir() {
+			continue
 		}
+
+		f := flavor.FromDir(entry.Name())
+
+		if f == flavor.UnknownFlavor {
+			logger.Warn("Found unknown directory: %s", entry.Name())
+			continue
+		}
+
+		logger.Success("Found %s World of Warcraft installation at: %s", f.Name, filepath.Join(wowPath, entry.Name()))
+		configKey := fmt.Sprintf("wowPath.%s", f.Id)
+		viper.Set(configKey, filepath.Join(wowPath, entry.Name()))
 	}
 
 	wowPaths := viper.GetStringMapString("wowPath")
@@ -217,9 +202,9 @@ func runConfigWizard() error {
 		logger.Info("1. Set or update Base World of Warcraft installation path")
 		nextNum := 2
 		if len(wowPaths) >= 1 {
-			for _, flavor := range flavor.KnownFlavors {
-				logger.Info("%d. Update %s World of Warcraft installation path", nextNum, capitalize(string(flavor)))
-				numberFlavorMap[nextNum] = flavor
+			for _, f := range flavor.KnownFlavors {
+				logger.Info("%d. Update %s World of Warcraft installation path", nextNum, f.Name)
+				numberFlavorMap[nextNum] = f
 				nextNum++
 			}
 		}
@@ -277,12 +262,12 @@ func RunConfig(args []string) error {
 	}
 
 	configType = "local"
-	if globalConfig {
+	if globalOnly {
 		configType = "global"
 	}
 	configFile = viper.ConfigFileUsed()
 
-	if err = createConfigFileIfNotExist(localPath); err != nil {
+	if err = promptCreateConfigFileIfNotExist(localPath); err != nil {
 		if err == ErrConfigCreationAborted {
 			return nil
 		}
@@ -297,15 +282,15 @@ func RunConfig(args []string) error {
 				return fmt.Errorf("no subcommand provided for %s configuration", args[0])
 			}
 			validSecondaryArgs := []string{"base"}
-			for _, flavor := range flavor.KnownFlavors {
-				validSecondaryArgs = append(validSecondaryArgs, string(flavor))
+			for _, f := range flavor.KnownFlavors {
+				validSecondaryArgs = append(validSecondaryArgs, f.Id)
 			}
 			if slices.Contains(validSecondaryArgs, args[1]) {
 				if args[1] == "base" {
 					return setWoWPath(bufio.NewReader(os.Stdin), args[2:]...)
 				} else {
-					flavor := Flavor(args[1])
-					return setFlavorPath(bufio.NewReader(os.Stdin), flavor, args[2:]...)
+					f := flavor.FromId(args[1])
+					return setFlavorPath(bufio.NewReader(os.Stdin), f, args[2:]...)
 				}
 			} else {
 				logger.Error("Invalid subcommand provided for %s configuration, %s. Must be one of %v", args[0], args[1], validSecondaryArgs)

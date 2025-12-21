@@ -273,6 +273,8 @@ type UploadWowiArgs struct {
 	WowiId         string
 }
 
+var UploadWowiParams = &UploadWowiArgs{}
+
 func UploadToWowi(args UploadWowiArgs) error {
 	logGroup := logger.NewLogGroup(fmt.Sprintf("%sUploading to WoW Interface", logger.WoWInterface))
 	defer logGroup.Flush(true)
@@ -316,6 +318,90 @@ func UploadToWowi(args UploadWowiArgs) error {
 	}
 
 	if err := wowiUpload.upload(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func RunUploadWowi() error {
+	tmp := os.TempDir()
+	tmpToc, err := os.CreateTemp(tmp, "wbt*.toc")
+	if err != nil {
+		logger.Error("Could not create temporary TOC file: %v", err)
+		return err
+	}
+	defer func() {
+		_ = tmpToc.Close()
+		_ = os.Remove(tmpToc.Name())
+	}()
+
+	changelogPath := UploadParams.Changelog
+	if UploadParams.Changelog == "" {
+		tmpChangelog, err := os.CreateTemp(tmp, "wbtChangelog*.md")
+		if err != nil {
+			logger.Error("Could not create temporary changelog file: %v", err)
+			return err
+		}
+		defer func() {
+			_ = tmpChangelog.Close()
+			_ = os.Remove(tmpChangelog.Name())
+		}()
+
+		_, err = tmpChangelog.WriteString("No changelog provided")
+		if err != nil {
+			logger.Error("Could not write to temporary changelog file: %v", err)
+			return err
+		}
+		err = tmpChangelog.Sync()
+		if err != nil {
+			logger.Error("Could not sync temporary changelog file: %v", err)
+			return err
+		}
+
+		changelogPath = tmpChangelog.Name()
+	}
+
+	changelog := &changelog.Changelog{
+		PreExistingFilePath: changelogPath,
+		MarkupType:          changelog.MarkdownMT,
+	}
+
+	interfaceStringList := []string{}
+	for _, i := range UploadParams.InterfaceVersions {
+		interfaceStringList = append(interfaceStringList, fmt.Sprintf("%d", i))
+	}
+
+	interfaceString := strings.Join(interfaceStringList, ",")
+	_, err = fmt.Fprintf(tmpToc, "## Interface: %s", interfaceString)
+	if err != nil {
+		logger.Error("Could not write to temporary TOC file: %v", err)
+		return err
+	}
+	err = tmpToc.Sync()
+	if err != nil {
+		logger.Error("Could not sync temporary TOC file: %v", err)
+		return err
+	}
+
+	tocFile, err := toc.NewToc(tmpToc.Name())
+	if err != nil {
+		logger.Error("Could not create TOC file: %v", err)
+		return err
+	}
+
+	w := UploadWowiArgs{
+		TocFiles:       []*toc.Toc{tocFile},
+		ProjectVersion: UploadWowiParams.ProjectVersion,
+		ZipPath:        UploadParams.Input,
+		FileLabel:      UploadParams.Label,
+		Changelog:      changelog,
+		WowiId:         UploadWowiParams.WowiId,
+	}
+
+	err = UploadToWowi(w)
+	if err != nil {
+		logger.Error("Could not upload to WoWInterface: %v", err)
 		return err
 	}
 

@@ -1,77 +1,44 @@
 package flavor
 
-type Flavor string
+type Flavor struct {
+	Id     string
+	Name   string
+	SubDir string
+}
 
-const (
-	Retail        Flavor = "retail"
-	Classic       Flavor = "classic"
-	ClassicEra    Flavor = "classicEra"
-	Ptr           Flavor = "ptr"
-	Xptr          Flavor = "xptr"
-	ClassicPtr    Flavor = "classicPtr"
-	ClassicEraPtr Flavor = "classicEraPtr"
-	ClassicBeta   Flavor = "classicBeta"
-)
+var KnownFlavors = []Flavor{
+	{Id: "retail", Name: "Retail", SubDir: "_retail_"},
+	{Id: "beta", Name: "Beta", SubDir: "_beta_"},
+	{Id: "classic", Name: "Classic", SubDir: "_classic_"},
+	{Id: "classicEra", Name: "Classic Era", SubDir: "_classic_era_"},
+	{Id: "ptr", Name: "PTR", SubDir: "_ptr_"},
+	{Id: "xptr", Name: "XPTR", SubDir: "_xptr_"},
+	{Id: "classicPtr", Name: "Classic PTR", SubDir: "_classic_ptr_"},
+	{Id: "classicEraPtr", Name: "Classic Era PTR", SubDir: "_classic_era_ptr_"},
+	{Id: "classicBeta", Name: "Classic Beta", SubDir: "_classic_beta_"},
+}
+var UnknownFlavor = Flavor{Id: "unknown", Name: "Unknown", SubDir: ""}
 
-type FlavorDir string
+var IdFlavorMap = map[string]Flavor{}
+var DirFlavorMap = map[string]Flavor{}
 
-const (
-	unknownDir       FlavorDir = ""
-	retailDir        FlavorDir = "_retail_"
-	classicDir       FlavorDir = "_classic_"
-	classicEraDir    FlavorDir = "_classic_era_"
-	ptrDir           FlavorDir = "_ptr_"
-	xptrDir          FlavorDir = "_xptr_"
-	classicPtrDir    FlavorDir = "_classic_ptr_"
-	classicEraPtrDir FlavorDir = "_classic_era_ptr_"
-	classicBetaDir   FlavorDir = "_classic_beta_"
-)
-
-var KnownFlavors = []Flavor{Retail, Classic, ClassicEra, Ptr, Xptr, ClassicPtr, ClassicEraPtr, ClassicBeta}
-
-func (f Flavor) ToDir() string {
-	switch f {
-	case Retail:
-		return string(retailDir)
-	case Classic:
-		return string(classicDir)
-	case ClassicEra:
-		return string(classicEraDir)
-	case Ptr:
-		return string(ptrDir)
-	case Xptr:
-		return string(xptrDir)
-	case ClassicPtr:
-		return string(classicPtrDir)
-	case ClassicEraPtr:
-		return string(classicEraPtrDir)
-	case ClassicBeta:
-		return string(classicBetaDir)
-	default:
-		return string(unknownDir)
+func init() {
+	for _, f := range KnownFlavors {
+		IdFlavorMap[f.Id] = f
+		DirFlavorMap[f.SubDir] = f
 	}
 }
 
-// StringToFlavor converts a string to a Flavor type
-func StringToFlavor(s string) Flavor {
-	switch s {
-	case "retail":
-		return Retail
-	case "classic":
-		return Classic
-	case "classicera":
-		return ClassicEra
-	case "ptr":
-		return Ptr
-	case "xptr":
-		return Xptr
-	case "classicptr":
-		return ClassicPtr
-	case "classiceraptr":
-		return ClassicEraPtr
-	case "classicbeta":
-		return ClassicBeta
-	default:
-		return Retail // Default to retail as a fallback
+func FromDir(dir string) Flavor {
+	if f, ok := DirFlavorMap[dir]; ok {
+		return f
 	}
+	return UnknownFlavor
+}
+
+func FromId(id string) Flavor {
+	if f, ok := IdFlavorMap[id]; ok {
+		return f
+	}
+	return UnknownFlavor
 }
