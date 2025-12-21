@@ -25,14 +25,7 @@ type GitHubReleaseAsset struct {
 // 		return nil, fmt.Errorf("failed to create request: %w", err)
 // 	}
 
-// 	err = addAuthHeader(req)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	client := &http.Client{}
-// 	resp, err := client.Do(req)
-
+// 	resp, err := clientRequest(req)
 // 	if err != nil {
 // 		return nil, fmt.Errorf("failed to get request: %w", err)
 // 	}
@@ -53,16 +46,7 @@ func getAssetId(slug string, releaseId int, filename string) (int, error) {
 		return -1, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	addAcceptHeader(req)
-
-	err = addAuthHeader(req)
-	if err != nil {
-		return -1, err
-	}
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-
+	resp, err := clientRequest(req)
 	if err != nil {
 		return -1, fmt.Errorf("failed to get request: %w", err)
 	}
@@ -92,16 +76,7 @@ func getAssetId(slug string, releaseId int, filename string) (int, error) {
 // 		return nil, fmt.Errorf("failed to create request: %w", err)
 // 	}
 
-// 	addAcceptHeader(req)
-
-// 	err = addAuthHeader(req)
-// 	if err != nil {
-// 		return nil, err
-// 	}
-
-// 	client := &http.Client{}
-// 	resp, err := client.Do(req)
-
+// 	resp, err := clientRequest(req)
 // 	if err != nil {
 // 		return nil, fmt.Errorf("failed to get request: %w", err)
 // 	}
@@ -127,16 +102,7 @@ func deleteAsset(slug string, assetId int, logGroup *logger.LogGroup) error {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
-	addAcceptHeader(req)
-
-	err = addAuthHeader(req)
-	if err != nil {
-		return err
-	}
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-
+	resp, err := clientRequest(req)
 	if err != nil {
 		return fmt.Errorf("failed to delete request: %w", err)
 	}
@@ -186,18 +152,9 @@ func UploadGitHubAsset(slug string, releaseId int, filename string, filePath str
 
 	fileExtension := strings.TrimPrefix(filepath.Ext(filePath), ".")
 	fileContentType := "application/" + fileExtension
-
-	addAcceptHeader(req)
 	req.Header.Add("Content-Type", fileContentType)
 
-	err = addAuthHeader(req)
-	if err != nil {
-		return err
-	}
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-
+	resp, err := clientRequest(req)
 	if err != nil {
 		return fmt.Errorf("failed to post request: %w", err)
 	}
