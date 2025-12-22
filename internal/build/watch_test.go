@@ -320,7 +320,6 @@ func TestTriggerBuild(t *testing.T) {
 	t.Run("sets correct build parameters", func(t *testing.T) {
 		// Setup
 		tmpDir := t.TempDir()
-		done := make(chan error, 1)
 
 		BuildParams = &BuildArgs{
 			TopDir:     tmpDir,
@@ -334,17 +333,11 @@ func TestTriggerBuild(t *testing.T) {
 		require.NoError(t, err)
 
 		// Execute
-		triggerBuild(done)
+		err = triggerBuild()
 
 		// Assert - check if error was sent
-		select {
-		case err := <-done:
-			if err != nil {
-				// Some errors are expected if full environment isn't set up
-				t.Logf("Build error (may be expected in test environment): %v", err)
-			}
-		default:
-			// No error
+		if err != nil {
+			t.Logf("Build error (may be expected in test environment): %v", err)
 		}
 	})
 }
@@ -709,8 +702,9 @@ func TestWatchLoopWithContext(t *testing.T) {
 		// Mock triggerBuildFunc to avoid real build
 		originalTriggerBuild := triggerBuildFunc
 		buildCalled := false
-		triggerBuildFunc = func(done chan error) {
+		triggerBuildFunc = func() {
 			buildCalled = true
+			return nil
 		}
 		defer func() { triggerBuildFunc = originalTriggerBuild }()
 
