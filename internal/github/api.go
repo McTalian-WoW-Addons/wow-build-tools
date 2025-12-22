@@ -44,3 +44,16 @@ func addAuthHeader(req *http.Request) error {
 
 	return nil
 }
+
+func clientRequest(req *http.Request) (*http.Response, error) {
+	client := &http.Client{}
+
+	addAcceptHeader(req)
+
+	err := addAuthHeader(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to set authorization header: %w", err)
+	}
+
+	return client.Do(req)
+}

@@ -330,6 +330,8 @@ type UploadWagoArgs struct {
 	WagoId      string
 }
 
+var UploadWagoParams = &UploadWagoArgs{}
+
 func UploadToWago(args UploadWagoArgs) error {
 	logGroup := logger.NewLogGroup(fmt.Sprintf("%sUploading to Wago", logger.Wago))
 	defer logGroup.Flush(true)
@@ -391,6 +393,34 @@ func UploadToWago(args UploadWagoArgs) error {
 	}
 
 	if err := wagoUpload.upload(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func RunUploadWago() error {
+	prepPayload, err := prepareUpload()
+	if err != nil {
+		return err
+	}
+	defer prepPayload.cleanup()
+
+	tocFile := prepPayload.toc
+	changelog := prepPayload.changelog
+
+	wagoArgs := UploadWagoArgs{
+		ZipPath:     UploadParams.Input,
+		FileLabel:   UploadParams.Label,
+		ReleaseType: UploadParams.ReleaseType,
+		TocFiles:    []*toc.Toc{tocFile},
+		Changelog:   changelog,
+		WagoId:      UploadWagoParams.WagoId,
+	}
+
+	err = UploadToWago(wagoArgs)
+	if err != nil {
+		logger.Error("Could not upload to wago: %v", err)
 		return err
 	}
 

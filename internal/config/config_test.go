@@ -11,34 +11,13 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestCapitalize(t *testing.T) {
-	tests := []struct {
-		name     string
-		input    string
-		expected string
-	}{
-		{"empty string", "", ""},
-		{"single char", "a", "A"},
-		{"lowercase word", "retail", "Retail"},
-		{"already capitalized", "Classic", "Classic"},
-		{"mixed case", "pTr", "PTr"},
-	}
-
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := capitalize(tt.input)
-			assert.Equal(t, tt.expected, result)
-		})
-	}
-}
-
 func TestSetWoWPath(t *testing.T) {
 	// Setup
 	tempDir := t.TempDir()
 
 	// Create mock WoW directory structure
-	retailDir := filepath.Join(tempDir, flavor.Retail.ToDir())
-	classicDir := filepath.Join(tempDir, flavor.Classic.ToDir())
+	retailDir := filepath.Join(tempDir, flavor.FromId("retail").Dir)
+	classicDir := filepath.Join(tempDir, flavor.FromId("classic").Dir)
 	require.NoError(t, os.MkdirAll(retailDir, 0755))
 	require.NoError(t, os.MkdirAll(classicDir, 0755))
 
@@ -84,19 +63,19 @@ func TestSetFlavorPath(t *testing.T) {
 	}{
 		{
 			name:      "set retail path",
-			flavor:    flavor.Retail,
+			flavor:    flavor.FromId("retail"),
 			value:     []string{"/path/to/retail"},
 			wantError: false,
 		},
 		{
 			name:      "set classic path",
-			flavor:    flavor.Classic,
+			flavor:    flavor.FromId("classic"),
 			value:     []string{"/path/to/classic"},
 			wantError: false,
 		},
 		{
 			name:      "set ptr path",
-			flavor:    flavor.Ptr,
+			flavor:    flavor.FromId("ptr"),
 			value:     []string{"/path/to/ptr"},
 			wantError: false,
 		},
@@ -111,7 +90,7 @@ func TestSetFlavorPath(t *testing.T) {
 				assert.Error(t, err)
 			} else {
 				assert.NoError(t, err)
-				assert.Equal(t, tt.value[0], viper.GetString("wowPath."+string(tt.flavor)))
+				assert.Equal(t, tt.value[0], viper.GetString("wowPath."+tt.flavor.Id))
 			}
 		})
 	}
@@ -167,7 +146,7 @@ func TestRunConfig(t *testing.T) {
 			err := viper.WriteConfig()
 			assert.NoError(t, err)
 
-			globalConfig = true
+			localConfigDisabled = true
 			err = RunConfig(tt.args)
 
 			if tt.wantError {

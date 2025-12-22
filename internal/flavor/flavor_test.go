@@ -1,145 +1,53 @@
 package flavor
 
-import (
-	"testing"
+import "testing"
 
-	"github.com/stretchr/testify/assert"
-)
-
-func TestStringToFlavor(t *testing.T) {
+func TestFromDir(t *testing.T) {
 	tests := []struct {
-		name     string
-		input    string
+		dir      string
 		expected Flavor
 	}{
-		{
-			name:     "retail",
-			input:    "retail",
-			expected: Retail,
-		},
-		{
-			name:     "classic",
-			input:    "classic",
-			expected: Classic,
-		},
-		{
-			name:     "classicera",
-			input:    "classicera",
-			expected: ClassicEra,
-		},
-		{
-			name:     "ptr",
-			input:    "ptr",
-			expected: Ptr,
-		},
-		{
-			name:     "xptr",
-			input:    "xptr",
-			expected: Xptr,
-		},
-		{
-			name:     "classicptr",
-			input:    "classicptr",
-			expected: ClassicPtr,
-		},
-		{
-			name:     "classiceraptr",
-			input:    "classiceraptr",
-			expected: ClassicEraPtr,
-		},
-		{
-			name:     "classicbeta",
-			input:    "classicbeta",
-			expected: ClassicBeta,
-		},
-		{
-			name:     "unknown defaults to retail",
-			input:    "unknown",
-			expected: Retail,
-		},
-		{
-			name:     "empty string defaults to retail",
-			input:    "",
-			expected: Retail,
-		},
-		{
-			name:     "uppercase retail defaults to retail",
-			input:    "RETAIL",
-			expected: Retail,
-		},
+		{"_retail_", KnownFlavors[0]},
+		{"_beta_", KnownFlavors[1]},
+		{"_classic_", KnownFlavors[2]},
+		{"_classic_era_", KnownFlavors[3]},
+		{"_ptr_", KnownFlavors[4]},
+		{"_xptr_", KnownFlavors[5]},
+		{"_classic_ptr_", KnownFlavors[6]},
+		{"_classic_era_ptr_", KnownFlavors[7]},
+		{"_classic_beta_", KnownFlavors[8]},
+		{"_some_unknown_dir_", UnknownFlavor},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := StringToFlavor(tt.input)
-			assert.Equal(t, tt.expected, result)
-		})
+	for _, test := range tests {
+		result := FromDir(test.dir)
+		if result != test.expected {
+			t.Errorf("FromDir(%s) = %v; want %v", test.dir, result, test.expected)
+		}
 	}
 }
 
-func TestFlavor_ToDir(t *testing.T) {
+func TestFromId(t *testing.T) {
 	tests := []struct {
-		name     string
-		flavor   Flavor
-		expected string
+		id       string
+		expected Flavor
 	}{
-		{
-			name:     "retail to dir",
-			flavor:   Retail,
-			expected: "_retail_",
-		},
-		{
-			name:     "classic to dir",
-			flavor:   Classic,
-			expected: "_classic_",
-		},
-		{
-			name:     "classicera to dir",
-			flavor:   ClassicEra,
-			expected: "_classic_era_",
-		},
-		{
-			name:     "ptr to dir",
-			flavor:   Ptr,
-			expected: "_ptr_",
-		},
-		{
-			name:     "xptr to dir",
-			flavor:   Xptr,
-			expected: "_xptr_",
-		},
-		{
-			name:     "classicptr to dir",
-			flavor:   ClassicPtr,
-			expected: "_classic_ptr_",
-		},
-		{
-			name:     "classiceraptr to dir",
-			flavor:   ClassicEraPtr,
-			expected: "_classic_era_ptr_",
-		},
-		{
-			name:     "classicbeta to dir",
-			flavor:   ClassicBeta,
-			expected: "_classic_beta_",
-		},
-		{
-			name:     "unknown flavor to empty dir",
-			flavor:   Flavor("unknown"),
-			expected: "",
-		},
+		{"retail", KnownFlavors[0]},
+		{"beta", KnownFlavors[1]},
+		{"classic", KnownFlavors[2]},
+		{"classicEra", KnownFlavors[3]},
+		{"ptr", KnownFlavors[4]},
+		{"xptr", KnownFlavors[5]},
+		{"classicPtr", KnownFlavors[6]},
+		{"classicEraPtr", KnownFlavors[7]},
+		{"classicBeta", KnownFlavors[8]},
+		{"some_unknown_id", UnknownFlavor},
 	}
 
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			result := tt.flavor.ToDir()
-			assert.Equal(t, tt.expected, result)
-		})
+	for _, test := range tests {
+		result := FromId(test.id)
+		if result != test.expected {
+			t.Errorf("FromId(%s) = %v; want %v", test.id, result, test.expected)
+		}
 	}
-}
-
-func TestKnownFlavors(t *testing.T) {
-	expected := []Flavor{Retail, Classic, ClassicEra, Ptr, Xptr, ClassicPtr, ClassicEraPtr, ClassicBeta}
-	assert.Equal(t, expected, KnownFlavors)
-	assert.Len(t, KnownFlavors, 8)
 }

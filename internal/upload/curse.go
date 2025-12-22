@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"strings"
 	"time"
 
 	"github.com/McTalian/wow-build-tools/internal/changelog"
@@ -472,70 +471,14 @@ func UploadToCurse(args UploadCurseArgs) error {
 }
 
 func RunUploadCurse() error {
-	tmp := os.TempDir()
-	tmpToc, err := os.CreateTemp(tmp, "wbt*.toc")
+	prepPayload, err := prepareUpload()
 	if err != nil {
-		logger.Error("Could not create temporary TOC file: %v", err)
 		return err
 	}
-	defer func() {
-		_ = tmpToc.Close()
-		_ = os.Remove(tmpToc.Name())
-	}()
+	defer prepPayload.cleanup()
 
-	changelogPath := UploadParams.Changelog
-	if UploadParams.Changelog == "" {
-		tmpChangelog, err := os.CreateTemp(tmp, "wbtChangelog*.md")
-		if err != nil {
-			logger.Error("Could not create temporary changelog file: %v", err)
-			return err
-		}
-		defer func() {
-			_ = tmpChangelog.Close()
-			_ = os.Remove(tmpChangelog.Name())
-		}()
-
-		_, err = tmpChangelog.WriteString("No changelog provided")
-		if err != nil {
-			logger.Error("Could not write to temporary changelog file: %v", err)
-			return err
-		}
-		err = tmpChangelog.Sync()
-		if err != nil {
-			logger.Error("Could not sync temporary changelog file: %v", err)
-			return err
-		}
-
-		changelogPath = tmpChangelog.Name()
-	}
-
-	changelog := &changelog.Changelog{
-		PreExistingFilePath: changelogPath,
-		MarkupType:          changelog.MarkdownMT,
-	}
-
-	interfaceStringList := []string{}
-	for _, i := range UploadParams.InterfaceVersions {
-		interfaceStringList = append(interfaceStringList, fmt.Sprintf("%d", i))
-	}
-
-	interfaceString := strings.Join(interfaceStringList, ",")
-	_, err = fmt.Fprintf(tmpToc, "## Interface: %s", interfaceString)
-	if err != nil {
-		logger.Error("Could not write to temporary TOC file: %v", err)
-		return err
-	}
-	err = tmpToc.Sync()
-	if err != nil {
-		logger.Error("Could not sync temporary TOC file: %v", err)
-		return err
-	}
-
-	tocFile, err := toc.NewToc(tmpToc.Name())
-	if err != nil {
-		logger.Error("Could not create TOC file: %v", err)
-		return err
-	}
+	tocFile := prepPayload.toc
+	changelog := prepPayload.changelog
 
 	pkgMeta := &pkg.PkgMeta{}
 

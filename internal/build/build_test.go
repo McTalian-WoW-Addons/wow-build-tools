@@ -62,6 +62,9 @@ func TestIgnores(t *testing.T) {
 }
 
 func TestSvnExternals(t *testing.T) {
+	if os.Getenv("CI") != "" {
+		t.Skip("Skipping SVN externals test in CI - requires network access to SVN repositories")
+	}
 	defer resetBuildParams()
 	testDir := filepath.Join(".", e2eDir, "test_svn_externals")
 	tempNewOutput, err := filepath.Abs(filepath.Join(".", e2eDir, "test_svn_externals", ".release"))
@@ -299,26 +302,25 @@ func TestLicenseDownload(t *testing.T) {
 }
 
 func runNewCLI(t *testing.T, input, output string) {
-	// Capture stdout/stderr if needed
+	// Suppress stdout/stderr during tests
 	oldStdout, oldStderr := os.Stdout, os.Stderr
-	defer func() { os.Stdout, os.Stderr = oldStdout, oldStderr }() // Restore after execution
+	defer func() { os.Stdout, os.Stderr = oldStdout, oldStderr }()
 
-	_, wOut, _ := os.Pipe()
-	_, wErr, _ := os.Pipe()
-	os.Stdout, os.Stderr = wOut, wErr
+	devNull, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
+	if err != nil {
+		t.Fatalf("Failed to open /dev/null: %v", err)
+	}
+	defer devNull.Close()
+
+	os.Stdout = devNull
+	os.Stderr = devNull
 
 	logger.InitLogger()
 	BuildParams.TopDir = input
 	BuildParams.ReleaseDir = output
-	err := Build(BuildParams)
+	err = Build(BuildParams)
 	if err != nil {
 		assert.NoError(t, fmt.Errorf("failed to run new CLI: %v", err))
 		t.FailNow()
 	}
-
-	// Close the write ends of the pipes
-	err = wOut.Close()
-	assert.NoError(t, err)
-	err = wErr.Close()
-	assert.NoError(t, err)
 }

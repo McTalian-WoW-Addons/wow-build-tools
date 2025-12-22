@@ -26,9 +26,12 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      pull-requests: write
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Go
         uses: actions/setup-go@v6
@@ -60,32 +63,42 @@ jobs:
           done
 
       - name: Run tests
-        run: |
-          mkdir -p ./.coverage
-          echo "Running tests with coverage"
-          go test -v ./... -coverpkg=./... -coverprofile="./.coverage/cover.out" -json > .coverage/test-report.json || true
-          echo "Generating reports"
-          gopogh -in .coverage/test-report.json -out_summary .coverage/test-summary.json -out_html .coverage/test-report.html 1> /dev/null
-          go tool cover -html=./.coverage/cover.out -o .coverage/cover.html
-          covreport -i .coverage/cover.out -o .coverage/report.html
-          NumberPassed=$(cat ./.coverage/test-summary.json | jq '.NumberOfPass')
-          NumFailed=$(cat ./.coverage/test-summary.json | jq '.NumberOfFail')
-          TotalTests=$(cat ./.coverage/test-summary.json | jq '.NumberOfTests')
-          TotalTime=$(cat ./.coverage/test-summary.json | jq '.TotalDuration')
-
-          echo ""
-          echo "Tests passed: $NumberPassed / $TotalTests in $TotalTime seconds."
-          if [ "$NumFailed" -ne "0" ]; then
-            echo "Tests failed: $NumFailed"
-            exit 1
-          fi
+        run: CC_THRESHOLD=10 ./scripts/test.sh
 
       - name: Upload test and coverage reports
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: coverage
           path: ./.coverage
           include-hidden-files: true
+
+      - name: Get Riskover Metrics Output
+        id: riskover
+        run: |
+          {
+            echo 'report<<EOF'
+            cat ./.coverage/coverage-metrics.md
+            echo EOF
+          } >> $GITHUB_OUTPUT
+
+      - name: Find Riskover Metrics Comment
+        uses: peter-evans/find-comment@v3
+        id: fc
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: github-actions[bot]
+          body-includes: <!-- RISKOVER_METRICS -->
+
+      - name: Create or update comment
+        uses: peter-evans/create-or-update-comment@v5
+        with:
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            <!-- RISKOVER_METRICS -->
+            ${{ steps.riskover.outputs.report }}
+          edit-mode: replace
 
   all_pr_checks:
     name: Passing PR Checks

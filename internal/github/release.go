@@ -9,6 +9,13 @@ import (
 	"github.com/McTalian/wow-build-tools/internal/logger"
 )
 
+type GetReleaseArgs struct {
+	Slug string
+	Tag  string
+}
+
+var GetReleaseParams = &GetReleaseArgs{}
+
 type GitHubRelease struct {
 	GitHubReleasePayload
 	Id   int `json:"id"`
@@ -50,16 +57,7 @@ func (r *GitHubRelease) UpdateRelease(newPayload GitHubReleasePayload) error {
 		return fmt.Errorf("failed to create request: %w", err)
 	}
 
-	addAcceptHeader(req)
-
-	err = addAuthHeader(req)
-	if err != nil {
-		return err
-	}
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-
+	resp, err := clientRequest(req)
 	if err != nil {
 		return fmt.Errorf("failed to get request: %w", err)
 	}
@@ -89,16 +87,7 @@ func CreateRelease(slug string, payload GitHubReleasePayload) (release *GitHubRe
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	addAcceptHeader(req)
-
-	err = addAuthHeader(req)
-	if err != nil {
-		return nil, err
-	}
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-
+	resp, err := clientRequest(req)
 	if err != nil {
 		return nil, fmt.Errorf("failed to get request: %w", err)
 	}
@@ -122,15 +111,7 @@ func GetRelease(slug, tag string) (release *GitHubRelease, err error) {
 		return
 	}
 
-	addAcceptHeader(req)
-
-	err = addAuthHeader(req)
-	if err != nil {
-		return
-	}
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	resp, err := clientRequest(req)
 	if err != nil {
 		return
 	}
@@ -151,4 +132,20 @@ func GetRelease(slug, tag string) (release *GitHubRelease, err error) {
 	}
 
 	return
+}
+
+func RunReleaseGet(slug, tag string) error {
+	release, err := GetRelease(slug, tag)
+	if err != nil {
+		logger.Error("Failed to get release ID")
+		return err
+	}
+
+	logger.Info("Release ID: %d", release.Id)
+	logger.Info("Tag Name: %s", release.TagName)
+	logger.Info("Name: %s", release.Name)
+	logger.Info("Draft: %t", release.Draft)
+	logger.Info("Prerelease: %t", release.Prerelease)
+	logger.Info("%s", release.Body)
+	return nil
 }

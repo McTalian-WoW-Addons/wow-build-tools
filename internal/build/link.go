@@ -30,29 +30,23 @@ func Link() error {
 	wslPathToAddonReleaseDir := LinkParams.WSLPathToAddonReleaseDir
 	releaseDir := BuildParams.ReleaseDir
 
-	var flavors = []Flavor{flavor.Retail, flavor.Classic, flavor.ClassicEra, flavor.Ptr, flavor.Xptr, flavor.ClassicPtr, flavor.ClassicEraPtr, flavor.ClassicBeta}
+	flavors := make([]Flavor, len(flavor.KnownFlavors))
+	copy(flavors, flavor.KnownFlavors)
 	// Filter flavors if specific ones are requested
 	if len(onlyFlavors) > 0 {
-		filteredFlavors := map[Flavor]bool{
-			flavor.Retail:        false,
-			flavor.Classic:       false,
-			flavor.ClassicEra:    false,
-			flavor.Ptr:           false,
-			flavor.Xptr:          false,
-			flavor.ClassicPtr:    false,
-			flavor.ClassicEraPtr: false,
-			flavor.ClassicBeta:   false,
-		}
+		filteredFlavors := make(map[Flavor]bool, len(flavor.KnownFlavors))
 		for _, flavorStr := range onlyFlavors {
-			f := flavor.StringToFlavor(flavorStr)
+			f := flavor.FromId(flavorStr)
 			if !slices.Contains(flavor.KnownFlavors, f) {
 				l.Warn("Unknown flavor: %s", flavorStr)
 				continue
 			}
 			filteredFlavors[f] = true
-			flavors = []Flavor{}
 		}
 
+		// If specific flavors were requested, we'll rebuild the
+		// flavors slice to only include those
+		flavors = []Flavor{}
 		for filteredFlavor, include := range filteredFlavors {
 			if include {
 				flavors = append(flavors, filteredFlavor)
@@ -95,7 +89,7 @@ func Link() error {
 			continue
 		}
 
-		if !slices.Contains(flavors, flavor.StringToFlavor(k)) {
+		if !slices.Contains(flavors, flavor.FromId(k)) {
 			l.Debug("Skipping flavor %s", k)
 			continue
 		}

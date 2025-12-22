@@ -32,11 +32,6 @@ import (
 	"github.com/spf13/viper"
 )
 
-var (
-	wowiId string
-	wagoId string
-)
-
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "wow-build-tools",
@@ -57,15 +52,67 @@ func Execute() {
 	}
 }
 
+func configureLogger() {
+	if cmdargs.RootParams.NoEmoji || cmdargs.RootParams.Boring {
+		logger.DisableEmoji()
+	}
+	if cmdargs.RootParams.NoColor || cmdargs.RootParams.Boring {
+		color.NoColor = true
+	}
+
+	if cmdargs.RootParams.LevelVerbose {
+		logger.SetLogLevel(logger.VERBOSE)
+	} else if cmdargs.RootParams.LevelDebug {
+		logger.SetLogLevel(logger.DEBUG)
+	} else {
+		logger.SetLogLevel(logger.INFO)
+	}
+}
+
+func loadConfig() error {
+	viper.SetConfigName(".wbt")
+	viper.SetConfigType("yaml")
+	configDir, err := config.GetConfigDir()
+	if err != nil {
+		logger.Error("Failed to determine configuration directory: %v - Please report this issue on GitHub", err)
+		return err
+	}
+	// viper.AddConfigPath(".")       // Look for config file in current directory first
+	// Maybe support merging multiple config files? For now just the global one is good enough
+	viper.AddConfigPath(configDir) // Then look in the user's home directory
+
+	if err = viper.ReadInConfig(); err != nil {
+		if _, ok := err.(viper.ConfigFileNotFoundError); ok {
+			logger.Verbose("No configuration file (.wbt.yaml) found at %s or current directory", configDir)
+		} else {
+			logger.Error("Failed to read configuration file: %v", err)
+			return err
+		}
+	}
+
+	return nil
+}
+
+func preRunE(cmd *cobra.Command, args []string) (err error) {
+	defer func() {
+		if err != nil {
+			logger.Error("Error during pre-run setup: %v", err)
+		}
+	}()
+
+	configureLogger()
+	err = loadConfig()
+	if err != nil {
+		return
+	}
+
+	return nil
+}
+
 func init() {
 	// Here you will define your flags and configuration settings.
 	// Cobra supports persistent flags, which, if defined here,
 	// will be global for your application.
-	configDir, err := config.GetConfigDir()
-	if err != nil {
-		logger.Error("Failed to determine configuration directory: %v", err)
-		os.Exit(1)
-	}
 
 	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.wow-build-tools.yaml)")
 	rootCmd.PersistentFlags().BoolVarP(&cmdargs.RootParams.LevelVerbose, "verbose", "V", false, "Enable verbose output")
@@ -73,38 +120,8 @@ func init() {
 	rootCmd.PersistentFlags().BoolVar(&cmdargs.RootParams.NoEmoji, "no-emoji", false, "Disable emoji output")
 	rootCmd.PersistentFlags().BoolVar(&cmdargs.RootParams.NoColor, "no-color", false, "Disable color output")
 	rootCmd.PersistentFlags().BoolVar(&cmdargs.RootParams.Boring, "boring", false, "Disable emoji and color output")
-	rootCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
-		if cmdargs.RootParams.NoEmoji || cmdargs.RootParams.Boring {
-			logger.DisableEmoji()
-		}
-		if cmdargs.RootParams.NoColor || cmdargs.RootParams.Boring {
-			color.NoColor = true
-		}
-		if cmdargs.RootParams.LevelVerbose {
-			logger.SetLogLevel(logger.VERBOSE)
-		} else if cmdargs.RootParams.LevelDebug {
-			logger.SetLogLevel(logger.DEBUG)
-		} else {
-			logger.SetLogLevel(logger.INFO)
-		}
-		viper.SetConfigName(".wbt")
-		viper.SetConfigType("yaml")
-		// Maybe support merging multiple config files? For now just the global one is good enough
-		// viper.AddConfigPath(".")       // Look for config file in current directory first
-		viper.AddConfigPath(configDir) // Then look in the user's home directory
-
-		if err = viper.ReadInConfig(); err != nil {
-			if _, ok := err.(viper.ConfigFileNotFoundError); ok {
-				logger.Verbose("No configuration file (.wbt.yaml) found at %s or current directory", configDir)
-			} else {
-				logger.Error("Failed to read configuration file: %v", err)
-				return err
-			}
-		}
-		return nil
-	}
+	rootCmd.PersistentPreRunE = preRunE
 	// Cobra also supports local flags, which will only run
 	// when this action is called directly.
 	// rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-
 }

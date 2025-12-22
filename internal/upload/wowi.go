@@ -273,6 +273,8 @@ type UploadWowiArgs struct {
 	WowiId         string
 }
 
+var UploadWowiParams = &UploadWowiArgs{}
+
 func UploadToWowi(args UploadWowiArgs) error {
 	logGroup := logger.NewLogGroup(fmt.Sprintf("%sUploading to WoW Interface", logger.WoWInterface))
 	defer logGroup.Flush(true)
@@ -316,6 +318,34 @@ func UploadToWowi(args UploadWowiArgs) error {
 	}
 
 	if err := wowiUpload.upload(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func RunUploadWowi() error {
+	prepPayload, err := prepareUpload()
+	if err != nil {
+		return err
+	}
+	defer prepPayload.cleanup()
+
+	tocFile := prepPayload.toc
+	changelog := prepPayload.changelog
+
+	w := UploadWowiArgs{
+		TocFiles:       []*toc.Toc{tocFile},
+		ProjectVersion: UploadWowiParams.ProjectVersion,
+		ZipPath:        UploadParams.Input,
+		FileLabel:      UploadParams.Label,
+		Changelog:      changelog,
+		WowiId:         UploadWowiParams.WowiId,
+	}
+
+	err = UploadToWowi(w)
+	if err != nil {
+		logger.Error("Could not upload to WoWInterface: %v", err)
 		return err
 	}
 

@@ -1,6 +1,7 @@
 package build
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -8,6 +9,8 @@ import (
 	"time"
 
 	"github.com/McTalian/wow-build-tools/internal/logger"
+	"github.com/fsnotify/fsnotify"
+	"github.com/spf13/viper"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -317,7 +320,6 @@ func TestTriggerBuild(t *testing.T) {
 	t.Run("sets correct build parameters", func(t *testing.T) {
 		// Setup
 		tmpDir := t.TempDir()
-		done := make(chan error, 1)
 
 		BuildParams = &BuildArgs{
 			TopDir:     tmpDir,
@@ -331,17 +333,11 @@ func TestTriggerBuild(t *testing.T) {
 		require.NoError(t, err)
 
 		// Execute
-		triggerBuild(done)
+		err = triggerBuild()
 
 		// Assert - check if error was sent
-		select {
-		case err := <-done:
-			if err != nil {
-				// Some errors are expected if full environment isn't set up
-				t.Logf("Build error (may be expected in test environment): %v", err)
-			}
-		default:
-			// No error
+		if err != nil {
+			t.Logf("Build error (may be expected in test environment): %v", err)
 		}
 	})
 }
@@ -393,4 +389,393 @@ func BenchmarkCopyDir(b *testing.B) {
 		dstDir := filepath.Join(tmpDir, fmt.Sprintf("dest%d", i))
 		_ = copyDir(srcDir, dstDir)
 	}
+}
+
+func TestSetupWatchEnvironment(t *testing.T) {
+	logger.InitLogger()
+
+	t.Run("creates and cleans release directory", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		releaseDir := filepath.Join(tmpDir, "release")
+
+		// Create release directory with a file first
+		require.NoError(t, os.MkdirAll(releaseDir, 0755))
+		testFile := filepath.Join(releaseDir, "test.txt")
+		require.NoError(t, os.WriteFile(testFile, []byte("test"), 0644))
+
+		err := setupWatchEnvironment(releaseDir, false)
+
+		assert.NoError(t, err)
+		// The function removes the directory, so it should no longer exist
+		// or exist but be empty
+		if _, err := os.Stat(releaseDir); err == nil {
+			// Directory exists, check it's empty
+			entries, err := os.ReadDir(releaseDir)
+			require.NoError(t, err)
+			assert.Empty(t, entries, "release directory should be empty after setup")
+		}
+	})
+
+	t.Run("handles nested release directory path", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		releaseDir := filepath.Join(tmpDir, "nested", "release", "dir")
+
+		err := setupWatchEnvironment(releaseDir, false)
+
+		assert.NoError(t, err)
+		// Parent directories should be created
+		assert.DirExists(t, filepath.Dir(releaseDir))
+	})
+
+	t.Run("with copy to wow dirs enabled", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		releaseDir := filepath.Join(tmpDir, "release")
+
+		err := setupWatchEnvironment(releaseDir, true)
+
+		assert.NoError(t, err)
+	})
+}
+
+func TestLoadWowPaths(t *testing.T) {
+	logger.InitLogger()
+
+	// Save original viper config and restore after tests
+	origConfig := viper.AllSettings()
+	defer func() {
+		viper.Reset()
+		for k, v := range origConfig {
+			viper.Set(k, v)
+		}
+	}()
+
+	t.Run("returns error when no paths configured", func(t *testing.T) {
+		viper.Reset()
+		viper.Set("wowPath", map[string]string{"base": "/some/path"})
+
+		paths, err := loadWowPaths()
+
+		assert.Error(t, err)
+		assert.Nil(t, paths)
+		assert.Contains(t, err.Error(), "no WoW paths configured")
+	})
+
+	t.Run("filters out base path", func(t *testing.T) {
+		viper.Reset()
+		viper.Set("wowPath", map[string]interface{}{
+			"base":    "/base/path",
+			"retail":  "/wow/retail",
+			"classic": "/wow/classic",
+		})
+
+		paths, err := loadWowPaths()
+
+		assert.NoError(t, err)
+		assert.Len(t, paths, 2)
+		assert.NotContains(t, paths, "/base/path")
+		assert.Contains(t, paths, "/wow/retail")
+		assert.Contains(t, paths, "/wow/classic")
+	})
+
+	t.Run("handles empty wow path config", func(t *testing.T) {
+		viper.Reset()
+		viper.Set("wowPath", map[string]string{})
+
+		paths, err := loadWowPaths()
+
+		assert.Error(t, err)
+		assert.Nil(t, paths)
+	})
+}
+
+func TestSetupWatcher(t *testing.T) {
+	logger.InitLogger()
+
+	t.Run("creates watcher successfully", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		dir1 := filepath.Join(tmpDir, "dir1")
+		dir2 := filepath.Join(tmpDir, "dir2")
+
+		require.NoError(t, os.MkdirAll(dir1, 0755))
+		require.NoError(t, os.MkdirAll(dir2, 0755))
+
+		dirsToWatch := []string{dir1, dir2}
+
+		watcher, err := setupWatcher(dirsToWatch)
+
+		assert.NoError(t, err)
+		assert.NotNil(t, watcher)
+
+		if watcher != nil {
+			_ = watcher.Close()
+		}
+	})
+
+	t.Run("returns error for non-existent directory", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		nonExistentDir := filepath.Join(tmpDir, "does-not-exist")
+
+		dirsToWatch := []string{nonExistentDir}
+
+		watcher, err := setupWatcher(dirsToWatch)
+
+		assert.Error(t, err)
+		assert.Nil(t, watcher)
+	})
+
+	t.Run("closes watcher on error", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		dir1 := filepath.Join(tmpDir, "dir1")
+		nonExistentDir := filepath.Join(tmpDir, "does-not-exist")
+
+		require.NoError(t, os.MkdirAll(dir1, 0755))
+
+		dirsToWatch := []string{dir1, nonExistentDir}
+
+		watcher, err := setupWatcher(dirsToWatch)
+
+		assert.Error(t, err)
+		assert.Nil(t, watcher)
+	})
+}
+
+func TestShouldProcessEvent(t *testing.T) {
+	logger.InitLogger()
+
+	tests := []struct {
+		name       string
+		op         fsnotify.Op
+		eventName  string
+		releaseDir string
+		expected   bool
+	}{
+		{
+			name:       "write event should be processed",
+			op:         fsnotify.Write,
+			eventName:  "/path/to/file.txt",
+			releaseDir: "/release",
+			expected:   true,
+		},
+		{
+			name:       "create event should be processed",
+			op:         fsnotify.Create,
+			eventName:  "/path/to/file.txt",
+			releaseDir: "/release",
+			expected:   true,
+		},
+		{
+			name:       "remove event should be processed",
+			op:         fsnotify.Remove,
+			eventName:  "/path/to/file.txt",
+			releaseDir: "/release",
+			expected:   true,
+		},
+		{
+			name:       "rename event should be processed",
+			op:         fsnotify.Rename,
+			eventName:  "/path/to/file.txt",
+			releaseDir: "/release",
+			expected:   true,
+		},
+		{
+			name:       "chmod event should be ignored",
+			op:         fsnotify.Chmod,
+			eventName:  "/path/to/file.txt",
+			releaseDir: "/release",
+			expected:   false,
+		},
+		{
+			name:       "event in release dir should be ignored",
+			op:         fsnotify.Write,
+			eventName:  "/release/file.txt",
+			releaseDir: "/release",
+			expected:   false,
+		},
+		{
+			name:       "event with release dir in path should be ignored",
+			op:         fsnotify.Write,
+			eventName:  "/path/release/file.txt",
+			releaseDir: "release",
+			expected:   false,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			event := fsnotify.Event{
+				Name: tt.eventName,
+				Op:   tt.op,
+			}
+
+			result := shouldProcessEvent(event, tt.releaseDir)
+
+			assert.Equal(t, tt.expected, result)
+		})
+	}
+}
+
+func TestRunInitialBuild(t *testing.T) {
+	logger.InitLogger()
+
+	t.Run("returns error when build fails", func(t *testing.T) {
+		// Setup: BuildParams with invalid topdir to cause build failure
+		originalBuildParams := BuildParams
+		defer func() { BuildParams = originalBuildParams }()
+
+		BuildParams = &BuildArgs{
+			TopDir:     "/nonexistent/path",
+			ReleaseDir: t.TempDir(),
+			WatchMode:  true,
+		}
+
+		err := runInitialBuild()
+
+		assert.Error(t, err)
+	})
+}
+
+func TestDetermineDirsToWatch(t *testing.T) {
+	logger.InitLogger()
+
+	t.Run("returns error for invalid topdir", func(t *testing.T) {
+		dirs, err := determineDirsToWatch("/nonexistent/path")
+
+		assert.Error(t, err)
+		assert.Nil(t, dirs)
+	})
+}
+
+func TestWatchLoopWithContext(t *testing.T) {
+	logger.InitLogger()
+	logger.DisableEmoji()
+	defer logger.EnableEmoji()
+
+	t.Run("cancels gracefully when context is cancelled", func(t *testing.T) {
+		// Setup
+		tmpDir := t.TempDir()
+		releaseDir := filepath.Join(tmpDir, "release")
+		err := os.MkdirAll(releaseDir, 0755)
+		require.NoError(t, err)
+
+		watcher, err := fsnotify.NewWatcher()
+		require.NoError(t, err)
+		defer func() {
+			_ = watcher.Close()
+		}()
+
+		err = watcher.Add(tmpDir)
+		require.NoError(t, err)
+
+		ctx, cancel := context.WithCancel(context.Background())
+		debounceDuration := 100 * time.Millisecond
+
+		// Start watch loop
+		done := watchLoop(ctx, watcher, releaseDir, debounceDuration)
+
+		// Give it a moment to start
+		time.Sleep(10 * time.Millisecond)
+
+		// Cancel the context
+		cancel()
+
+		// Wait for completion with timeout
+		select {
+		case err := <-done:
+			// Should get context.Canceled error
+			assert.ErrorIs(t, err, context.Canceled)
+		case <-time.After(1 * time.Second):
+			t.Fatal("watchLoop did not exit after context cancellation")
+		}
+	})
+
+	t.Run("processes file events and debounces", func(t *testing.T) {
+		// Setup
+		tmpDir := t.TempDir()
+		releaseDir := filepath.Join(tmpDir, "release")
+		err := os.MkdirAll(releaseDir, 0755)
+		require.NoError(t, err)
+
+		testFile := filepath.Join(tmpDir, "test.lua")
+		err = os.WriteFile(testFile, []byte("-- test"), 0644)
+		require.NoError(t, err)
+
+		// Mock triggerBuildFunc to avoid real build
+		originalTriggerBuild := triggerBuildFunc
+		buildCalled := false
+		triggerBuildFunc = func() error {
+			buildCalled = true
+			return nil
+		}
+		defer func() { triggerBuildFunc = originalTriggerBuild }()
+
+		WatchParams = &WatchArgs{CopyToWowDirs: false}
+
+		watcher, err := fsnotify.NewWatcher()
+		require.NoError(t, err)
+		defer func() {
+			_ = watcher.Close()
+		}()
+
+		err = watcher.Add(tmpDir)
+		require.NoError(t, err)
+
+		ctx, cancel := context.WithTimeout(context.Background(), 1*time.Second)
+		defer cancel()
+
+		debounceDuration := 50 * time.Millisecond
+
+		// Start watch loop
+		done := watchLoop(ctx, watcher, releaseDir, debounceDuration)
+
+		// Trigger a file write event
+		time.Sleep(10 * time.Millisecond)
+		err = os.WriteFile(testFile, []byte("-- updated content"), 0644)
+		require.NoError(t, err)
+
+		// Wait for debounce to trigger
+		time.Sleep(100 * time.Millisecond)
+
+		// Cancel to exit cleanly
+		cancel()
+
+		// Wait for completion
+		select {
+		case err := <-done:
+			assert.ErrorIs(t, err, context.Canceled)
+		case <-time.After(2 * time.Second):
+			t.Fatal("watchLoop did not exit")
+		}
+
+		// Verify build was triggered
+		assert.True(t, buildCalled, "triggerBuild should have been called")
+	})
+
+	t.Run("handles watcher errors", func(t *testing.T) {
+		// Setup
+		tmpDir := t.TempDir()
+		releaseDir := filepath.Join(tmpDir, "release")
+		err := os.MkdirAll(releaseDir, 0755)
+		require.NoError(t, err)
+
+		watcher, err := fsnotify.NewWatcher()
+		require.NoError(t, err)
+
+		// Close the watcher immediately to trigger an error
+		_ = watcher.Close()
+
+		ctx := context.Background()
+		debounceDuration := 100 * time.Millisecond
+
+		// Start watch loop with closed watcher
+		done := watchLoop(ctx, watcher, releaseDir, debounceDuration)
+
+		// Should get an error quickly
+		select {
+		case err := <-done:
+			assert.Error(t, err)
+			assert.Contains(t, err.Error(), "channel closed")
+		case <-time.After(1 * time.Second):
+			t.Fatal("watchLoop did not exit after watcher closed")
+		}
+	})
 }
