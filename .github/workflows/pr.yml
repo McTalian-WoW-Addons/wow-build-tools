@@ -94,7 +94,7 @@ jobs:
       - name: Get Riskover Metrics Output
         id: riskover
         run: |
-          contents=$(cat ./.coverage/coverage-metrics.md)
+          contents="$(cat ./.coverage/coverage-metrics.md)"
           echo "report=${contents}" >> $GITHUB_OUTPUT
 
       - name: Find Riskover Metrics Comment
