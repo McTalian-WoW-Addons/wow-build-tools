@@ -68,6 +68,7 @@ jobs:
           gopogh -in .coverage/test-report.json -out_summary .coverage/test-summary.json -out_html .coverage/test-report.html 1> /dev/null
           go tool cover -html=./.coverage/cover.out -o .coverage/cover.html
           covreport -i .coverage/cover.out -o .coverage/report.html
+          go run ./scripts/coverage-metrics.go -threshold=10 -format=markdown -output=.coverage/coverage-metrics.md
           NumberPassed=$(cat ./.coverage/test-summary.json | jq '.NumberOfPass')
           NumFailed=$(cat ./.coverage/test-summary.json | jq '.NumberOfFail')
           TotalTests=$(cat ./.coverage/test-summary.json | jq '.NumberOfTests')
@@ -86,6 +87,30 @@ jobs:
           name: coverage
           path: ./.coverage
           include-hidden-files: true
+
+      - name: Get Riskover Metrics Output
+        id: riskover
+        run: |
+          contents=$(cat ./.coverage/coverage-metrics.md)
+          echo "report=${contents}" >> $GITHUB_OUTPUT
+
+      - name: Find Riskover Metrics Comment
+        uses: peter-evans/find-comment@v3
+        id: fc
+        with:
+          issue-number: ${{ github.event.pull_request.number }}
+          comment-author: "github-actions[bot]"
+          body-includes: <!-- RISKOVER_METRICS -->
+
+      - name: Create or update comment
+        uses: peter-evans/create-or-update-comment@v5
+        with:
+          comment-id: ${{ steps.fc.outputs.comment-id }}
+          issue-number: ${{ github.event.pull_request.number }}
+          body: |
+            <!-- RISKOVER_METRICS -->
+            ${{ steps.riskover.outputs.report }}
+          edit-mode: replace
 
   all_pr_checks:
     name: Passing PR Checks
