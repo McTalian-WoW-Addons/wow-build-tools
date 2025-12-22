@@ -702,7 +702,7 @@ func TestWatchLoopWithContext(t *testing.T) {
 		// Mock triggerBuildFunc to avoid real build
 		originalTriggerBuild := triggerBuildFunc
 		buildCalled := false
-		triggerBuildFunc = func() {
+		triggerBuildFunc = func() error {
 			buildCalled = true
 			return nil
 		}
