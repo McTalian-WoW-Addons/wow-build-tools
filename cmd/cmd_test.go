@@ -267,10 +267,10 @@ func TestLoadConfig(t *testing.T) {
 
 				// Set HOME to temp directory so config.GetConfigDir() uses it
 				oldHome := os.Getenv("HOME")
-				os.Setenv("HOME", tempDir)
+				_ = os.Setenv("HOME", tempDir)
 
 				cleanup = func() {
-					os.Setenv("HOME", oldHome)
+					_ = os.Setenv("HOME", oldHome)
 					viper.Reset()
 				}
 				return cleanup, nil
@@ -360,10 +360,10 @@ func TestPreRunE(t *testing.T) {
 
 				// Set HOME to temp directory so config.GetConfigDir() uses it
 				oldHome := os.Getenv("HOME")
-				os.Setenv("HOME", tempDir)
+				_ = os.Setenv("HOME", tempDir)
 
 				cleanup = func() {
-					os.Setenv("HOME", oldHome)
+					_ = os.Setenv("HOME", oldHome)
 					viper.Reset()
 				}
 				return cleanup, nil

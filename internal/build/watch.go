@@ -373,10 +373,8 @@ func watchLoop(ctx context.Context, watcher *fsnotify.Watcher, releaseDir string
 	go func() {
 		defer close(done)
 
-		var debounceTimer *time.Timer
-
 		// Initialize the debounce timer (stopped)
-		debounceTimer = time.AfterFunc(debounceDuration, func() {
+		debounceTimer := time.AfterFunc(debounceDuration, func() {
 			onDebounceExpired(done, releaseDir)
 			l.Info("Watching for changes... Press Ctrl+C to stop.")
 		})

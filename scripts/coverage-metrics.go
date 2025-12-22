@@ -96,7 +96,9 @@ func parseCoverage(filename string) (map[string]*FunctionData, float64, error) {
 	if err != nil {
 		return nil, 0, err
 	}
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 
 	data := make(map[string]*FunctionData)
 	var totalCoverage float64
@@ -149,7 +151,9 @@ func parseComplexity(filename string) (map[string]int, error) {
 	if err != nil {
 		return nil, err
 	}
-	defer file.Close()
+	defer func() {
+		_ = file.Close()
+	}()
 
 	data := make(map[string]int)
 	scanner := bufio.NewScanner(file)

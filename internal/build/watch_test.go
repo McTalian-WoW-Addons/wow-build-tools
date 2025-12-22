@@ -666,7 +666,9 @@ func TestWatchLoopWithContext(t *testing.T) {
 
 		watcher, err := fsnotify.NewWatcher()
 		require.NoError(t, err)
-		defer watcher.Close()
+		defer func() {
+			_ = watcher.Close()
+		}()
 
 		err = watcher.Add(tmpDir)
 		require.NoError(t, err)
@@ -716,7 +718,9 @@ func TestWatchLoopWithContext(t *testing.T) {
 
 		watcher, err := fsnotify.NewWatcher()
 		require.NoError(t, err)
-		defer watcher.Close()
+		defer func() {
+			_ = watcher.Close()
+		}()
 
 		err = watcher.Add(tmpDir)
 		require.NoError(t, err)
@@ -763,7 +767,7 @@ func TestWatchLoopWithContext(t *testing.T) {
 		require.NoError(t, err)
 
 		// Close the watcher immediately to trigger an error
-		watcher.Close()
+		_ = watcher.Close()
 
 		ctx := context.Background()
 		debounceDuration := 100 * time.Millisecond

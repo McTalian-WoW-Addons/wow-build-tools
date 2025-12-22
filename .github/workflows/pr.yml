@@ -67,6 +67,8 @@ jobs:
           echo "Generating reports"
           gopogh -in .coverage/test-report.json -out_summary .coverage/test-summary.json -out_html .coverage/test-report.html 1> /dev/null
           go tool cover -html=./.coverage/cover.out -o .coverage/cover.html
+          go tool cover -func=./.coverage/cover.out > .coverage/coverage-by-function.txt
+          gocyclo -over 1 . > .coverage/complexity.txt 2>/dev/null || true
           covreport -i .coverage/cover.out -o .coverage/report.html
           go run ./scripts/coverage-metrics.go -threshold=10 -format=markdown -output=.coverage/coverage-metrics.md
           NumberPassed=$(cat ./.coverage/test-summary.json | jq '.NumberOfPass')
@@ -99,7 +101,7 @@ jobs:
         id: fc
         with:
           issue-number: ${{ github.event.pull_request.number }}
-          comment-author: "github-actions[bot]"
+          comment-author: github-actions[bot]
           body-includes: <!-- RISKOVER_METRICS -->
 
       - name: Create or update comment
