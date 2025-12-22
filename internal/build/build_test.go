@@ -62,6 +62,9 @@ func TestIgnores(t *testing.T) {
 }
 
 func TestSvnExternals(t *testing.T) {
+	if os.Getenv("CI") != "" {
+		t.Skip("Skipping SVN externals test in CI - requires network access to SVN repositories")
+	}
 	defer resetBuildParams()
 	testDir := filepath.Join(".", e2eDir, "test_svn_externals")
 	tempNewOutput, err := filepath.Abs(filepath.Join(".", e2eDir, "test_svn_externals", ".release"))
