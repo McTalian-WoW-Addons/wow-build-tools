@@ -16,7 +16,8 @@ import (
 
 type Flavor = flavor.Flavor
 
-// We only support global config for now
+// We only support global config for now, this flag disables local config handling
+// but leaves the code in place for future use and iteration.
 var globalOnly bool = true
 var configType string
 var configFile string
@@ -106,7 +107,7 @@ func setFlavorPath(reader *bufio.Reader, f Flavor, value ...string) error {
 		if viper.Get("wowPath."+f.Id) != nil {
 			defaultPath = viper.GetString("wowPath." + f.Id)
 		} else {
-			defaultPath += f.SubDir
+			defaultPath += f.Dir
 		}
 
 		logger.Prompt("Enter the path to your %s WoW installation [%s]: ", f.Name, defaultPath)

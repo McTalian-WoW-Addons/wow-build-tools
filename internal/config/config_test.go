@@ -16,8 +16,8 @@ func TestSetWoWPath(t *testing.T) {
 	tempDir := t.TempDir()
 
 	// Create mock WoW directory structure
-	retailDir := filepath.Join(tempDir, flavor.FromId("retail").SubDir)
-	classicDir := filepath.Join(tempDir, flavor.FromId("classic").SubDir)
+	retailDir := filepath.Join(tempDir, flavor.FromId("retail").Dir)
+	classicDir := filepath.Join(tempDir, flavor.FromId("classic").Dir)
 	require.NoError(t, os.MkdirAll(retailDir, 0755))
 	require.NoError(t, os.MkdirAll(classicDir, 0755))
 

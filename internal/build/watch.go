@@ -271,11 +271,10 @@ func determineDirsToWatch(topdir string) (dirsToWatch []string, err error) {
 	return
 }
 
-func onDebounceExpired(done chan error, releaseDir string) {
+func onDebounceExpired(releaseDir string) error {
 	l.Debug("Debounced change detected, triggering build...")
 	if err := triggerBuildFunc(); err != nil {
-		done <- err
-		return
+		return err
 	}
 
 	if WatchParams.CopyToWowDirs {
@@ -283,8 +282,7 @@ func onDebounceExpired(done chan error, releaseDir string) {
 		dirEntries, err := os.ReadDir(releaseDir)
 		if err != nil {
 			l.Error("Error reading release directory: %v", err)
-			done <- err
-			return
+			return err
 		}
 
 		addonDirs = []string{}
@@ -294,8 +292,11 @@ func onDebounceExpired(done chan error, releaseDir string) {
 			}
 		}
 
+		done := make(chan error, 1)
 		copyToWow(l, done)
+		return <-done
 	}
+	return nil
 }
 
 // setupWatchEnvironment prepares the environment for watching, including creating directories
@@ -389,7 +390,9 @@ func watchLoop(ctx context.Context, watcher *fsnotify.Watcher, releaseDir string
 
 		// Initialize the debounce timer (stopped)
 		debounceTimer := time.AfterFunc(debounceDuration, func() {
-			onDebounceExpired(done, releaseDir)
+			if err := onDebounceExpired(releaseDir); err != nil {
+				done <- err
+			}
 			l.Info("Watching for changes... Press Ctrl+C to stop.")
 		})
 		debounceTimer.Stop()

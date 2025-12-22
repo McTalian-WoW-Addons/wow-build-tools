@@ -1,23 +1,23 @@
 package flavor
 
 type Flavor struct {
-	Id     string
-	Name   string
-	SubDir string
+	Id   string
+	Name string
+	Dir  string
 }
 
 var KnownFlavors = []Flavor{
-	{Id: "retail", Name: "Retail", SubDir: "_retail_"},
-	{Id: "beta", Name: "Beta", SubDir: "_beta_"},
-	{Id: "classic", Name: "Classic", SubDir: "_classic_"},
-	{Id: "classicEra", Name: "Classic Era", SubDir: "_classic_era_"},
-	{Id: "ptr", Name: "PTR", SubDir: "_ptr_"},
-	{Id: "xptr", Name: "XPTR", SubDir: "_xptr_"},
-	{Id: "classicPtr", Name: "Classic PTR", SubDir: "_classic_ptr_"},
-	{Id: "classicEraPtr", Name: "Classic Era PTR", SubDir: "_classic_era_ptr_"},
-	{Id: "classicBeta", Name: "Classic Beta", SubDir: "_classic_beta_"},
+	{Id: "retail", Name: "Retail", Dir: "_retail_"},
+	{Id: "beta", Name: "Beta", Dir: "_beta_"},
+	{Id: "classic", Name: "Classic", Dir: "_classic_"},
+	{Id: "classicEra", Name: "Classic Era", Dir: "_classic_era_"},
+	{Id: "ptr", Name: "PTR", Dir: "_ptr_"},
+	{Id: "xptr", Name: "XPTR", Dir: "_xptr_"},
+	{Id: "classicPtr", Name: "Classic PTR", Dir: "_classic_ptr_"},
+	{Id: "classicEraPtr", Name: "Classic Era PTR", Dir: "_classic_era_ptr_"},
+	{Id: "classicBeta", Name: "Classic Beta", Dir: "_classic_beta_"},
 }
-var UnknownFlavor = Flavor{Id: "unknown", Name: "Unknown", SubDir: ""}
+var UnknownFlavor = Flavor{Id: "unknown", Name: "Unknown", Dir: ""}
 
 func (f Flavor) IsUnknown() bool {
 	return f.Id == UnknownFlavor.Id
@@ -29,7 +29,7 @@ var DirFlavorMap = map[string]Flavor{}
 func init() {
 	for _, f := range KnownFlavors {
 		IdFlavorMap[f.Id] = f
-		DirFlavorMap[f.SubDir] = f
+		DirFlavorMap[f.Dir] = f
 	}
 }
 
