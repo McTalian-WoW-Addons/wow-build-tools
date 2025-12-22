@@ -8,6 +8,7 @@ import (
 
 	"github.com/McTalian/wow-build-tools/internal/build"
 	"github.com/McTalian/wow-build-tools/internal/cmdargs"
+	"github.com/McTalian/wow-build-tools/internal/config"
 	"github.com/McTalian/wow-build-tools/internal/logger"
 	"github.com/fatih/color"
 	"github.com/spf13/pflag"
@@ -250,27 +251,37 @@ func TestLoadConfig(t *testing.T) {
 		{
 			name: "invalid yaml config file in home directory",
 			setupConfig: func() (cleanup func(), err error) {
-				// Create a temporary directory with an invalid YAML config file
-				tempDir := t.TempDir()
-
-				// Create the .wow-build-tools subdirectory
-				wbtDir := filepath.Join(tempDir, ".wow-build-tools")
-				if err := os.MkdirAll(wbtDir, 0755); err != nil {
+				// Get the actual config directory (works in both local and CI environments)
+				configDir, err := config.GetConfigDir()
+				if err != nil {
 					return nil, err
 				}
 
-				configFile := filepath.Join(wbtDir, ".wbt.yaml")
+				// Ensure the config directory exists
+				if err := os.MkdirAll(configDir, 0755); err != nil {
+					return nil, err
+				}
+
+				configFile := filepath.Join(configDir, ".wbt.yaml")
+
+				// Check if file already exists and back it up
+				existingContent, existingErr := os.ReadFile(configFile)
+				hadExisting := existingErr == nil
+
+				// Write invalid YAML
 				err = os.WriteFile(configFile, []byte("invalid:\n  yaml: [\n"), 0644)
 				if err != nil {
 					return nil, err
 				}
 
-				// Set HOME to temp directory so config.GetConfigDir() uses it
-				oldHome := os.Getenv("HOME")
-				_ = os.Setenv("HOME", tempDir)
-
 				cleanup = func() {
-					_ = os.Setenv("HOME", oldHome)
+					if hadExisting {
+						// Restore original file
+						_ = os.WriteFile(configFile, existingContent, 0644)
+					} else {
+						// Remove the file we created
+						_ = os.Remove(configFile)
+					}
 					viper.Reset()
 				}
 				return cleanup, nil
@@ -344,26 +355,37 @@ func TestPreRunE(t *testing.T) {
 				cmdargs.RootParams = &cmdargs.RootArgs{}
 			},
 			setupConfig: func() (cleanup func(), err error) {
-				tempDir := t.TempDir()
-
-				// Create the .wow-build-tools subdirectory
-				wbtDir := filepath.Join(tempDir, ".wow-build-tools")
-				if err := os.MkdirAll(wbtDir, 0755); err != nil {
+				// Get the actual config directory (works in both local and CI environments)
+				configDir, err := config.GetConfigDir()
+				if err != nil {
 					return nil, err
 				}
 
-				configFile := filepath.Join(wbtDir, ".wbt.yaml")
+				// Ensure the config directory exists
+				if err := os.MkdirAll(configDir, 0755); err != nil {
+					return nil, err
+				}
+
+				configFile := filepath.Join(configDir, ".wbt.yaml")
+
+				// Check if file already exists and back it up
+				existingContent, existingErr := os.ReadFile(configFile)
+				hadExisting := existingErr == nil
+
+				// Write invalid YAML
 				err = os.WriteFile(configFile, []byte("invalid:\n  yaml: [\n"), 0644)
 				if err != nil {
 					return nil, err
 				}
 
-				// Set HOME to temp directory so config.GetConfigDir() uses it
-				oldHome := os.Getenv("HOME")
-				_ = os.Setenv("HOME", tempDir)
-
 				cleanup = func() {
-					_ = os.Setenv("HOME", oldHome)
+					if hadExisting {
+						// Restore original file
+						_ = os.WriteFile(configFile, existingContent, 0644)
+					} else {
+						// Remove the file we created
+						_ = os.Remove(configFile)
+					}
 					viper.Reset()
 				}
 				return cleanup, nil
