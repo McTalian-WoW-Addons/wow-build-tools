@@ -30,6 +30,8 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Go
         uses: actions/setup-go@v6
@@ -64,7 +66,7 @@ jobs:
         run: |
           mkdir -p ./.coverage
           echo "Running tests with coverage"
-          go test -v ./... -coverpkg=./... -coverprofile="./.coverage/cover.out" -json > .coverage/test-report.json || true
+          go test -tags e2e -v ./... -coverpkg=./... -coverprofile="./.coverage/cover.out" -json > .coverage/test-report.json || true
           echo "Generating reports"
           gopogh -in .coverage/test-report.json -out_summary .coverage/test-summary.json -out_html .coverage/test-report.html 1> /dev/null
           go tool cover -html=./.coverage/cover.out -o .coverage/cover.html
