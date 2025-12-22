@@ -28,8 +28,8 @@ var destinationPaths []string
 var wowPaths map[string]string
 
 // triggerBuildFunc is a function variable that can be replaced in tests for mocking.
-var triggerBuildFunc = func(done chan error) {
-	triggerBuild(done)
+var triggerBuildFunc = func() error {
+	return triggerBuild()
 }
 
 // runInitialBuildFunc is a function variable that can be replaced in tests for mocking.
@@ -58,6 +58,8 @@ func copyToWow(l *logger.Logger, done chan error) {
 		lg := logger.NewLogGroup("Copy to WoW Directories", l)
 
 		var copyWg sync.WaitGroup
+		copyErrChan := make(chan error, len(destinationPaths))
+
 		for _, path := range destinationPaths {
 			copyWg.Add(1)
 			go func(path string) {
@@ -67,7 +69,7 @@ func copyToWow(l *logger.Logger, done chan error) {
 					err = os.MkdirAll(interfaceDir, os.ModePerm)
 					if err != nil {
 						l.Error("Error creating directory %s: %v", interfaceDir, err)
-						done <- err
+						copyErrChan <- err
 						return
 					}
 				}
@@ -79,14 +81,31 @@ func copyToWow(l *logger.Logger, done chan error) {
 					err := copyDir(src, dst)
 					if err != nil {
 						l.Error("Error copying %s to %s: %v", src, dst, err)
-						done <- err
+						copyErrChan <- err
+						return
 					}
 				}
+				copyErrChan <- nil
 			}(path)
 		}
 
 		copyWg.Wait()
+		close(copyErrChan)
 		lg.Flush()
+
+		// Collect errors
+		errsEncountered := 0
+		errStr := ""
+		for e := range copyErrChan {
+			if e != nil {
+				errsEncountered++
+				errStr += fmt.Sprintf("\n  - %s", e.Error())
+			}
+		}
+
+		if errsEncountered > 0 {
+			done <- fmt.Errorf("encountered %d errors while copying to WoW directories:%s", errsEncountered, errStr)
+		}
 	}
 }
 
@@ -183,7 +202,7 @@ func copyDir(src, dst string) error {
 	return nil
 }
 
-func triggerBuild(done chan error) {
+func triggerBuild() error {
 	buildArgs := &BuildArgs{
 		TopDir:         BuildParams.TopDir,
 		ReleaseDir:     BuildParams.ReleaseDir,
@@ -197,10 +216,10 @@ func triggerBuild(done chan error) {
 	err := Build(buildArgs)
 	if err != nil {
 		logger.Error("Error running build command: %v", err)
-		done <- err
-		return
+		return err
 	}
 	fmt.Println()
+	return nil
 }
 
 func determineDirsToWatch(topdir string) (dirsToWatch []string, err error) {
@@ -254,7 +273,10 @@ func determineDirsToWatch(topdir string) (dirsToWatch []string, err error) {
 
 func onDebounceExpired(done chan error, releaseDir string) {
 	l.Debug("Debounced change detected, triggering build...")
-	triggerBuildFunc(done)
+	if err := triggerBuildFunc(); err != nil {
+		done <- err
+		return
+	}
 
 	if WatchParams.CopyToWowDirs {
 		l.Info("Build complete, determining outputs to copy...")
@@ -262,6 +284,7 @@ func onDebounceExpired(done chan error, releaseDir string) {
 		if err != nil {
 			l.Error("Error reading release directory: %v", err)
 			done <- err
+			return
 		}
 
 		addonDirs = []string{}
@@ -304,16 +327,7 @@ func setupWatchEnvironment(releaseDir string, copyToWowDirs bool) error {
 
 // runInitialBuild performs the initial build before starting the watch loop.
 func runInitialBuild() error {
-	initialBuildChan := make(chan error, 1)
-	triggerBuild(initialBuildChan)
-	close(initialBuildChan)
-
-	for e := range initialBuildChan {
-		if e != nil {
-			return e
-		}
-	}
-	return nil
+	return triggerBuild()
 }
 
 // loadWowPaths loads and validates WoW installation paths from configuration.
@@ -383,8 +397,10 @@ func watchLoop(ctx context.Context, watcher *fsnotify.Watcher, releaseDir string
 		for {
 			select {
 			case <-ctx.Done():
+				defer func() {
+					_ = debounceTimer.Stop()
+				}()
 				// Context cancelled - clean shutdown
-				debounceTimer.Stop()
 				done <- ctx.Err()
 				return
 

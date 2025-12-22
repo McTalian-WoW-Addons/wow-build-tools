@@ -205,17 +205,18 @@ func Build(args *BuildArgs) (err error) {
 	}
 
 	uploadToDistrosArgs := uploadToDistrosArgs{
-		zipFilePath:   zipFilePath,
-		fileLabel:     templateTokens.GetLabel(&tokenMap, flags),
-		tocFiles:      tocFiles,
-		pkgMeta:       pkgMeta,
-		cl:            cl,
-		releaseDir:    args.ReleaseDir,
-		releaseType:   releaseType,
-		projectName:   projectName,
-		vR:            vR,
-		isNoLib:       isNoLib,
-		noLibFileName: noLibFileName,
+		zipFilePath:    zipFilePath,
+		fileLabel:      templateTokens.GetLabel(&tokenMap, flags),
+		tocFiles:       tocFiles,
+		pkgMeta:        pkgMeta,
+		cl:             cl,
+		releaseDir:     args.ReleaseDir,
+		releaseType:    releaseType,
+		projectName:    projectName,
+		projectVersion: tokenMap[tokens.ProjectVersion],
+		vR:             vR,
+		isNoLib:        isNoLib,
+		noLibFileName:  noLibFileName,
 	}
 
 	if !args.SkipUpload && !args.WatchMode {

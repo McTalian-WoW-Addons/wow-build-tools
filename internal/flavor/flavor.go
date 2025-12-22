@@ -19,6 +19,10 @@ var KnownFlavors = []Flavor{
 }
 var UnknownFlavor = Flavor{Id: "unknown", Name: "Unknown", SubDir: ""}
 
+func (f Flavor) IsUnknown() bool {
+	return f.Id == UnknownFlavor.Id
+}
+
 var IdFlavorMap = map[string]Flavor{}
 var DirFlavorMap = map[string]Flavor{}
 

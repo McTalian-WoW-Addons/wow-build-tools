@@ -42,9 +42,11 @@ func Link() error {
 				continue
 			}
 			filteredFlavors[f] = true
-			flavors = []Flavor{}
 		}
 
+		// If specific flavors were requested, we'll rebuild the
+		// flavors slice to only include those
+		flavors = []Flavor{}
 		for filteredFlavor, include := range filteredFlavors {
 			if include {
 				flavors = append(flavors, filteredFlavor)

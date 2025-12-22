@@ -16,6 +16,7 @@ import (
 
 type Flavor = flavor.Flavor
 
+// We only support global config for now
 var globalOnly bool = true
 var configType string
 var configFile string
@@ -31,6 +32,9 @@ func promptCreateConfigFileIfNotExist(localPath string) error {
 
 	if configFile == "" || (globalOnly && configFile == localPath) {
 		if configFile == localPath && !globalOnly {
+			// Currently we only support global config, so this
+			// log will never show. Eventually, a local config may make sense
+			// so I want to keep local config code in place.
 			logger.Info("Local configuration file already exists and will take precedence: %s", configFile)
 		}
 
@@ -167,7 +171,7 @@ func setWoWPath(reader *bufio.Reader, value ...string) error {
 
 		f := flavor.FromDir(entry.Name())
 
-		if f == flavor.UnknownFlavor {
+		if f.IsUnknown() {
 			logger.Warn("Found unknown directory: %s", entry.Name())
 			continue
 		}

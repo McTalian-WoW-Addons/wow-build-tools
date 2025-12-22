@@ -52,7 +52,7 @@ func clientRequest(req *http.Request) (*http.Response, error) {
 
 	err := addAuthHeader(req)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("failed to set authorization header: %w", err)
 	}
 
 	return client.Do(req)

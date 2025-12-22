@@ -62,11 +62,7 @@ func uploadToDistros(args uploadToDistrosArgs) (err error) {
 			Changelog:   cl,
 			ReleaseType: releaseType,
 		}
-		if err = upload.UploadToCurse(curseArgs); err != nil {
-			l.Error("Curse Upload Error: %v", err)
-			uploadErrChan <- err
-			return
-		}
+		uploadErrChan <- upload.UploadToCurse(curseArgs)
 	}()
 
 	go func() {
@@ -79,11 +75,7 @@ func uploadToDistros(args uploadToDistrosArgs) (err error) {
 			Changelog:      cl,
 			ReleaseType:    releaseType,
 		}
-		if err = upload.UploadToWowi(wowiArgs); err != nil {
-			l.Error("WoW Interface Upload Error: %v", err)
-			uploadErrChan <- err
-			return
-		}
+		uploadErrChan <- upload.UploadToWowi(wowiArgs)
 	}()
 
 	go func() {
@@ -95,11 +87,7 @@ func uploadToDistros(args uploadToDistrosArgs) (err error) {
 			Changelog:   cl,
 			ReleaseType: releaseType,
 		}
-		if err = upload.UploadToWago(wagoArgs); err != nil {
-			l.Error("Wago Upload Error: %v", err)
-			uploadErrChan <- err
-			return
-		}
+		uploadErrChan <- upload.UploadToWago(wagoArgs)
 	}()
 
 	go func() {
@@ -116,11 +104,7 @@ func uploadToDistros(args uploadToDistrosArgs) (err error) {
 			githubArgs.ZipPaths = append(githubArgs.ZipPaths, filepath.Join(releaseDir, noLibFileName+".zip"))
 		}
 
-		if err = upload.UploadToGitHub(githubArgs); err != nil {
-			l.Error("GitHub Upload Error: %v", err)
-			uploadErrChan <- err
-			return
-		}
+		uploadErrChan <- upload.UploadToGitHub(githubArgs)
 	}()
 
 	uploadWGroup.Wait()
@@ -129,10 +113,10 @@ func uploadToDistros(args uploadToDistrosArgs) (err error) {
 	// Collect errors
 	errsEncountered := 0
 	errStr := ""
-	for err := range uploadErrChan {
-		if err != nil {
+	for e := range uploadErrChan {
+		if e != nil {
 			errsEncountered++
-			errStr += fmt.Sprintf("\n  - %s", err.Error())
+			errStr += fmt.Sprintf("\n  - %s", e.Error())
 		}
 	}
 

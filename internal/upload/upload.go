@@ -23,6 +23,7 @@ var UploadParams = &UploadArgs{}
 type preparePayload struct {
 	toc       *toc.Toc
 	changelog *changelog.Changelog
+	cleanup   func() // cleanup function to remove temp files
 }
 
 func prepareUpload() (prepPayload *preparePayload, err error) {
@@ -32,14 +33,17 @@ func prepareUpload() (prepPayload *preparePayload, err error) {
 		}
 	}()
 
+	var tempFiles []string // Track temp files for cleanup
+
 	tmp := os.TempDir()
 	tmpToc, err := os.CreateTemp(tmp, "wbt*.toc")
 	if err != nil {
 		return
 	}
+	tempFiles = append(tempFiles, tmpToc.Name())
 	defer func() {
 		_ = tmpToc.Close()
-		_ = os.Remove(tmpToc.Name())
+		// Don't remove yet - caller needs it
 	}()
 
 	changelogPath := UploadParams.Changelog
@@ -49,9 +53,10 @@ func prepareUpload() (prepPayload *preparePayload, err error) {
 		if err != nil {
 			return
 		}
+		tempFiles = append(tempFiles, tmpChangelog.Name())
 		defer func() {
 			_ = tmpChangelog.Close()
-			_ = os.Remove(tmpChangelog.Name())
+			// Don't remove yet - caller needs it
 		}()
 
 		_, err = tmpChangelog.WriteString("No changelog provided")
@@ -94,6 +99,11 @@ func prepareUpload() (prepPayload *preparePayload, err error) {
 	prepPayload = &preparePayload{
 		toc:       tocFile,
 		changelog: cLog,
+		cleanup: func() {
+			for _, file := range tempFiles {
+				_ = os.Remove(file)
+			}
+		},
 	}
 	return
 }

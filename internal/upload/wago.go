@@ -404,6 +404,7 @@ func RunUploadWago() error {
 	if err != nil {
 		return err
 	}
+	defer prepPayload.cleanup()
 
 	tocFile := prepPayload.toc
 	changelog := prepPayload.changelog
