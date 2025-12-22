@@ -146,7 +146,7 @@ func TestRunConfig(t *testing.T) {
 			err := viper.WriteConfig()
 			assert.NoError(t, err)
 
-			globalOnly = true
+			localConfigDisabled = true
 			err = RunConfig(tt.args)
 
 			if tt.wantError {

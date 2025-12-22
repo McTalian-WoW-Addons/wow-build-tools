@@ -306,7 +306,7 @@ func runNewCLI(t *testing.T, input, output string) {
 	oldStdout, oldStderr := os.Stdout, os.Stderr
 	defer func() { os.Stdout, os.Stderr = oldStdout, oldStderr }()
 
-	devNull, err := os.Open(os.DevNull)
+	devNull, err := os.OpenFile(os.DevNull, os.O_WRONLY, 0)
 	if err != nil {
 		t.Fatalf("Failed to open /dev/null: %v", err)
 	}

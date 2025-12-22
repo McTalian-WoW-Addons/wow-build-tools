@@ -18,7 +18,7 @@ type Flavor = flavor.Flavor
 
 // We only support global config for now, this flag disables local config handling
 // but leaves the code in place for future use and iteration.
-var globalOnly bool = true
+var localConfigDisabled bool = true
 var configType string
 var configFile string
 
@@ -31,8 +31,8 @@ func promptCreateConfigFileIfNotExist(localPath string) error {
 		return err
 	}
 
-	if configFile == "" || (globalOnly && configFile == localPath) {
-		if configFile == localPath && !globalOnly {
+	if configFile == "" || (localConfigDisabled && configFile == localPath) {
+		if configFile == localPath && !localConfigDisabled {
 			// Currently we only support global config, so this
 			// log will never show. Eventually, a local config may make sense
 			// so I want to keep local config code in place.
@@ -61,7 +61,7 @@ func promptCreateConfigFileIfNotExist(localPath string) error {
 }
 
 func createConfigFile(configDir, localPath string) error {
-	if globalOnly {
+	if localConfigDisabled {
 		logger.Info("Creating global configuration file...")
 		err := os.MkdirAll(configDir, 0755)
 		if err != nil && !os.IsExist(err) {
@@ -267,7 +267,7 @@ func RunConfig(args []string) error {
 	}
 
 	configType = "local"
-	if globalOnly {
+	if localConfigDisabled {
 		configType = "global"
 	}
 	configFile = viper.ConfigFileUsed()
