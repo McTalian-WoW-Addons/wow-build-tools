@@ -7,8 +7,11 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync"
 
+	"github.com/McTalian/wow-build-tools/internal/injector"
 	"github.com/McTalian/wow-build-tools/internal/logger"
+	"github.com/McTalian/wow-build-tools/internal/pkg"
 	"github.com/McTalian/wow-build-tools/internal/tokens"
 )
 
@@ -24,7 +27,8 @@ func (z *Zipper) Complete() {
 	z.logGroup.Flush(true)
 }
 
-func (z *Zipper) ZipFiles(srcPath string, destPath string, noLibArgs ...[]string) error {
+func (z *Zipper) ZipFiles(destPath string, noLibArgs ...[]string) error {
+	srcPath := z.pkgDir
 	z.logGroup.Info("%sCreating %s", logger.ZipFile, destPath)
 	dirsToExclude := []string{}
 	noLibStripPaths := []string{}
@@ -178,4 +182,87 @@ func NewZipper(pkgDir string, releaseDir string, topDir string, unixLineEndings 
 		logGroup:        logGroup,
 		unixLineEndings: unixLineEndings,
 	}
+}
+
+type createZipsArgs struct {
+	isNoLib          bool
+	zipFilePath      string
+	noLibZipFilePath string
+	releaseDir       string
+	packageDir       string
+	topDir           string
+	unixLineEndings  bool
+	pkgMeta          *pkg.PkgMeta
+	injector         *injector.Injector
+}
+
+func createZips(args createZipsArgs) (err error) {
+	defer func() {
+		if err != nil {
+			l.Error("Error creating zips: %v", err)
+		}
+	}()
+
+	isNoLib := args.isNoLib
+	zipFilePath := args.zipFilePath
+	noLibZipFilePath := args.noLibZipFilePath
+	releaseDir := args.releaseDir
+	packageDir := args.packageDir
+	topDir := args.topDir
+	unixLineEndings := args.unixLineEndings
+	pkgMeta := args.pkgMeta
+	i := args.injector
+
+	zipsToCreate := 1
+	if isNoLib {
+		zipsToCreate++
+	}
+	var zipWGroup sync.WaitGroup
+	zipErrChan := make(chan error, zipsToCreate)
+
+	z := NewZipper(packageDir, releaseDir, topDir, unixLineEndings)
+	zipWGroup.Add(1)
+	go func() {
+		defer zipWGroup.Done()
+		zipPath := zipFilePath
+		err = z.ZipFiles(zipPath)
+		if err != nil {
+			zipErrChan <- err
+			return
+		}
+	}()
+
+	if isNoLib {
+		dirsToExclude := pkgMeta.GetNoLibDirs(packageDir)
+		zipWGroup.Add(1)
+		go func() {
+			defer zipWGroup.Done()
+			zipPath := noLibZipFilePath
+			err = z.ZipFiles(zipPath, dirsToExclude, i.NoLibStripFiles)
+			if err != nil {
+				zipErrChan <- err
+				return
+			}
+		}()
+	}
+
+	zipWGroup.Wait()
+	close(zipErrChan)
+	z.Complete()
+
+	// Collect errors
+	errsEncountered := 0
+	errStr := ""
+	for e := range zipErrChan {
+		if e != nil {
+			errsEncountered++
+			errStr += fmt.Sprintf("\n  - %s", e.Error())
+		}
+	}
+
+	if errsEncountered > 0 {
+		err = fmt.Errorf("encountered %d errors while creating zip files:%s", errsEncountered, errStr)
+	}
+
+	return
 }

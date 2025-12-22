@@ -41,3 +41,24 @@ func DisableEmoji() {
 	Zip = ""
 	ZipFile = ""
 }
+
+func EnableEmoji() {
+	Build = "🔨 "
+	CurseForge = "🔥 "
+	Directory = "🗂️  "
+	Done = "✨ "
+	External = "🌐 "
+	File = "📑 "
+	Finish = "🏁  "
+	GitHub = "🐱 "
+	Ignore = "⛔ "
+	Inject = "💉 "
+	Package = "🗃️  "
+	Processing = "📥 "
+	Time = "⏱️  "
+	Wago = "🪢  "
+	Watch = " 👀"
+	WoWInterface = "🛜  "
+	Zip = "💼 "
+	ZipFile = "📦 "
+}

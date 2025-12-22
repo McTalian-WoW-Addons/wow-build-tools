@@ -74,3 +74,55 @@ func TestDisableEmoji(t *testing.T) {
 	Zip = origZip
 	ZipFile = origZipFile
 }
+
+func TestEnableEmoji(t *testing.T) {
+	// Disable emojis first
+	DisableEmoji()
+
+	// Verify they are empty
+	assert.Empty(t, Build)
+	assert.Empty(t, CurseForge)
+	assert.Empty(t, Directory)
+
+	// Re-enable emojis
+	EnableEmoji()
+
+	// Check all are not empty
+	assert.NotEmpty(t, Build)
+	assert.NotEmpty(t, CurseForge)
+	assert.NotEmpty(t, Directory)
+	assert.NotEmpty(t, Done)
+	assert.NotEmpty(t, External)
+	assert.NotEmpty(t, File)
+	assert.NotEmpty(t, Finish)
+	assert.NotEmpty(t, GitHub)
+	assert.NotEmpty(t, Ignore)
+	assert.NotEmpty(t, Inject)
+	assert.NotEmpty(t, Package)
+	assert.NotEmpty(t, Processing)
+	assert.NotEmpty(t, Time)
+	assert.NotEmpty(t, Wago)
+	assert.NotEmpty(t, Watch)
+	assert.NotEmpty(t, WoWInterface)
+	assert.NotEmpty(t, Zip)
+	assert.NotEmpty(t, ZipFile)
+
+	// Verify specific emojis
+	assert.Equal(t, "🔨 ", Build)
+	assert.Equal(t, "🔥 ", CurseForge)
+	assert.Equal(t, "📦 ", ZipFile)
+}
+
+func TestDisableAndEnableEmoji(t *testing.T) {
+	// Store originals
+	origBuild := Build
+
+	// Disable
+	DisableEmoji()
+	assert.Empty(t, Build)
+
+	// Enable
+	EnableEmoji()
+	assert.NotEmpty(t, Build)
+	assert.Equal(t, origBuild, Build)
+}

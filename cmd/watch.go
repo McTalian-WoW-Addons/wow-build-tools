@@ -22,6 +22,11 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"context"
+	"os"
+	"os/signal"
+	"syscall"
+
 	"github.com/lithammer/dedent"
 	"github.com/spf13/cobra"
 
@@ -41,7 +46,19 @@ var watchCmd = &cobra.Command{
 	When copying from WSL to the host system, the copies can be slower than desired.
 	`),
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return build.WatchBuild()
+		// Create a context that cancels on interrupt signals (Ctrl+C)
+		ctx, cancel := context.WithCancel(context.Background())
+		defer cancel()
+
+		// Handle interrupt signals for graceful shutdown
+		sigChan := make(chan os.Signal, 1)
+		signal.Notify(sigChan, os.Interrupt, syscall.SIGTERM)
+		go func() {
+			<-sigChan
+			cancel()
+		}()
+
+		return build.WatchBuild(ctx)
 	},
 }
 
