@@ -299,26 +299,25 @@ func TestLicenseDownload(t *testing.T) {
 }
 
 func runNewCLI(t *testing.T, input, output string) {
-	// Capture stdout/stderr if needed
+	// Suppress stdout/stderr during tests
 	oldStdout, oldStderr := os.Stdout, os.Stderr
-	defer func() { os.Stdout, os.Stderr = oldStdout, oldStderr }() // Restore after execution
+	defer func() { os.Stdout, os.Stderr = oldStdout, oldStderr }()
 
-	_, wOut, _ := os.Pipe()
-	_, wErr, _ := os.Pipe()
-	os.Stdout, os.Stderr = wOut, wErr
+	devNull, err := os.Open(os.DevNull)
+	if err != nil {
+		t.Fatalf("Failed to open /dev/null: %v", err)
+	}
+	defer devNull.Close()
+
+	os.Stdout = devNull
+	os.Stderr = devNull
 
 	logger.InitLogger()
 	BuildParams.TopDir = input
 	BuildParams.ReleaseDir = output
-	err := Build(BuildParams)
+	err = Build(BuildParams)
 	if err != nil {
 		assert.NoError(t, fmt.Errorf("failed to run new CLI: %v", err))
 		t.FailNow()
 	}
-
-	// Close the write ends of the pipes
-	err = wOut.Close()
-	assert.NoError(t, err)
-	err = wErr.Close()
-	assert.NoError(t, err)
 }
