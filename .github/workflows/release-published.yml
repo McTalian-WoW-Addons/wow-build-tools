@@ -190,7 +190,7 @@ jobs:
           zip -j ${zipFile} ${binaryFile}
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: zip-${{ env.CMD }}_${{ matrix.goos }}_${{ matrix.goarch }}
           path: build/${{ env.CMD }}_${{ matrix.goos }}_${{ matrix.goarch }}.zip
