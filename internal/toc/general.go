@@ -229,7 +229,7 @@ func WalkXmlFile(xmlFile string, l *logger.Logger) ([]string, error) {
 func readFilesFromXmlFile(xmlFile string) ([]string, error) {
 	contents, err := os.ReadFile(xmlFile)
 	if err != nil {
-		return nil, fmt.Errorf("error reading XML file: %v", err)
+		return nil, fmt.Errorf("error reading XML file %s: %v", xmlFile, err)
 	}
 
 	files := []string{}

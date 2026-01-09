@@ -1,7 +1,6 @@
 package toc
 
 import (
-	"fmt"
 	"path/filepath"
 	"slices"
 
@@ -17,7 +16,7 @@ func (e *TocEntry) populateEntries(ignoredFiles []string, l *logger.Logger) erro
 	if filepath.Ext(e.Filepath) == ".xml" {
 		files, err := readFilesFromXmlFile(e.Filepath)
 		if err != nil {
-			return fmt.Errorf("error parsing XML file '%s': %v", e.Filepath, err)
+			return err
 		}
 
 		for _, f := range files {

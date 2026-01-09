@@ -10,6 +10,8 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+
+	"golang.org/x/mod/modfile"
 )
 
 // FunctionData holds coverage and complexity information for a function
@@ -44,12 +46,14 @@ func main() {
 	coverageFile := flag.String("coverage", ".coverage/coverage-by-function.txt", "Coverage output file")
 	complexityFile := flag.String("complexity", ".coverage/complexity.txt", "Cyclomatic complexity output file")
 	complexityThreshold := flag.Int("threshold", 7, "Complexity threshold for high-complexity coverage")
+	riskThreshold := flag.Float64("risk-threshold", 200.0, "Risk threshold to count high-risk functions")
 	outputFormat := flag.String("format", "text", "Output format: text, json, or markdown")
-	outputFile := flag.String("output", "", "Output file (default: stdout)")
+	modfilePath := flag.String("modfile", "go.mod", "Path to go.mod file for module path")
+	outputFile := flag.String("output", "stdout", "Output file (default: stdout)")
 	flag.Parse()
 
 	// Parse coverage data
-	coverageData, totalCoverage, err := parseCoverage(*coverageFile)
+	coverageData, totalCoverage, err := parseCoverage(*coverageFile, *modfilePath)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "Error parsing coverage: %v\n", err)
 		os.Exit(1)
@@ -66,7 +70,7 @@ func main() {
 	functions := combineData(coverageData, complexityData)
 
 	// Calculate metrics
-	metrics := calculateMetrics(functions, *complexityThreshold)
+	metrics := calculateMetrics(functions, *complexityThreshold, *riskThreshold)
 	metrics.StatementCoverage = totalCoverage
 
 	// Output results
@@ -77,10 +81,10 @@ func main() {
 	case "markdown":
 		output = formatMarkdown(metrics, *complexityThreshold)
 	default:
-		output = formatText(metrics, *complexityThreshold)
+		output = formatText(metrics, *complexityThreshold, *riskThreshold)
 	}
 
-	if *outputFile != "" {
+	if *outputFile != "stdout" {
 		err := os.WriteFile(*outputFile, []byte(output), 0644)
 		if err != nil {
 			fmt.Fprintf(os.Stderr, "Error writing output file: %v\n", err)
@@ -91,7 +95,7 @@ func main() {
 	}
 }
 
-func parseCoverage(filename string) (map[string]*FunctionData, float64, error) {
+func parseCoverage(filename string, modfilePath string) (map[string]*FunctionData, float64, error) {
 	file, err := os.Open(filename)
 	if err != nil {
 		return nil, 0, err
@@ -107,6 +111,13 @@ func parseCoverage(filename string) (map[string]*FunctionData, float64, error) {
 	// Match: github.com/McTalian/wow-build-tools/internal/build/build.go:58:	Build	56.0%
 	re := regexp.MustCompile(`^(.+):(\d+):\s+(\S+)\s+(\d+\.?\d*)%`)
 	totalRe := regexp.MustCompile(`^total:\s+\(statements\)\s+(\d+\.?\d*)%`)
+
+	// Read go.mod to get module path
+	modBytes, err := os.ReadFile(modfilePath)
+	if err != nil {
+		return nil, 0, fmt.Errorf("error reading go.mod file: %v", err)
+	}
+	modulePath := modfile.ModulePath(modBytes)
 
 	for scanner.Scan() {
 		line := scanner.Text()
@@ -124,7 +135,12 @@ func parseCoverage(filename string) (map[string]*FunctionData, float64, error) {
 			funcName := matches[3]
 			coverage, _ := strconv.ParseFloat(matches[4], 64)
 
-			// Extract package and file
+			// Normalize file path to be relative to module
+			if strings.HasPrefix(filePath, modulePath) {
+				filePath = strings.TrimPrefix(filePath, modulePath)
+				filePath = strings.TrimPrefix(filePath, "/")
+			}
+
 			parts := strings.Split(filePath, "/")
 			var pkg, file string
 			if len(parts) > 0 {
@@ -167,6 +183,11 @@ func parseComplexity(filename string) (map[string]int, error) {
 		if len(matches) == 5 {
 			complexity, _ := strconv.Atoi(matches[1])
 			funcName := matches[2]
+			if strings.HasPrefix(funcName, "(") {
+				// Method, extract method name
+				parts := strings.Split(funcName, ").")
+				funcName = parts[len(parts)-1]
+			}
 			filePath := matches[3]
 			lineNum := matches[4]
 
@@ -210,7 +231,7 @@ func combineData(coverageData map[string]*FunctionData, complexityData map[strin
 	return functions
 }
 
-func calculateMetrics(functions []*FunctionData, complexityThreshold int) Metrics {
+func calculateMetrics(functions []*FunctionData, complexityThreshold int, riskThreshold float64) Metrics {
 	var metrics Metrics
 	var totalFunctionCoverage float64
 	var highComplexityCoverage float64
@@ -261,8 +282,8 @@ func calculateMetrics(functions []*FunctionData, complexityThreshold int) Metric
 
 		allRisks = append(allRisks, functionRisk{function: f, risk: risk})
 
-		// Count high-risk functions (risk > 100 means >10% uncovered with complexity >10, or similar)
-		if risk > 100 {
+		// Count high-risk functions
+		if risk > riskThreshold {
 			highRiskCount++
 		}
 	}
@@ -312,7 +333,7 @@ func calculateMetrics(functions []*FunctionData, complexityThreshold int) Metric
 	return metrics
 }
 
-func formatText(metrics Metrics, threshold int) string {
+func formatText(metrics Metrics, threshold int, riskThreshold float64) string {
 	var sb strings.Builder
 	sb.WriteString("Coverage Metrics Report\n")
 	sb.WriteString("=======================\n")
@@ -342,7 +363,7 @@ func formatText(metrics Metrics, threshold int) string {
 	sb.WriteString("\n")
 	sb.WriteString(fmt.Sprintf("Total Risk Score:           %.1f\n", metrics.TotalRiskScore))
 	sb.WriteString(fmt.Sprintf("Avg Risk Per Function:      %.1f (normalized for codebase size)\n", metrics.AvgRiskPerFunction))
-	sb.WriteString(fmt.Sprintf("High-Risk Functions:        %d (risk > 100)\n", metrics.HighRiskFunctions))
+	sb.WriteString(fmt.Sprintf("High-Risk Functions:        %d (risk > %.1f)\n", metrics.HighRiskFunctions, riskThreshold))
 	sb.WriteString("\n")
 
 	sb.WriteString("Top 10 Riskiest Functions:\n")
