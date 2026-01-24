@@ -12,10 +12,9 @@ import (
 )
 
 func TestClearDestDir(t *testing.T) {
-	testDir := "testdir"
+	testDir := filepath.Join(t.TempDir(), "testdir")
 	err := os.Mkdir(testDir, 0755)
 	require.NoError(t, err)
-	defer func() { _ = os.RemoveAll(testDir) }()
 
 	err = clearDestDir(testDir)
 	require.NoError(t, err)
@@ -26,8 +25,7 @@ func TestClearDestDir(t *testing.T) {
 }
 
 func TestCreateDestDir(t *testing.T) {
-	testDir := "testdir"
-	defer func() { _ = os.RemoveAll(testDir) }()
+	testDir := filepath.Join(t.TempDir(), "testdir")
 
 	err := createDestDir(testDir)
 	if err != nil {
@@ -40,10 +38,9 @@ func TestCreateDestDir(t *testing.T) {
 }
 
 func TestCopyFromCacheToPackageDir(t *testing.T) {
-	destDir := "destdir"
-	cacheDir := "cachedir"
-	defer func() { _ = os.RemoveAll(destDir) }()
-	defer func() { _ = os.RemoveAll(cacheDir) }()
+	tempDir := t.TempDir()
+	destDir := filepath.Join(tempDir, "destdir")
+	cacheDir := filepath.Join(tempDir, "cachedir")
 
 	err := os.Mkdir(cacheDir, 0755)
 	require.NoError(t, err)
@@ -60,10 +57,9 @@ func TestCopyFromCacheToPackageDir(t *testing.T) {
 }
 
 func TestCopyExternal(t *testing.T) {
-	packageDir := "packagedir"
-	cacheDir := "cachedir"
-	defer func() { _ = os.RemoveAll(packageDir) }()
-	defer func() { _ = os.RemoveAll(cacheDir) }()
+	tempDir := t.TempDir()
+	packageDir := filepath.Join(tempDir, "packagedir")
+	cacheDir := filepath.Join(tempDir, "cachedir")
 
 	err := os.Mkdir(cacheDir, 0755)
 	require.NoError(t, err)
@@ -87,10 +83,9 @@ func TestCopyExternal(t *testing.T) {
 }
 
 func TestCopyToPackageDir(t *testing.T) {
-	topDir := "topdir"
-	packageDir := "packagedir"
-	defer func() { _ = os.RemoveAll(topDir) }()
-	defer func() { _ = os.RemoveAll(packageDir) }()
+	tempDir := t.TempDir()
+	topDir := filepath.Join(tempDir, "topdir")
+	packageDir := filepath.Join(tempDir, "packagedir")
 
 	err := os.Mkdir(topDir, 0755)
 	require.NoError(t, err)
