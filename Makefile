@@ -20,6 +20,11 @@ release:
 	@cp -f ./$(OUTPUT_DIR)/$(BINARY_NAME) ~/bin/$(BINARY_NAME)
 	@cp -f ./$(OUTPUT_DIR)/$(BINARY_NAME).exe /mnt/c/Users/robpa/bin/$(BINARY_NAME).exe
 
+tools:
+	@echo "Installing Go tools..."
+	@cat go.tools | xargs -n1 go install -v
+	@echo "✓ Tools installed"
+
 CC_THRESHOLD = 10
 
 test:

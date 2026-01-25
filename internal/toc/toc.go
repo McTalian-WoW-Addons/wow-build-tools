@@ -113,6 +113,24 @@ func (t *Toc) CheckForInterfaceBumps(flavorReleaseInfo FlavorReleaseInfo) (avail
 		if err != nil {
 			return nil, fmt.Errorf("error parsing Interface version for product %s: %v", product, err)
 		}
+		if product.IsBeta() || product.IsTest() {
+			liveProduct := product.GetLive()
+			liveInterface, liveExists := availableInterfaces[liveProduct]
+			if !liveExists {
+				liveBuildInfo, liveCacheExists := (*cacheLatestBuilds)[liveProduct]
+				if liveCacheExists {
+					liveInterface, err = liveBuildInfo.GetInterfaceVersion()
+					if err != nil {
+						return nil, fmt.Errorf("error parsing Interface version for live product %s: %v", liveProduct, err)
+					}
+				}
+			}
+
+			if liveInterface > interfaceVersion {
+				// Skip older version
+				continue
+			}
+		}
 
 		availableInterfaces[product] = interfaceVersion
 	}

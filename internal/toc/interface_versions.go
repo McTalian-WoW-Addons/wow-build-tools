@@ -20,33 +20,62 @@ type BuildInfo struct {
 type Product string
 
 const (
-	ProductWow              Product = "wow"
-	ProductWowBeta          Product = "wow_beta"
-	ProductWowTest          Product = "wowt"
-	ProductWowXPtr          Product = "wowxptr"
-	ProductWowLiveTest      Product = "wowlivetest"
-	ProductWowZ             Product = "wowz"
-	ProductWowClassic       Product = "wow_classic"
-	ProductWowClassicBeta   Product = "wow_classic_beta"
-	ProductWowClassicPtr    Product = "wow_classic_ptr"
-	ProductWoWClassicTitan  Product = "wow_classic_titan"
-	ProductWowClassicEra    Product = "wow_classic_era"
-	ProductWowClassicEraPtr Product = "wow_classic_era_ptr"
+	ProductWow                       Product = "wow"
+	ProductWowBeta                   Product = "wow_beta"
+	ProductWowTest                   Product = "wowt"
+	ProductWowXPtr                   Product = "wowxptr"
+	ProductWowLiveTest               Product = "wowlivetest"
+	ProductWowZ                      Product = "wowz"
+	ProductWowClassic                Product = "wow_classic"
+	ProductWowClassicBeta            Product = "wow_classic_beta"
+	ProductWowClassicPtr             Product = "wow_classic_ptr"
+	ProductWowClassicTitan           Product = "wow_classic_titan"
+	ProductWowClassicAnniversary     Product = "wow_anniversary"
+	ProductWowClassicAnniversaryBeta Product = "wow_anniversary_beta"
+	ProductWowClassicAnniversaryPtr  Product = "wow_anniversary_ptr"
+	ProductWowClassicEra             Product = "wow_classic_era"
+	ProductWowClassicEraPtr          Product = "wow_classic_era_ptr"
 )
 
+func (p Product) IsBeta() bool {
+	return strings.Contains(string(p), "beta")
+}
+
+func (p Product) IsTest() bool {
+	return strings.Contains(string(p), "test") || strings.Contains(string(p), "ptr") || p == ProductWowTest || p == ProductWowZ
+}
+
+func (p Product) GetLive() Product {
+	switch p {
+	case ProductWowBeta, ProductWowTest, ProductWowXPtr, ProductWowLiveTest, ProductWowZ:
+		return ProductWow
+	case ProductWowClassicBeta, ProductWowClassicPtr:
+		return ProductWowClassic
+	case ProductWowClassicEraPtr:
+		return ProductWowClassicEra
+	case ProductWowClassicAnniversaryBeta, ProductWowClassicAnniversaryPtr:
+		return ProductWowClassicAnniversary
+	default:
+		return p
+	}
+}
+
 var ProductToFlavorMap map[Product]GameFlavor = map[Product]GameFlavor{
-	ProductWow:              Retail,
-	ProductWowBeta:          Retail,
-	ProductWowTest:          Retail,
-	ProductWowXPtr:          Retail,
-	ProductWowLiveTest:      Retail, // Not sure about this one
-	ProductWowZ:             Retail, // Not sure about this one
-	ProductWowClassic:       CurrentClassic,
-	ProductWowClassicBeta:   CurrentClassic,
-	ProductWowClassicPtr:    CurrentClassic,
-	ProductWoWClassicTitan:  WotlkClassic, // This one's a bit more nuanced than that
-	ProductWowClassicEra:    ClassicEra,
-	ProductWowClassicEraPtr: ClassicEra,
+	ProductWow:                       Retail,
+	ProductWowBeta:                   Retail,
+	ProductWowTest:                   Retail,
+	ProductWowXPtr:                   Retail,
+	ProductWowLiveTest:               Retail, // Not sure about this one
+	ProductWowZ:                      Retail, // Not sure about this one
+	ProductWowClassic:                CurrentClassic,
+	ProductWowClassicBeta:            CurrentClassic,
+	ProductWowClassicPtr:             CurrentClassic,
+	ProductWowClassicTitan:           WotlkClassic, // This one's a bit more nuanced than that
+	ProductWowClassicAnniversary:     CurrentAnniversary,
+	ProductWowClassicAnniversaryBeta: CurrentAnniversary,
+	ProductWowClassicAnniversaryPtr:  CurrentAnniversary,
+	ProductWowClassicEra:             ClassicEra,
+	ProductWowClassicEraPtr:          ClassicEra,
 }
 
 type FlavorReleaseInfo struct {
@@ -96,6 +125,10 @@ var (
 	ClassicFlavorRelease     = GameFlavorRelease{Flavor: CurrentClassic, ReleaseType: LiveRelease}
 	ClassicBetaFlavorRelease = GameFlavorRelease{Flavor: CurrentClassic, ReleaseType: BetaRelease}
 	ClassicTestFlavorRelease = GameFlavorRelease{Flavor: CurrentClassic, ReleaseType: TestRelease}
+
+	ClassicAnniversaryFlavorRelease     = GameFlavorRelease{Flavor: CurrentAnniversary, ReleaseType: LiveRelease}
+	ClassicAnniversaryBetaFlavorRelease = GameFlavorRelease{Flavor: CurrentAnniversary, ReleaseType: BetaRelease}
+	ClassicAnniversaryTestFlavorRelease = GameFlavorRelease{Flavor: CurrentAnniversary, ReleaseType: TestRelease}
 )
 
 var FlavorReleaseToProductMap map[GameFlavorRelease][]Product = map[GameFlavorRelease][]Product{
@@ -110,6 +143,10 @@ var FlavorReleaseToProductMap map[GameFlavorRelease][]Product = map[GameFlavorRe
 	ClassicFlavorRelease:     {ProductWowClassic},
 	ClassicBetaFlavorRelease: {ProductWowClassicBeta},
 	ClassicTestFlavorRelease: {ProductWowClassicPtr},
+
+	ClassicAnniversaryFlavorRelease:     {ProductWowClassicAnniversary},
+	ClassicAnniversaryBetaFlavorRelease: {ProductWowClassicAnniversary},
+	ClassicAnniversaryTestFlavorRelease: {ProductWowClassicAnniversary},
 }
 
 type ProductBuilds = map[Product]BuildInfo
