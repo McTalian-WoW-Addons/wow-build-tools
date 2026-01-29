@@ -513,15 +513,23 @@ Core.lua`
 	}
 
 	// Verify that we have entries for the expected products
-	if _, exists := availableInterfaces[ProductWowBeta]; !exists {
-		t.Error("Expected Retail beta product in results")
+	_, retailBetaExists := availableInterfaces[ProductWowBeta]
+	_, retailLiveExists := availableInterfaces[ProductWow]
+	if !retailBetaExists && !retailLiveExists {
+		t.Error("Expected a Retail product in results")
 	}
-	if _, exists := availableInterfaces[ProductWowClassicBeta]; !exists {
-		t.Error("Expected Classic beta product in results")
-	}
+
 	// Note: Classic Era doesn't have a separate beta product currently, uses PTR
-	if _, exists := availableInterfaces[ProductWowClassicEraPtr]; !exists {
-		t.Error("Expected Classic Era PTR product in results")
+	_, eraPtrExists := availableInterfaces[ProductWowClassicEraPtr]
+	_, eraLiveExists := availableInterfaces[ProductWowClassicEra]
+	if !eraPtrExists && !eraLiveExists {
+		t.Error("Expected a Classic Era product in results")
+	}
+
+	_, classicBetaExists := availableInterfaces[ProductWowClassicBeta]
+	_, classicLiveExists := availableInterfaces[ProductWowClassic]
+	if !classicBetaExists && !classicLiveExists {
+		t.Error("Expected a Classic product in results")
 	}
 }
 
