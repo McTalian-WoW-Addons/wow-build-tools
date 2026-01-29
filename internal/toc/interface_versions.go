@@ -145,8 +145,8 @@ var FlavorReleaseToProductMap map[GameFlavorRelease][]Product = map[GameFlavorRe
 	ClassicTestFlavorRelease: {ProductWowClassicPtr},
 
 	ClassicAnniversaryFlavorRelease:     {ProductWowClassicAnniversary},
-	ClassicAnniversaryBetaFlavorRelease: {ProductWowClassicAnniversary},
-	ClassicAnniversaryTestFlavorRelease: {ProductWowClassicAnniversary},
+	ClassicAnniversaryBetaFlavorRelease: {ProductWowClassicAnniversaryBeta},
+	ClassicAnniversaryTestFlavorRelease: {ProductWowClassicAnniversaryPtr},
 }
 
 type ProductBuilds = map[Product]BuildInfo
