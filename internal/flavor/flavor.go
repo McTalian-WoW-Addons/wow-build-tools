@@ -11,6 +11,7 @@ var KnownFlavors = []Flavor{
 	{Id: "beta", Name: "Beta", Dir: "_beta_"},
 	{Id: "classic", Name: "Classic", Dir: "_classic_"},
 	{Id: "classicEra", Name: "Classic Era", Dir: "_classic_era_"},
+	{Id: "anniversary", Name: "Classic Anniversary", Dir: "_anniversary_"},
 	{Id: "ptr", Name: "PTR", Dir: "_ptr_"},
 	{Id: "xptr", Name: "XPTR", Dir: "_xptr_"},
 	{Id: "classicPtr", Name: "Classic PTR", Dir: "_classic_ptr_"},

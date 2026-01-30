@@ -2,12 +2,27 @@
 
 CC_THRESHOLD=${CC_THRESHOLD:-10}
 
+# Check for required tools
+MISSING_TOOLS=()
+for tool in go gopogh gocyclo covreport jq realpath; do
+	if ! command -v "${tool}" &>/dev/null; then
+		MISSING_TOOLS+=("${tool}")
+	fi
+done
+
+if [[ ${#MISSING_TOOLS[@]} -gt 0 ]]; then
+	echo "❌ Missing required tools: ${MISSING_TOOLS[*]}"
+	echo ""
+	echo "Install with: make tools"
+	exit 1
+fi
+
 echo "Creating coverage directory..."
 mkdir -p ./.coverage
 
 echo "Running tests with coverage..."
 set +e # Allow test command to fail so we can capture output and generate reports
-go test -tags="e2e" -v ./... -coverpkg=./cmd/...,./internal/... -coverprofile="./.coverage/cover.out" >.coverage/test-output.txt 2>&1
+go test -v ./... -coverpkg=./cmd/...,./internal/... -coverprofile="./.coverage/cover.out" >.coverage/test-output.txt 2>&1
 TEST_EXIT_CODE=$?
 set -e # Re-enable exit on error for the rest of the script
 

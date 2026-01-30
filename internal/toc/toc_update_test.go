@@ -575,7 +575,7 @@ func TestGameFlavorToString(t *testing.T) {
 		expected string
 	}{
 		{ClassicEra, "classic"},
-		{TbcClassic, "bcc"},
+		{TbcClassic, "tbc"},
 		{WotlkClassic, "wrath"},
 		{CataClassic, "cata"},
 		{MistsClassic, "mists"},

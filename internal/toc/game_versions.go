@@ -26,13 +26,14 @@ const (
 )
 
 const CurrentClassic GameFlavor = MistsClassic
+const CurrentAnniversary GameFlavor = TbcClassic
 
 func (g GameFlavor) ToString() string {
 	switch g {
 	case ClassicEra:
 		return "classic"
 	case TbcClassic:
-		return "bcc"
+		return "tbc"
 	case WotlkClassic:
 		return "wrath"
 	case CataClassic:
