@@ -67,16 +67,10 @@ jobs:
           done
 
       - name: Run tests
-        run: |
-          echo "Creating temp directories..."
-          mkdir -p ./.coverage
-          # mkdir -p ./.test-results
-          echo "Running tests..."
-          go test -v ./... -cover -coverpkg=./... -coverprofile="./.coverage/.cover.out"
-          echo "Generating coverage report..."
-          go tool cover -html="./.coverage/.cover.out" -o "./.coverage/report.html"
+        run: CC_THRESHOLD=10 ./scripts/test.sh
 
-      - name: Upload coverage
+      - name: Upload test and coverage reports
+        if: always()
         uses: actions/upload-artifact@v6
         with:
           name: coverage
