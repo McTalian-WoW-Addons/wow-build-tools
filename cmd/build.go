@@ -44,6 +44,7 @@ func init() {
 	rootCmd.AddCommand(buildCmd)
 
 	buildCmd.PersistentPreRunE = func(cmd *cobra.Command, args []string) error {
+		rootCmd.PersistentPreRunE(cmd, args)
 		if cmd.Flags().Changed("topDir") && !cmd.Flags().Changed("releaseDir") {
 			build.BuildParams.ReleaseDir = filepath.Join(build.BuildParams.TopDir, ".release")
 		}
