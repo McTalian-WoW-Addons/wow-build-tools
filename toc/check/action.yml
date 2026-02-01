@@ -32,4 +32,4 @@ runs:
       run: |
         set -euo pipefail
 
-        ${GITHUB_ACTION_PATH}/dist/wow-build-tools toc check ${{ steps.handle-inputs.outputs.INPUT_ARGS }}
+        ${GITHUB_ACTION_PATH}/../../dist/wow-build-tools toc check ${{ steps.handle-inputs.outputs.INPUT_ARGS }}
