@@ -5,6 +5,7 @@ type RootArgs struct {
 	LevelDebug   bool
 	NoEmoji      bool
 	NoColor      bool
+	NoSplash     bool
 	Boring       bool
 }
 
@@ -13,5 +14,6 @@ var RootParams *RootArgs = &RootArgs{
 	LevelDebug:   false,
 	NoEmoji:      false,
 	NoColor:      false,
+	NoSplash:     false,
 	Boring:       false,
 }
