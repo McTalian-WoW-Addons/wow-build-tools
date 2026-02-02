@@ -22,6 +22,7 @@ THE SOFTWARE.
 package cmd
 
 import (
+	"fmt"
 	"os"
 
 	"github.com/McTalian/wow-build-tools/internal/cmdargs"
@@ -106,6 +107,23 @@ func preRunE(cmd *cobra.Command, args []string) (err error) {
 		return
 	}
 
+	if !cmdargs.RootParams.NoSplash && !cmdargs.RootParams.Boring {
+		fmt.Println(`
+===============================================================================
+ __    __     __    __        ___       _ _     _      _____            _     
+/ / /\ \ \___/ / /\ \ \      / __\_   _(_) | __| |    /__   \___   ___ | |___ 
+\ \/  \/ / _ \ \/  \/ /____ /__\// | | | | |/ _  |_____ / /\/ _ \ / _ \| / __|
+ \  /\  / (_) \  /\  /_____/ \/  \ |_| | | | (_| |_____/ / | (_) | (_) | \__ \
+  \/  \/ \___/ \/  \/      \_____/\__,_|_|_|\__,_|     \/   \___/ \___/|_|___/
+
+              />
+ (           //------------------------------------------------------(
+(*)OXOXOXOXO(*>                  --------                             \
+ (           \\--------------------------------------------------------)
+              \>
+===============================================================================`)
+	}
+
 	return nil
 }
 
@@ -119,6 +137,7 @@ func init() {
 	rootCmd.PersistentFlags().BoolVarP(&cmdargs.RootParams.LevelDebug, "debug", "v", false, "Enable debug output")
 	rootCmd.PersistentFlags().BoolVar(&cmdargs.RootParams.NoEmoji, "no-emoji", false, "Disable emoji output")
 	rootCmd.PersistentFlags().BoolVar(&cmdargs.RootParams.NoColor, "no-color", false, "Disable color output")
+	rootCmd.PersistentFlags().BoolVar(&cmdargs.RootParams.NoSplash, "no-splash", false, "Disable splash screen on startup")
 	rootCmd.PersistentFlags().BoolVar(&cmdargs.RootParams.Boring, "boring", false, "Disable emoji and color output")
 	rootCmd.PersistentPreRunE = preRunE
 	// Cobra also supports local flags, which will only run
