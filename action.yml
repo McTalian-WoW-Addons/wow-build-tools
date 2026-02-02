@@ -37,6 +37,22 @@ runs:
         fi
 
         echo "INPUT_ARGS=${INPUT_ARGS}" >> $GITHUB_OUTPUT
+    - name: Check for Subversion
+      id: check-svn
+      shell: bash
+      run: |
+        if command -v svn &> /dev/null; then
+          echo "found=true" >> $GITHUB_OUTPUT
+          echo "✓ Subversion is already installed: $(svn --version --quiet)"
+        else
+          echo "found=false" >> $GITHUB_OUTPUT
+        fi
+    - name: Install Subversion
+      if: steps.check-svn.outputs.found != 'true'
+      uses: awalsh128/cache-apt-pkgs-action@acb598e5ddbc6f68a970c5da0688d2f3a9f04d05
+      with:
+        packages: subversion
+        version: 1.14
     - name: Run wow-build-tools
       shell: bash
       run: |
