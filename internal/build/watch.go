@@ -315,7 +315,7 @@ func setupWatchEnvironment(releaseDir string, copyToWowDirs bool) error {
 		}
 
 		l.Warn("To create symlinks to your release directory in WSL, run this command in Windows in an elevated command prompt:")
-		l.Warn("wow-build-tools.exe link -w \"%s\"", winPath)
+		l.Warn("wow-build-tools.exe build link -w \"%s\"", winPath)
 	}
 
 	// Clean the release directory
