@@ -1,0 +1,122 @@
+# Reusable workflow: CI pipeline (tests, i18n, semantic-release)
+#
+# Triggered on push to main/release branches. Runs Lua tests, optional i18n
+# translation checks, and semantic-release.
+#
+# Inputs:
+#   addon-name:     Addon directory name (e.g., Endeavoring, RPGLootFeed)
+#   rockspec-name:  Rockspec filename (e.g., endeavoring-1-1.rockspec)
+#   lua-version:    Lua version for tests (e.g., 5.4.4, 5.3.5)
+#   i18n-enabled:   Whether to run i18n translation checks
+#
+# Requires secrets (via `secrets: inherit`):
+#   - GH_PAT (org-level) for semantic-release
+
+name: CI
+
+on:
+  workflow_call:
+    inputs:
+      addon-name:
+        description: Addon directory name (e.g., Endeavoring, RPGLootFeed)
+        required: true
+        type: string
+      rockspec-name:
+        description: Rockspec filename (e.g., endeavoring-1-1.rockspec)
+        required: true
+        type: string
+      lua-version:
+        description: Lua version for tests (e.g., 5.4.4, 5.3.5)
+        required: true
+        type: string
+      i18n-enabled:
+        description: Whether to run i18n translation checks
+        required: false
+        type: boolean
+        default: false
+
+permissions: {}
+
+jobs:
+  i18n_translations:
+    if: ${{ inputs.i18n-enabled }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
+      issues: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Sync uv environment
+        run: uv sync
+
+      - name: Run translation check script
+        run: uv run .scripts/missing_translation_check.py
+
+      - name: Create or Update Issues
+        if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+        run: uv run .scripts/create_or_update_i18n_issues.py
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  run_tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - uses: lewis6991/gh-actions-lua@01aab24c4de9555717b685f9b142a2abbe12ef14
+        with:
+          luaVersion: ${{ inputs.lua-version }}
+
+      - uses: leafo/gh-actions-luarocks@v4
+        with:
+          luaRocksVersion: 3.11.1
+
+      - name: Install luarock dependencies
+        run: luarocks make --local ${{ inputs.rockspec-name }}
+
+      - name: Run Tests
+        run: make test-ci
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: luacov-html
+          path: luacov-html/
+
+  release:
+    needs: [run_tests, i18n_translations]
+    if: ${{ !cancelled() && needs.run_tests.result == 'success' && (needs.i18n_translations.result == 'success' || needs.i18n_translations.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+      issues: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run semantic-release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GH_PAT }}
+        run: npm run semantic-release

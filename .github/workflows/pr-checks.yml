@@ -1,0 +1,279 @@
+# Reusable workflow: PR checks (tests, translations, packaging, linting)
+#
+# Triggered on pull_request and merge_group events. Runs Lua tests, optional
+# i18n translation checks, test packaging with PR comment, optional trunk
+# linting, and commitlint.
+#
+# Inputs:
+#   addon-name:      Addon directory name (e.g., Endeavoring, RPGLootFeed)
+#   rockspec-name:   Rockspec filename (e.g., endeavoring-1-1.rockspec)
+#   lua-version:     Lua version for tests (e.g., 5.4.4, 5.3.5)
+#   i18n-enabled:    Whether to run i18n translation checks
+#   trunk-enabled:   Whether to run trunk code quality checks
+#
+# Expects in the calling repo:
+#   - .scripts/post-pkg-comment.cjs (for PR package size comment)
+#   - Makefile with test-ci target
+#   - .nvmrc for Node.js version
+#   - commitlint.config.js
+
+name: PR Checks
+
+on:
+  workflow_call:
+    inputs:
+      addon-name:
+        description: Addon directory name (e.g., Endeavoring, RPGLootFeed)
+        required: true
+        type: string
+      rockspec-name:
+        description: Rockspec filename (e.g., endeavoring-1-1.rockspec)
+        required: true
+        type: string
+      lua-version:
+        description: Lua version for tests (e.g., 5.4.4, 5.3.5)
+        required: true
+        type: string
+      i18n-enabled:
+        description: Whether to run i18n translation checks
+        required: false
+        type: boolean
+        default: false
+      trunk-enabled:
+        description: Whether to run trunk code quality checks
+        required: false
+        type: boolean
+        default: false
+
+permissions: {}
+
+jobs:
+  check_translations:
+    if: ${{ inputs.i18n-enabled }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@v6
+        with:
+          enable-cache: true
+
+      - name: Sync uv environment
+        run: uv sync
+
+      - name: Run translation check script
+        run: uv run .scripts/missing_translation_check.py
+
+      - name: Check for Hard-coded strings
+        run: uv run .scripts/hardcode_string_check.py
+
+      - name: Run missing locale keys script
+        run: uv run .scripts/check_for_missing_locale_keys.py
+
+  run_tests:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - uses: lewis6991/gh-actions-lua@01aab24c4de9555717b685f9b142a2abbe12ef14
+        with:
+          luaVersion: ${{ inputs.lua-version }}
+
+      - uses: leafo/gh-actions-luarocks@v4
+        with:
+          luaRocksVersion: 3.11.1
+
+      - name: Install luarock dependencies
+        run: luarocks make --local ${{ inputs.rockspec-name }}
+
+      - name: Run Tests
+        run: make test-ci
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: luacov-html
+          path: luacov-html/
+
+  test_package:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      actions: write
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+          repository: ${{ github.event.pull_request.head.repo.full_name }}
+          fetch-depth: 0
+
+      - name: Fetch Latest Release Assets
+        id: fetch-release-assets
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Check if any releases exist
+          if gh release list --limit 1 | grep -q .; then
+            # Try to get nolib size, default to 0 if not found
+            nolib_size=$(gh release view --json assets -q '.assets[] | select(.name | endswith("nolib.zip")) | .size' || echo "0")
+            nolib_size=${nolib_size:-0}
+
+            # Try to get standard size, default to 0 if not found
+            lib_size=$(gh release view --json assets -q '.assets[] | select(.name | endswith(".zip")) | select(.name | contains("-nolib") | not) | .size' || echo "0")
+            lib_size=${lib_size:-0}
+
+            echo "NoLibSize: $nolib_size"
+            echo "LibSize: $lib_size"
+            echo "LATEST_RELEASE_NOLIB_SIZE=$nolib_size" >> $GITHUB_OUTPUT
+            echo "LATEST_RELEASE_LIBS_SIZE=$lib_size" >> $GITHUB_OUTPUT
+          else
+            echo "No releases found, setting sizes to 0"
+            echo "LATEST_RELEASE_NOLIB_SIZE=0" >> $GITHUB_OUTPUT
+            echo "LATEST_RELEASE_LIBS_SIZE=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Package
+        uses: McTalian-WoW-Addons/wow-build-tools@v1-beta
+        with:
+          args: -d -t ./${{ inputs.addon-name }} -r ./.release --skipChangelog -n {package-name}-pr${{github.event.number}}-{nolib}{classic}
+
+      - name: Capture Filenames
+        id: capture-filenames
+        run: |
+          # Check for nolib build
+          if ls .release/*-nolib.zip 1> /dev/null 2>&1; then
+            FILE1=$(ls .release/*-nolib.zip | head -n1)
+            echo "NOLIBZIP=$FILE1" >> $GITHUB_OUTPUT
+            echo "TEST_NOLIB_SIZE=$(stat -c%s "$FILE1")" >> $GITHUB_OUTPUT
+            echo "HAS_NOLIB=true" >> $GITHUB_OUTPUT
+          else
+            echo "HAS_NOLIB=false" >> $GITHUB_OUTPUT
+            echo "TEST_NOLIB_SIZE=0" >> $GITHUB_OUTPUT
+          fi
+
+          # Check for standard build (with or without libs)
+          if ls .release/*.zip 2>/dev/null | grep -v 'nolib' 1> /dev/null 2>&1; then
+            FILE2=$(ls .release/*.zip | grep -v 'nolib' | head -n1)
+            echo "ZIP=$FILE2" >> $GITHUB_OUTPUT
+            echo "TEST_LIBS_SIZE=$(stat -c%s "$FILE2")" >> $GITHUB_OUTPUT
+            echo "HAS_STANDARD=true" >> $GITHUB_OUTPUT
+          else
+            echo "HAS_STANDARD=false" >> $GITHUB_OUTPUT
+            echo "TEST_LIBS_SIZE=0" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload Standard Package
+        if: steps.capture-filenames.outputs.HAS_STANDARD == 'true'
+        uses: actions/upload-artifact@v4
+        id: upload-zips-standard
+        with:
+          name: pr-pkg
+          path: ${{ steps.capture-filenames.outputs.ZIP }}
+
+      - name: Upload NoLib Package
+        if: steps.capture-filenames.outputs.HAS_NOLIB == 'true'
+        uses: actions/upload-artifact@v4
+        id: upload-zips-nolib
+        with:
+          name: pr-pkg-nolib
+          path: ${{ steps.capture-filenames.outputs.NOLIBZIP }}
+
+      - name: Post PR comment
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const script = require('./.scripts/post-pkg-comment.cjs');
+            await script({
+              github,
+              context,
+              hasStandard: ${{ steps.capture-filenames.outputs.HAS_STANDARD == 'true' }},
+              hasNoLib: ${{ steps.capture-filenames.outputs.HAS_NOLIB == 'true' }},
+              libsUrl: "${{ steps.upload-zips-standard.outputs.artifact-url || '' }}",
+              noLibUrl: "${{ steps.upload-zips-nolib.outputs.artifact-url || '' }}",
+              latestReleaseStandardSize: ${{ steps.fetch-release-assets.outputs.LATEST_RELEASE_LIBS_SIZE }},
+              testPkgStandardSize: ${{ steps.capture-filenames.outputs.TEST_LIBS_SIZE }},
+              latestReleaseNoLibSize: ${{ steps.fetch-release-assets.outputs.LATEST_RELEASE_NOLIB_SIZE }},
+              testPkgNoLibSize: ${{ steps.capture-filenames.outputs.TEST_NOLIB_SIZE }},
+            });
+
+  trunk-check:
+    if: ${{ inputs.trunk-enabled }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Trunk Cache
+        uses: actions/cache@v4
+        with:
+          key: trunk-cache-${{ hashFiles('**/trunk.yaml') }}
+          path: ~/.cache/trunk
+
+      - name: Trunk Code Quality
+        uses: trunk-io/trunk-action@v1
+
+  commitlint:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      TITLE: ${{ github.event.pull_request.title }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.sha }}
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+
+      - name: Install commitlint
+        run: |
+          npm install @commitlint/config-conventional @commitlint/cli
+
+      - name: Run commitlint (PR)
+        if: ${{ github.event_name == 'pull_request' }}
+        run: echo "${TITLE}" | npx commitlint
+
+      - name: Run commitlint (Merge Group)
+        if: ${{ github.event_name == 'merge_group' }}
+        run: npx commitlint --last
+
+  all_pr_checks:
+    name: Passing PR Checks
+    runs-on: ubuntu-latest
+    if: always()
+    needs:
+      [check_translations, run_tests, test_package, trunk-check, commitlint]
+    steps:
+      - name: Export needs results as JSON
+        id: export-needs
+        run: echo '${{ toJSON(needs) }}' > needs.json
+
+      - name: Check if all jobs passed or were skipped
+        run: |
+          needs=$(cat needs.json)
+          for job in $(echo "$needs" | jq -r 'keys[]'); do
+            result=$(echo "$needs" | jq -r ".\"$job\".result")
+            if [[ "$result" != "success" && "$result" != "skipped" ]]; then
+              echo "Job $job failed."
+              exit 1
+            fi
+          done
+          echo "All jobs passed or were skipped."
+        shell: bash
