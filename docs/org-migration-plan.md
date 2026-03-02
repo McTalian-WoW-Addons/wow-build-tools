@@ -40,8 +40,10 @@ These are inherently per-addon and stay at the repo level:
 
 | Secret                     | Repo        | Purpose                       |
 | -------------------------- | ----------- | ----------------------------- |
-| `DISCO_WH_NDVRNG_RELEASES` | Endeavoring | Discord release announcements |
-| `DISCO_WH_RLF_RELEASES`    | RPGLootFeed | Discord release announcements |
+| `DISCORD_RELEASES_WEBHOOK` | Endeavoring | Discord release announcements |
+| `DISCORD_RELEASES_WEBHOOK` | RPGLootFeed | Discord release announcements |
+
+> **Note:** Originally named `DISCO_WH_NDVRNG_RELEASES` and `DISCO_WH_RLF_RELEASES`. Renamed to standardized `DISCORD_RELEASES_WEBHOOK` during Phase 4 reusable workflow work (March 2, 2026).
 
 ### 1c. Create Org `.github` Repo (Optional, Low Priority)
 
@@ -134,17 +136,19 @@ Transfer `wow-build-tools` first since the addons reference it:
 
 ### Progress
 
-- [ ] Endeavoring: All references updated
-- [ ] RPGLootFeed: All references updated
-- [ ] wow-build-tools: All references updated
+- [x] Endeavoring: All references updated
+- [x] RPGLootFeed: All references updated
+- [x] wow-build-tools: All references updated
 
 ---
 
 ## Phase 4: Create Reusable Workflows
 
-> Convert duplicated workflows into parameterized [reusable workflows](https://docs.github.com/en/actions/sharing-automations/reusing-workflows) in `wow-build-tools`.
+> Convert duplicated workflows into parameterized [reusable workflows](https://docs.github.com/en/actions/sharing-automations/reusing-workflows) in `McTalian-WoW-Addons/.github`.
+>
+> **Note:** Originally planned for `wow-build-tools`, but `.github` org repo is the correct home for `workflow_call` workflows.
 
-### 4a. `cleanup-stale-issues.yml` — Zero Inputs
+### 4a. `cleanup-stale-issues.yml` — Zero Inputs ✅
 
 **Effort:** ~30 min | **Priority:** First — proves the pattern
 
@@ -152,38 +156,42 @@ Transfer `wow-build-tools` first since the addons reference it:
 
 ```yaml
 # Caller workflow in each addon repo (entire file):
+name: Close stale issues
 on:
   schedule:
-    - cron: "30 1 * * *"
+    - cron: 30 1 * * *
+permissions: {}
 jobs:
-  cleanup:
-    uses: McTalian-WoW-Addons/wow-build-tools/.github/workflows/cleanup-stale-issues.yml@v1-beta
+  stale:
+    uses: McTalian-WoW-Addons/.github/.github/workflows/cleanup-stale-issues.yml@main
 ```
 
-- [ ] Create reusable workflow in wow-build-tools
-- [ ] Convert Endeavoring caller
-- [ ] Convert RPGLootFeed caller
-- [ ] Verify both repos' stale issue cleanup works
+- [x] Create reusable workflow in `.github` org repo
+- [x] Convert Endeavoring caller
+- [x] Convert RPGLootFeed caller
 
-### 4b. `package-and-distribute.yml`
+### 4b. `package-and-distribute.yml` ✅
 
 **Effort:** ~45 min | **Priority:** High
 
 **Inputs:**
 
-- `addon-name` — used for naming in Discord messages
-- `toc-dir` — e.g., `./Endeavoring` or `./RPGLootFeed`
-- `release-dir` — e.g., `./.release`
-- `discord-avatar-url` — addon logo URL
-- `curseforge-url`, `wowi-url`, `wago-url` — distribution platform links
-- `discord-webhook-secret-name` — name of the Discord webhook secret (repo-level)
+- `addon-name` — addon directory name
+- `avatar-url` — Discord embed avatar image URL
 
-**Secrets:** `secrets: inherit` from caller (pulls org + repo secrets)
+**Dynamic from TOC file:**
 
-- [ ] Create reusable workflow in wow-build-tools
-- [ ] Convert Endeavoring caller
-- [ ] Convert RPGLootFeed caller
-- [ ] Test with a release on both repos
+- `X-Curse-Project-ID` → CurseForge link (slug = lowercased addon name)
+- `X-WoWI-ID` → WoWInterface link
+- `X-Wago-ID` → Wago link
+- Missing IDs → that distribution link is omitted from Discord announcement
+
+**Secrets:** `secrets: inherit` from caller (pulls org + repo secrets). Discord webhook standardized to `DISCORD_RELEASES_WEBHOOK` (repo-level, same name in every repo).
+
+- [x] Standardize Discord webhook secret names across repos
+- [x] Create reusable workflow in `.github` org repo
+- [x] Convert Endeavoring caller
+- [x] Convert RPGLootFeed caller
 
 ### 4c. `ci.yml` (replaces `main.yml`)
 
@@ -197,7 +205,7 @@ jobs:
 - `has-i18n` (boolean) — controls whether i18n translation job runs
 - `spec-dir` — e.g., `Endeavoring_spec` or `RPGLootFeed_spec`
 
-- [ ] Create reusable workflow in wow-build-tools
+- [ ] Create reusable workflow in `.github` org repo
 - [ ] Convert Endeavoring caller
 - [ ] Convert RPGLootFeed caller
 - [ ] Verify tests + semantic-release work on both repos
@@ -215,25 +223,26 @@ jobs:
 **Note:** `post-pkg-comment.cjs` should be consolidated first (see Phase 5) or embedded into the reusable workflow.
 
 - [ ] Consolidate `post-pkg-comment.cjs` (see Phase 5)
-- [ ] Create reusable workflow in wow-build-tools
+- [ ] Create reusable workflow in `.github` org repo
 - [ ] Convert Endeavoring caller
 - [ ] Convert RPGLootFeed caller
 - [ ] Verify PR checks work on both repos
 
-### 4e. `toc-updater.yml`
+### 4e. `toc-updater.yml` ✅
 
 **Effort:** ~45 min | **Priority:** Medium
 
 **Inputs:**
 
 - `addon-name`
-- `pr-body` — PR description template (differs by addon due to flavor support / extra steps)
-- `extra-pre-pr-steps` — optional, for RPGLootFeed's hidden currency generation
+- `pr-body` — PR description template (differs by addon due to flavor support)
 
-- [ ] Create reusable workflow in wow-build-tools
-- [ ] Convert Endeavoring caller
-- [ ] Convert RPGLootFeed caller
-- [ ] Verify TOC update PRs are created correctly
+**Design decision:** RPGLootFeed's hidden currency generation was split into a separate `hidden-currencies.yml` workflow (runs weekly on Monday 2pm UTC, creates its own PR branch). This keeps the reusable toc-updater clean and generic.
+
+- [x] Create reusable workflow in `.github` org repo
+- [x] Convert Endeavoring caller
+- [x] Convert RPGLootFeed caller
+- [x] Create separate `hidden-currencies.yml` for RPGLootFeed
 
 ---
 
@@ -315,14 +324,15 @@ wow-build-tools init --name MyAddon --flavors retail,classic --platforms cursefo
 
 | Phase                                        | Effort     | Status         |
 | -------------------------------------------- | ---------- | -------------- |
-| **Phase 1**: Org secrets                     | ~10 min    | ⬜ Not started |
-| **Phase 2**: Transfer repos                  | ~15 min    | ⬜ Not started |
-| **Phase 3**: Update references               | ~30 min    | ⬜ Not started |
-| **Phase 4a**: Stale issues reusable workflow | ~30 min    | ⬜ Not started |
-| **Phase 4b**: Package & distribute reusable  | ~45 min    | ⬜ Not started |
+| **Phase 1**: Org secrets                     | ~10 min    | ✅ Complete    |
+| **Phase 2**: Transfer repos                  | ~15 min    | ✅ Complete    |
+| **Phase 3**: Update references               | ~30 min    | ✅ Complete    |
+| **Phase 3.5**: Standardize rulesets          | ~1 hour    | ✅ Complete    |
+| **Phase 4a**: Stale issues reusable workflow | ~30 min    | ✅ Complete    |
+| **Phase 4b**: Package & distribute reusable  | ~45 min    | ✅ Complete    |
 | **Phase 4c**: CI reusable workflow           | ~1 hour    | ⬜ Not started |
 | **Phase 4d**: PR checks reusable workflow    | ~1.5 hours | ⬜ Not started |
-| **Phase 4e**: TOC updater reusable workflow  | ~45 min    | ⬜ Not started |
+| **Phase 4e**: TOC updater reusable workflow  | ~45 min    | ✅ Complete    |
 | **Phase 5**: Script/config consolidation     | ~1 hour    | ⬜ Not started |
 | **Phase 6**: `init` command                  | ~Half day  | ⬜ Future      |
 
@@ -339,8 +349,9 @@ wow-build-tools init --name MyAddon --flavors retail,classic --platforms cursefo
 | `WAGO_API_TOKEN`           |     ✅      |     ✅      |        —        |    ✅ Yes     |
 | `GH_PAT`                   |     ✅      |     ✅      |       ✅        |    ✅ Yes     |
 | `GITHUB_TOKEN`             |  ✅ (auto)  |  ✅ (auto)  |        —        | Auto-provided |
-| `DISCO_WH_NDVRNG_RELEASES` |     ✅      |      —      |        —        | ❌ Repo-level |
-| `DISCO_WH_RLF_RELEASES`    |      —      |     ✅      |        —        | ❌ Repo-level |
+| `DISCORD_RELEASES_WEBHOOK` |     ✅      |     ✅      |        —        | ❌ Repo-level |
+
+> **Note:** `DISCO_WH_NDVRNG_RELEASES` and `DISCO_WH_RLF_RELEASES` were renamed to `DISCORD_RELEASES_WEBHOOK` during Phase 4 (March 2, 2026).
 
 ### Variables
 
