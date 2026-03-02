@@ -144,9 +144,11 @@ Transfer `wow-build-tools` first since the addons reference it:
 
 ## Phase 4: Create Reusable Workflows
 
-> Convert duplicated workflows into parameterized [reusable workflows](https://docs.github.com/en/actions/sharing-automations/reusing-workflows) in `McTalian-WoW-Addons/.github`.
+> Convert duplicated workflows into parameterized [reusable workflows](https://docs.github.com/en/actions/sharing-automations/reusing-workflows) in `wow-build-tools`.
 >
-> **Note:** Originally planned for `wow-build-tools`, but `.github` org repo is the correct home for `workflow_call` workflows.
+> **Decision history:** Initially placed in `.github` org repo during Session 2 (March 2). Later decided to move to `wow-build-tools` for better alignment with Phase 6 scaffolding (`wow-build-tools init`) and to enable external addon developers to leverage the same workflows. Callers reference `McTalian-WoW-Addons/wow-build-tools/.github/workflows/<workflow>.yml@v1-beta`.
+>
+> **Next session:** Move existing workflows from `.github` to `wow-build-tools`, update caller references in both addon PRs (Endeavoring #15, RPGLootFeed #528).
 
 ### 4a. `cleanup-stale-issues.yml` — Zero Inputs ✅
 
@@ -163,12 +165,13 @@ on:
 permissions: {}
 jobs:
   stale:
-    uses: McTalian-WoW-Addons/.github/.github/workflows/cleanup-stale-issues.yml@main
+    uses: McTalian-WoW-Addons/wow-build-tools/.github/workflows/cleanup-stale-issues.yml@v1-beta
 ```
 
-- [x] Create reusable workflow in `.github` org repo
-- [x] Convert Endeavoring caller
-- [x] Convert RPGLootFeed caller
+- [x] Create reusable workflow _(currently in `.github`, needs move to `wow-build-tools`)_
+- [x] Convert Endeavoring caller _(needs ref update after move)_
+- [x] Convert RPGLootFeed caller _(needs ref update after move)_
+- [ ] Move workflow from `.github` to `wow-build-tools` and update caller refs
 
 ### 4b. `package-and-distribute.yml` ✅
 
@@ -189,9 +192,10 @@ jobs:
 **Secrets:** `secrets: inherit` from caller (pulls org + repo secrets). Discord webhook standardized to `DISCORD_RELEASES_WEBHOOK` (repo-level, same name in every repo).
 
 - [x] Standardize Discord webhook secret names across repos
-- [x] Create reusable workflow in `.github` org repo
-- [x] Convert Endeavoring caller
-- [x] Convert RPGLootFeed caller
+- [x] Create reusable workflow _(currently in `.github`, needs move to `wow-build-tools`)_
+- [x] Convert Endeavoring caller _(needs ref update after move)_
+- [x] Convert RPGLootFeed caller _(needs ref update after move)_
+- [ ] Move workflow from `.github` to `wow-build-tools` and update caller refs
 
 ### 4c. `ci.yml` (replaces `main.yml`)
 
@@ -205,7 +209,7 @@ jobs:
 - `has-i18n` (boolean) — controls whether i18n translation job runs
 - `spec-dir` — e.g., `Endeavoring_spec` or `RPGLootFeed_spec`
 
-- [ ] Create reusable workflow in `.github` org repo
+- [ ] Create reusable workflow in `wow-build-tools`
 - [ ] Convert Endeavoring caller
 - [ ] Convert RPGLootFeed caller
 - [ ] Verify tests + semantic-release work on both repos
@@ -223,7 +227,7 @@ jobs:
 **Note:** `post-pkg-comment.cjs` should be consolidated first (see Phase 5) or embedded into the reusable workflow.
 
 - [ ] Consolidate `post-pkg-comment.cjs` (see Phase 5)
-- [ ] Create reusable workflow in `.github` org repo
+- [ ] Create reusable workflow in `wow-build-tools`
 - [ ] Convert Endeavoring caller
 - [ ] Convert RPGLootFeed caller
 - [ ] Verify PR checks work on both repos
@@ -239,10 +243,11 @@ jobs:
 
 **Design decision:** RPGLootFeed's hidden currency generation was split into a separate `hidden-currencies.yml` workflow (runs weekly on Monday 2pm UTC, creates its own PR branch). This keeps the reusable toc-updater clean and generic.
 
-- [x] Create reusable workflow in `.github` org repo
-- [x] Convert Endeavoring caller
-- [x] Convert RPGLootFeed caller
+- [x] Create reusable workflow _(currently in `.github`, needs move to `wow-build-tools`)_
+- [x] Convert Endeavoring caller _(needs ref update after move)_
+- [x] Convert RPGLootFeed caller _(needs ref update after move)_
 - [x] Create separate `hidden-currencies.yml` for RPGLootFeed
+- [ ] Move workflow from `.github` to `wow-build-tools` and update caller refs
 
 ---
 
@@ -328,11 +333,11 @@ wow-build-tools init --name MyAddon --flavors retail,classic --platforms cursefo
 | **Phase 2**: Transfer repos                  | ~15 min    | ✅ Complete    |
 | **Phase 3**: Update references               | ~30 min    | ✅ Complete    |
 | **Phase 3.5**: Standardize rulesets          | ~1 hour    | ✅ Complete    |
-| **Phase 4a**: Stale issues reusable workflow | ~30 min    | ✅ Complete    |
-| **Phase 4b**: Package & distribute reusable  | ~45 min    | ✅ Complete    |
+| **Phase 4a**: Stale issues reusable workflow | ~30 min    | ⚠️ Move to WBT |
+| **Phase 4b**: Package & distribute reusable  | ~45 min    | ⚠️ Move to WBT |
 | **Phase 4c**: CI reusable workflow           | ~1 hour    | ⬜ Not started |
 | **Phase 4d**: PR checks reusable workflow    | ~1.5 hours | ⬜ Not started |
-| **Phase 4e**: TOC updater reusable workflow  | ~45 min    | ✅ Complete    |
+| **Phase 4e**: TOC updater reusable workflow  | ~45 min    | ⚠️ Move to WBT |
 | **Phase 5**: Script/config consolidation     | ~1 hour    | ⬜ Not started |
 | **Phase 6**: `init` command                  | ~Half day  | ⬜ Future      |
 

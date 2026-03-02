@@ -90,7 +90,7 @@ Org-level rulesets require GitHub Team (paid plan, $4/user/month additive to ind
 
 6. **Org-level rulesets require GitHub Team plan.** Free org plans only support repo-level rulesets. Workaround: maintain canonical config in `.github` org repo and apply via script.
 
-7. **Reusable workflows belong in `.github` org repo, not `wow-build-tools`.** The original plan placed them in `wow-build-tools`, but `workflow_call` workflows must live in a repo that callers can reference via `uses: org/repo/.github/workflows/file.yml@ref`. The `.github` org repo is the canonical home since it's already the org-wide shared config repo.
+7. **Reusable workflows should live in `wow-build-tools`, not `.github`.** Initially placed in `.github` org repo during Session 2. Later reconsidered: `wow-build-tools` is better because (a) external addon devs already use WBT and can leverage the same workflows, (b) WBT has versioned tags (`@v1-beta`) for stable pinning vs `.github`'s `@main`, and (c) Phase 6 scaffolding (`wow-build-tools init`) can generate callers that reference the same repo. **Action for next session:** move the 3 completed workflows from `.github` to `wow-build-tools` and update caller refs.
 
 8. **`secrets: inherit` covers both org-level and repo-level secrets.** No need for explicit secret inputs as long as secret names are standardized across repos. This enabled standardizing Discord webhook secrets to `DISCORD_RELEASES_WEBHOOK` (same name, different values per repo).
 
@@ -119,9 +119,9 @@ Org-level rulesets require GitHub Team (paid plan, $4/user/month additive to ind
 
 ### Phase 4: Create Reusable Workflows — In Progress
 
-Reusable workflows live in `McTalian-WoW-Addons/.github/.github/workflows/` (not wow-build-tools as originally planned — `.github` org repo is the correct home for `workflow_call` workflows).
+Reusable workflows initially placed in `McTalian-WoW-Addons/.github/.github/workflows/`. **End-of-session decision: pivot to `wow-build-tools`** for external adoption, versioned tags, and Phase 6 alignment. Next session will move the 3 completed workflows and update all caller refs.
 
-#### Completed (Session 2, March 2)
+#### Completed (Session 2, March 2) — needs move to wow-build-tools
 
 1. **`cleanup-stale-issues.yml`** ✅ — Zero inputs, identical config. Proved the pattern.
 2. **`toc-updater.yml`** ✅ — Inputs: `addon-name`, `pr-body`. RPGLootFeed's hidden currencies steps split into a separate `hidden-currencies.yml` workflow (weekly Monday 2pm UTC).
@@ -130,8 +130,15 @@ Reusable workflows live in `McTalian-WoW-Addons/.github/.github/workflows/` (not
 
 **PRs open (both repos, same branch `chore/reusable-stale-workflow`):**
 
-- [Endeavoring PR #15](https://github.com/McTalian-WoW-Addons/Endeavoring/pull/15) — stale + toc-updater + package-and-distribute
-- [RPGLootFeed PR #528](https://github.com/McTalian-WoW-Addons/RPGLootFeed/pull/528) — stale + toc-updater + hidden-currencies + package-and-distribute
+- [Endeavoring PR #15](https://github.com/McTalian-WoW-Addons/Endeavoring/pull/15) — stale + toc-updater + package-and-distribute _(caller refs need update after WBT move)_
+- [RPGLootFeed PR #528](https://github.com/McTalian-WoW-Addons/RPGLootFeed/pull/528) — stale + toc-updater + hidden-currencies + package-and-distribute _(caller refs need update after WBT move)_
+
+#### Next session: Move + Continue
+
+1. Move 3 completed workflows from `.github` → `wow-build-tools/.github/workflows/`
+2. Update caller refs in both addon PRs: `.../.github/.github/workflows/...@main` → `.../wow-build-tools/.github/workflows/...@v1-beta`
+3. Clean up `.github` repo (remove the moved workflow files)
+4. Continue with remaining workflows (`main.yml`, `pr-checks.yml`) directly in `wow-build-tools`
 
 #### Remaining
 
@@ -162,18 +169,18 @@ Future. Scaffolding command for new addons.
 
 ## Key Files & Locations
 
-| Resource                              | Location                                                                                                  |
-| ------------------------------------- | --------------------------------------------------------------------------------------------------------- |
-| **Migration plan** (with checkboxes)  | `wow-build-tools/docs/org-migration-plan.md`                                                              |
-| **This session summary**              | `wow-build-tools/docs/org-migration-session-summary.md`                                                   |
-| **Endeavoring pending branch**        | Merged                                                                                                    |
-| **RPGLootFeed reference PR**          | [PR #527](https://github.com/McTalian-WoW-Addons/RPGLootFeed/pull/527) — Merged                           |
-| **wow-build-tools pending branch**    | Merged                                                                                                    |
-| **Ruleset canonical config**          | `.github/rulesets/default.json`                                                                           |
-| **Ruleset apply script**              | `.github/scripts/apply-ruleset.sh`                                                                        |
-| **Reusable workflows**                | `.github/.github/workflows/` (cleanup-stale-issues, toc-updater, package-and-distribute)                  |
-| **Endeavoring reusable workflows PR** | [PR #15](https://github.com/McTalian-WoW-Addons/Endeavoring/pull/15) on `chore/reusable-stale-workflow`   |
-| **RPGLootFeed reusable workflows PR** | [PR #528](https://github.com/McTalian-WoW-Addons/RPGLootFeed/pull/528) on `chore/reusable-stale-workflow` |
+| Resource                              | Location                                                                                                                                           |
+| ------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Migration plan** (with checkboxes)  | `wow-build-tools/docs/org-migration-plan.md`                                                                                                       |
+| **This session summary**              | `wow-build-tools/docs/org-migration-session-summary.md`                                                                                            |
+| **Endeavoring pending branch**        | Merged                                                                                                                                             |
+| **RPGLootFeed reference PR**          | [PR #527](https://github.com/McTalian-WoW-Addons/RPGLootFeed/pull/527) — Merged                                                                    |
+| **wow-build-tools pending branch**    | Merged                                                                                                                                             |
+| **Ruleset canonical config**          | `.github/rulesets/default.json`                                                                                                                    |
+| **Ruleset apply script**              | `.github/scripts/apply-ruleset.sh`                                                                                                                 |
+| **Reusable workflows (current)**      | `.github/.github/workflows/` — **to be moved to `wow-build-tools/.github/workflows/`** next session                                                |
+| **Endeavoring reusable workflows PR** | [PR #15](https://github.com/McTalian-WoW-Addons/Endeavoring/pull/15) on `chore/reusable-stale-workflow` — caller refs need update after WBT move   |
+| **RPGLootFeed reusable workflows PR** | [PR #528](https://github.com/McTalian-WoW-Addons/RPGLootFeed/pull/528) on `chore/reusable-stale-workflow` — caller refs need update after WBT move |
 
 ---
 
