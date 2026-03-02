@@ -11,7 +11,7 @@ Once this project is out of beta, the installation process should be a one-time 
 
 ### Local
 
-Head over to the [releases page](https://github.com/McTalian/wow-build-tools/releases) and download the latest release for your operating system and architecture.
+Head over to the [releases page](https://github.com/McTalian-WoW-Addons/wow-build-tools/releases) and download the latest release for your operating system and architecture.
 
 - **Windows?** it's likely going to be the `wow-build-tools_windows_amd64.zip` file.
 - **Linux or WSL?** you'll likely want the `wow-build-tools_linux_amd64.zip` file.
@@ -53,7 +53,7 @@ jobs:
         env:
           # GitHub Token, required for creating releases
           GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
-        uses: McTalian/wow-build-tools@v1-beta
+        uses: McTalian-WoW-Addons/wow-build-tools@v1-beta
 ```
 
 ## Features
@@ -64,7 +64,7 @@ I have many plans for this project, and I will communicate those plans at a late
 
 To start, I'd like `wow-build-tools` to be as close to a drop-in replacement for `BigWigsMods/packager` as possible. That means, ideally, it should be able to handle all of the same features as `packager` with the same level of ease and speed or better.
 
-For feature parity progress, please see the [BigWigsMods/packager feature parity wiki page](https://github.com/McTalian/wow-build-tools/wiki/BigWigs-Packager-Parity)
+For feature parity progress, please see the [BigWigsMods/packager feature parity wiki page](https://github.com/McTalian-WoW-Addons/wow-build-tools/wiki/BigWigs-Packager-Parity)
 
 ### Additional features
 
