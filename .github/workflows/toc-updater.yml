@@ -1,0 +1,76 @@
+# Reusable workflow: Update TOC Interface version(s)
+#
+# Checks for new WoW interface versions daily, updates the addon's .toc file,
+# and creates a PR with the appropriate commit type (toc: for additions,
+# chore: for removals).
+#
+# Inputs:
+#   addon-name: The addon directory/name (e.g., "Endeavoring", "RPGLootFeed")
+#   pr-body:    The PR body markdown (checklist of test requirements)
+#
+# Requires: GH_PAT secret (passed via `secrets: inherit`)
+
+name: Update TOC Interface version(s)
+
+on:
+  workflow_call:
+    inputs:
+      addon-name:
+        description: "Addon directory name (e.g., Endeavoring, RPGLootFeed)"
+        required: true
+        type: string
+      pr-body:
+        description: "PR body markdown with test checklist"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Clone project
+        uses: actions/checkout@v4
+
+      - name: Update TOC Interface version
+        uses: McTalian-WoW-Addons/wow-build-tools/toc/update@v1-beta
+        with:
+          args: -a ${{ inputs.addon-name }} -b -p
+
+      - name: Detect change type
+        id: change-type
+        run: |
+          # Extract old and new interface versions from git diff
+          OLD_VERSIONS=$(git diff ${{ inputs.addon-name }}/${{ inputs.addon-name }}.toc | grep '^-## Interface:' | sed 's/^-## Interface: //' || echo "")
+          NEW_VERSIONS=$(git diff ${{ inputs.addon-name }}/${{ inputs.addon-name }}.toc | grep '^+## Interface:' | sed 's/^+## Interface: //' || echo "")
+
+          # Count versions in old and new
+          OLD_COUNT=$(echo "$OLD_VERSIONS" | grep -o ',' | wc -l || echo 0)
+          NEW_COUNT=$(echo "$NEW_VERSIONS" | grep -o ',' | wc -l || echo 0)
+
+          # Add 1 to counts since comma count = version count - 1
+          OLD_COUNT=$((OLD_COUNT + 1))
+          NEW_COUNT=$((NEW_COUNT + 1))
+
+          if [ "$NEW_COUNT" -gt "$OLD_COUNT" ]; then
+            echo "pr_title=toc: bump versions, please submit any bugs" >> $GITHUB_OUTPUT
+            echo "commit_message=toc: bump versions, please submit any bugs" >> $GITHUB_OUTPUT
+            echo "Detected version additions (toc commit): $OLD_COUNT -> $NEW_COUNT versions"
+          else
+            echo "pr_title=chore: remove old interface versions" >> $GITHUB_OUTPUT
+            echo "commit_message=chore: remove old interface versions" >> $GITHUB_OUTPUT
+            echo "Detected only version removals or no change (chore commit): $OLD_COUNT -> $NEW_COUNT versions"
+          fi
+
+      - name: Create pull request
+        uses: peter-evans/create-pull-request@v8
+        with:
+          token: ${{ secrets.GH_PAT }}
+          title: ${{ steps.change-type.outputs.pr_title }}
+          body: ${{ inputs.pr-body }}
+          commit-message: ${{ steps.change-type.outputs.commit_message }}
+          branch: interface-version
+          delete-branch: true
