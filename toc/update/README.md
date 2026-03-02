@@ -8,7 +8,7 @@ GitHub Action to automatically update the interface version(s) in your World of 
 
 ```yaml
 - name: Update TOC files
-  uses: McTalian/wow-build-tools/toc/update@v1-beta
+  uses: McTalian-WoW-Addons/wow-build-tools/toc/update@v1-beta
 ```
 
 ## What It Does
@@ -34,14 +34,14 @@ This action updates your addon TOC files with the latest interface versions base
 
 ```yaml
 - name: Update TOC files
-  uses: McTalian/wow-build-tools/toc/update@beta
+  uses: McTalian-WoW-Addons/wow-build-tools/toc/update@beta
 ```
 
 ### Update for PTR versions
 
 ```yaml
 - name: Update TOC files
-  uses: McTalian/wow-build-tools/toc/update@beta
+  uses: McTalian-WoW-Addons/wow-build-tools/toc/update@beta
   with:
     args: "--ptr"
 ```
@@ -50,7 +50,7 @@ This action updates your addon TOC files with the latest interface versions base
 
 ```yaml
 - name: Update TOC files
-  uses: McTalian/wow-build-tools/toc/update@beta
+  uses: McTalian-WoW-Addons/wow-build-tools/toc/update@beta
   with:
     args: "--beta"
 ```
@@ -72,7 +72,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Update TOC files
-        uses: McTalian/wow-build-tools/toc/update@v1-beta
+        uses: McTalian-WoW-Addons/wow-build-tools/toc/update@v1-beta
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v5

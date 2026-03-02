@@ -12,7 +12,7 @@ import (
 )
 
 const version = "LOCAL" // This will be replaced by the tag version in the binary
-const repo = "McTalian/wow-build-tools"
+const repo = "McTalian-WoW-Addons/wow-build-tools"
 
 func checkVersion() (semver.Version, error) {
 	trimmedVersion := strings.TrimPrefix(version, "v")
