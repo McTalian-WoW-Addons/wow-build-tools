@@ -24,11 +24,11 @@ on:
   workflow_call:
     inputs:
       addon-name:
-        description: "Addon directory name (e.g., Endeavoring, RPGLootFeed)"
+        description: Addon directory name (e.g., Endeavoring, RPGLootFeed)
         required: true
         type: string
       avatar-url:
-        description: "Discord embed avatar image URL"
+        description: Discord embed avatar image URL
         required: true
         type: string
 

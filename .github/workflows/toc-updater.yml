@@ -16,11 +16,11 @@ on:
   workflow_call:
     inputs:
       addon-name:
-        description: "Addon directory name (e.g., Endeavoring, RPGLootFeed)"
+        description: Addon directory name (e.g., Endeavoring, RPGLootFeed)
         required: true
         type: string
       pr-body:
-        description: "PR body markdown with test checklist"
+        description: PR body markdown with test checklist
         required: true
         type: string
 
