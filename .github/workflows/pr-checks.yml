@@ -44,6 +44,11 @@ on:
         required: false
         type: boolean
         default: false
+      wbt-ref:
+        description: wow-build-tools ref to use for configs/scripts (default v1-beta)
+        required: false
+        type: string
+        default: v1-beta
 
 permissions: {}
 
@@ -192,7 +197,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: McTalian-WoW-Addons/wow-build-tools
-          ref: v1-beta
+          ref: ${{ inputs.wbt-ref }}
           sparse-checkout: .github/scripts
           path: .wbt
 
@@ -249,7 +254,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: McTalian-WoW-Addons/wow-build-tools
-          ref: v1-beta
+          ref: ${{ inputs.wbt-ref }}
           path: .wbt
 
       - name: Install Node.js
