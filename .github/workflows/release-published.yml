@@ -251,8 +251,10 @@ jobs:
           echo "## Notes: This is NOT an addon, but a tool for building and releasing WoW addons." >> bin/${{ env.CMD }}.toc
           echo "## Author: McTalian" >> bin/${{ env.CMD }}.toc
           echo "" >> bin/${{ env.CMD }}.toc
-          echo "Putting it all in a zip"
-          zip -j ./${{ env.CMD }}-${{ env.VERSION }}.zip ./bin/${{ env.CMD }}_windows_amd64.zip ./bin/README.txt ./bin/LICENSE ./bin/${{ env.CMD }}.toc
+          echo "Putting it all in a zip (wrapped in ${{ env.CMD }}/ folder for CurseForge)"
+          mkdir -p ./${{ env.CMD }}
+          cp ./bin/${{ env.CMD }}_windows_amd64.zip ./bin/README.txt ./bin/LICENSE ./bin/${{ env.CMD }}.toc ./${{ env.CMD }}/
+          cd . && zip -r ./${{ env.CMD }}-${{ env.VERSION }}.zip ./${{ env.CMD }}/
 
       - name: Download binary
         uses: actions/download-artifact@v7
