@@ -108,15 +108,24 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Checkout wow-build-tools (release config and deps)
+        uses: actions/checkout@v4
+        with:
+          repository: McTalian-WoW-Addons/wow-build-tools
+          ref: v1-beta
+          path: .wbt
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: .nvmrc
+          node-version-file: .wbt/.nvmrc
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci --prefix .wbt
 
       - name: Run semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-        run: npm run semantic-release
+        run: |
+          cp .wbt/.releaserc.json .releaserc.json
+          npx --prefix .wbt semantic-release

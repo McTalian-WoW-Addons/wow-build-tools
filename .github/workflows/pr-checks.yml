@@ -245,10 +245,17 @@ jobs:
         with:
           ref: ${{ github.sha }}
 
+      - name: Checkout wow-build-tools (commitlint config)
+        uses: actions/checkout@v4
+        with:
+          repository: McTalian-WoW-Addons/wow-build-tools
+          ref: v1-beta
+          path: .wbt
+
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: .nvmrc
+          node-version-file: .wbt/.nvmrc
 
       - name: Install commitlint
         run: |
@@ -256,11 +263,11 @@ jobs:
 
       - name: Run commitlint (PR)
         if: ${{ github.event_name == 'pull_request' }}
-        run: echo "${TITLE}" | npx commitlint
+        run: echo "${TITLE}" | npx commitlint --config .wbt/commitlint.config.js
 
       - name: Run commitlint (Merge Group)
         if: ${{ github.event_name == 'merge_group' }}
-        run: npx commitlint --last
+        run: npx commitlint --last --config .wbt/commitlint.config.js
 
   all_pr_checks:
     name: Passing PR Checks
