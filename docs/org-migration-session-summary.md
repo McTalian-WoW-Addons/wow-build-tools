@@ -117,7 +117,7 @@ Org-level rulesets require GitHub Team (paid plan, $4/user/month additive to ind
 - [x] Create reusable script + canonical JSON in `.github` org repo
 - [x] Push to `.github` main
 
-### Phase 4: Create Reusable Workflows — Mostly Complete
+### Phase 4: Create Reusable Workflows ✅
 
 Reusable workflows initially placed in `McTalian-WoW-Addons/.github/.github/workflows/`. Pivoted to `wow-build-tools` for external adoption, versioned tags, and Phase 6 alignment.
 
@@ -127,32 +127,33 @@ Reusable workflows initially placed in `McTalian-WoW-Addons/.github/.github/work
 2. **`toc-updater.yml`** ✅ — Inputs: `addon-name`, `pr-body`. RPGLootFeed's hidden currencies steps split into a separate `hidden-currencies.yml` workflow (weekly Monday 2pm UTC).
 3. **`package-and-distribute.yml`** ✅ — Inputs: `addon-name`, `avatar-url`. Distribution links (CurseForge, WoWInterface, Wago) parsed dynamically from the addon's `.toc` file (`X-Curse-Project-ID`, `X-WoWI-ID`, `X-Wago-ID`). Missing IDs → that link is omitted from the Discord announcement.
    - **Discord webhook secrets standardized:** `DISCO_WH_NDVRNG_RELEASES` → `DISCORD_RELEASES_WEBHOOK` (Endeavoring), `DISCO_WH_RLF_RELEASES` → `DISCORD_RELEASES_WEBHOOK` (RPGLootFeed). Same name, different values per repo.
+4. **`ci.yml`** ✅ — Inputs: `addon-name`, `rockspec-name`, `lua-version`, `i18n-enabled`. Runs tests, optional i18n checks, semantic-release. Conditional release job handles skipped i18n gracefully.
+5. **`pr-checks.yml`** ✅ — Inputs: `addon-name`, `rockspec-name`, `lua-version`, `i18n-enabled`, `trunk-enabled`. Full PR pipeline: tests, optional translations, test packaging with PR comment, optional trunk linting, commitlint, and gate job.
+   - **`post-pkg-comment.cjs` consolidated:** Backported Endeavoring's robust version to RPGLootFeed (handles missing releases, missing package types, human-readable byte formatting, table format).
 
-#### Session 3: Workflow Move Complete ✅
+#### Session 3: Workflow Move + CI/PR Checks Complete ✅
 
 1. ✅ Moved 3 workflows from `.github/.github/workflows/` → `wow-build-tools/.github/workflows/` (`feat/reusable-workflows` branch)
 2. ✅ Updated caller refs in both addon PRs: `.../.github/.github/workflows/...@main` → `.../wow-build-tools/.github/workflows/...@v1-beta`
 3. ✅ Cleaned up `.github` repo (removed moved workflow files from main)
+4. ✅ Created `ci.yml` and `pr-checks.yml` reusable workflows in wow-build-tools
+5. ✅ Updated both addon repos' `main.yml` and `pr-checks.yml` to use reusable callers
+6. ✅ Backported robust `post-pkg-comment.cjs` to RPGLootFeed
 
 **Merge order:** wow-build-tools `feat/reusable-workflows` → beta → update `v1-beta` tag → merge addon PRs
 
 **PRs open (both repos, same branch `chore/reusable-stale-workflow`):**
 
-- [Endeavoring PR #15](https://github.com/McTalian-WoW-Addons/Endeavoring/pull/15) — stale + toc-updater + package-and-distribute (caller refs updated ✅)
-- [RPGLootFeed PR #528](https://github.com/McTalian-WoW-Addons/RPGLootFeed/pull/528) — stale + toc-updater + hidden-currencies + package-and-distribute (caller refs updated ✅)
+- [Endeavoring PR #15](https://github.com/McTalian-WoW-Addons/Endeavoring/pull/15) — all 5 workflows now use reusable callers ✅
+- [RPGLootFeed PR #528](https://github.com/McTalian-WoW-Addons/RPGLootFeed/pull/528) — all 5 workflows now use reusable callers + backported post-pkg-comment.cjs ✅
 
 **wow-build-tools PR:** `feat/reusable-workflows` — needs merge to beta, then update `v1-beta` tag
-
-#### Remaining
-
-4. `ci.yml` / `main.yml` (parameterized with addon name, Lua version, i18n toggle)
-5. `pr-checks.yml` (parameterized, needs `post-pkg-comment.cjs` consolidation first)
 
 ### Phase 5: Consolidate Scripts & Config
 
 Not started. Key items:
 
-- **`post-pkg-comment.cjs`** — Endeavoring version is more robust; backport to RPGLootFeed, then move to wow-build-tools
+- **`post-pkg-comment.cjs`** — ~~Endeavoring version is more robust; backport to RPGLootFeed, then move to wow-build-tools~~ Backported ✅. Still lives in each repo; can be moved to wow-build-tools later.
 - **Identical files to share:** `commitlint.config.js`, `.releaserc.json`
 - **Align `.nvmrc`** (`v24` vs `24.10.0`)
 - **Align Lua version** (Endeavoring CI: 5.4, RPGLootFeed CI: 5.3 — both rockspecs say `>= 5.3`)
