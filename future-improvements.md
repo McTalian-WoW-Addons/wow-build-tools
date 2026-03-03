@@ -1,3 +1,5 @@
+# Future Improvements
+
 Pre-Release Checklist
 Purpose: Comprehensive pre-release validation
 When to use: Before tagging a version or releasing to CurseForge
