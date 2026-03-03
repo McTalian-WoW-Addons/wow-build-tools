@@ -100,63 +100,58 @@ Org-level rulesets require GitHub Team (paid plan, $4/user/month additive to ind
 
 ---
 
+## Session 5: What Was Accomplished (March 3, 2026)
+
+### Bugfixes
+
+1. **toc-updater `startup_failure`** — All caller workflows with `permissions: {}` at top level were capping GITHUB_TOKEN to `none`, failing reusable workflows at startup validation. Fixed by adding job-level permissions (union of sub-job permissions) to all callers. Also moved `toc-updater.yml` permissions from workflow level to job level.
+   - [Endeavoring PR #17](https://github.com/McTalian-WoW-Addons/Endeavoring/pull/17) ✅ Merged
+   - [RPGLootFeed PR #530](https://github.com/McTalian-WoW-Addons/RPGLootFeed/pull/530) ✅ Merged
+   - [wow-build-tools PR #70](https://github.com/McTalian-WoW-Addons/wow-build-tools/pull/70) ✅ Merged
+
+2. **WBT distro archive folder wrapping** — `zip -j` placed all files at archive root; CurseForge requires a top-level folder. Fixed `release-published.yml` to stage files into `wow-build-tools/` dir before zipping. Included in PR #70.
+
+3. **`apply-ruleset.sh --all` exclusions** — Added `EXCLUDED_REPOS` array (`wow-build-tools`, `.github`) so `--all` skips repos that don't use the shared reusable workflows.
+
+4. **Phase 4 cleanup** — `feat/reusable-workflows` branch hard-reset to match `origin/beta` (squash merge had already landed all content).
+
+### Phase 5: Centralize Node Tooling — In Progress
+
+**Goal:** Zero Node footprint in addon repos. All semantic-release deps, `.releaserc.json`, and `commitlint.config.js` centralized in WBT.
+
+**WBT `feat/phase-5-consolidation` ([PR #71](https://github.com/McTalian-WoW-Addons/wow-build-tools/pull/71) — pending merge):**
+
+- Added `commitlint.config.js` and `.releaserc.json` to WBT root (Endeavoring's version as canonical base)
+- Added `wbt-ref` input (default `v1-beta`) to `ci.yml` and `pr-checks.yml` for test branch overrides
+- `ci.yml`: checks out WBT into `.wbt/`, `npm ci --prefix .wbt`, copies `.releaserc.json`, runs `npx --prefix .wbt semantic-release`
+- `pr-checks.yml`: checks out WBT into `.wbt/`, uses `.wbt/.nvmrc`, `--config .wbt/commitlint.config.js`
+
+**Addon `chore/remove-node-tooling` branches (both repos):**
+
+- Removed `package.json`, `package-lock.json`, `.releaserc.json`, `commitlint.config.js`, `.nvmrc`
+- Temporarily calling WBT at `feat/phase-5-consolidation` with `wbt-ref` for testing
+- [RPGLootFeed PR #532](https://github.com/McTalian-WoW-Addons/RPGLootFeed/pull/532) — commitlint ✅ passed
+- Endeavoring branch pushed, PR not yet opened
+
+**Testing status:** commitlint passing ✅. Semantic-release path untested (needs push to main).
+
+---
+
 ## What Remains
 
-### Phase 3: Finish Reference Updates ✅
+### Immediate next session
 
-- [x] Open PR for Endeavoring `update-more-references` branch and merge
-- [x] Merge RPGLootFeed PR #527
-- [x] Open PR for wow-build-tools `chore/update-org-references` branch and merge
-- [ ] Retire old personal PAT (Phase 2, step 2a.3 — after verifying all workflows and migrating remaining addons)
+1. **Merge WBT PR #71** to beta, update `v1-beta` tag
+2. **Update addon `chore/remove-node-tooling` branches:**
+   - Swap `feat/phase-5-consolidation` → `v1-beta` in the `uses:` lines
+   - Remove `wbt-ref: feat/phase-5-consolidation` inputs (default kicks in)
+3. **Open Endeavoring PR**, merge both addon PRs, verify semantic-release runs cleanly on next push to main
+4. **npm caching improvement:** Move `commitlint` devDependencies into WBT `package.json` so `npm ci --prefix .wbt` is cacheable (currently `npm install` with no lockfile in commitlint job)
+5. **Lua version alignment:** RPGLootFeed CI still on 5.3.5 vs Endeavoring's 5.4.4
 
-### Phase 3.5: Standardize Repo Rulesets (Remaining) ✅
+### Phase 3 remaining
 
-- [x] Audit existing rulesets across all 3 repos
-- [x] Design standardized config
-- [x] Apply via API to RPGLootFeed, Endeavoring, wow-build-tools
-- [x] Create reusable script + canonical JSON in `.github` org repo
-- [x] Push to `.github` main
-
-### Phase 4: Create Reusable Workflows ✅
-
-Reusable workflows initially placed in `McTalian-WoW-Addons/.github/.github/workflows/`. Pivoted to `wow-build-tools` for external adoption, versioned tags, and Phase 6 alignment.
-
-#### Completed (Session 2, March 2 + Session 3, March 2 PM)
-
-1. **`cleanup-stale-issues.yml`** ✅ — Zero inputs, identical config. Proved the pattern.
-2. **`toc-updater.yml`** ✅ — Inputs: `addon-name`, `pr-body`. RPGLootFeed's hidden currencies steps split into a separate `hidden-currencies.yml` workflow (weekly Monday 2pm UTC).
-3. **`package-and-distribute.yml`** ✅ — Inputs: `addon-name`, `avatar-url`. Distribution links (CurseForge, WoWInterface, Wago) parsed dynamically from the addon's `.toc` file (`X-Curse-Project-ID`, `X-WoWI-ID`, `X-Wago-ID`). Missing IDs → that link is omitted from the Discord announcement.
-   - **Discord webhook secrets standardized:** `DISCO_WH_NDVRNG_RELEASES` → `DISCORD_RELEASES_WEBHOOK` (Endeavoring), `DISCO_WH_RLF_RELEASES` → `DISCORD_RELEASES_WEBHOOK` (RPGLootFeed). Same name, different values per repo.
-4. **`ci.yml`** ✅ — Inputs: `addon-name`, `rockspec-name`, `lua-version`, `i18n-enabled`. Runs tests, optional i18n checks, semantic-release. Conditional release job handles skipped i18n gracefully.
-5. **`pr-checks.yml`** ✅ — Inputs: `addon-name`, `rockspec-name`, `lua-version`, `i18n-enabled`, `trunk-enabled`. Full PR pipeline: tests, optional translations, test packaging with PR comment, optional trunk linting, commitlint, and gate job.
-   - **`post-pkg-comment.cjs` consolidated:** Backported Endeavoring's robust version to RPGLootFeed (handles missing releases, missing package types, human-readable byte formatting, table format).
-
-#### Session 3: Workflow Move + CI/PR Checks Complete ✅
-
-1. ✅ Moved 3 workflows from `.github/.github/workflows/` → `wow-build-tools/.github/workflows/` (`feat/reusable-workflows` branch)
-2. ✅ Updated caller refs in both addon PRs: `.../.github/.github/workflows/...@main` → `.../wow-build-tools/.github/workflows/...@v1-beta`
-3. ✅ Cleaned up `.github` repo (removed moved workflow files from main)
-4. ✅ Created `ci.yml` and `pr-checks.yml` reusable workflows in wow-build-tools
-5. ✅ Updated both addon repos' `main.yml` and `pr-checks.yml` to use reusable callers
-6. ✅ Backported robust `post-pkg-comment.cjs` to RPGLootFeed
-
-**Merge order:** wow-build-tools `feat/reusable-workflows` → beta → update `v1-beta` tag → merge addon PRs
-
-**PRs open (both repos, same branch `chore/reusable-stale-workflow`):**
-
-- [Endeavoring PR #15](https://github.com/McTalian-WoW-Addons/Endeavoring/pull/15) — all 5 workflows now use reusable callers ✅
-- [RPGLootFeed PR #528](https://github.com/McTalian-WoW-Addons/RPGLootFeed/pull/528) — all 5 workflows now use reusable callers + backported post-pkg-comment.cjs ✅
-
-**wow-build-tools PR:** `feat/reusable-workflows` — needs merge to beta, then update `v1-beta` tag
-
-### Phase 5: Consolidate Scripts & Config
-
-Not started. Key items:
-
-- **`post-pkg-comment.cjs`** — ~~Endeavoring version is more robust; backport to RPGLootFeed, then move to wow-build-tools~~ Backported ✅. Still lives in each repo; can be moved to wow-build-tools later.
-- **Identical files to share:** `commitlint.config.js`, `.releaserc.json`
-- **Align `.nvmrc`** (`v24` vs `24.10.0`)
-- **Align Lua version** (Endeavoring CI: 5.4, RPGLootFeed CI: 5.3 — both rockspecs say `>= 5.3`)
+- [ ] Retire old personal PAT (after verifying all workflows and migrating remaining addons)
 
 ### Phase 6: `wow-build-tools init` Command
 
@@ -164,27 +159,22 @@ Future. Scaffolding command for new addons.
 
 ### Future Addon Migrations
 
-~3-5 more addons to migrate to the org. Keep in mind:
-
-- When `package.json` is dropped (Phase 5), semantic-release will need `repositoryUrl` in `.releaserc.json` or will use CI-detected URL.
-- The same reference update sweep will be needed for each addon.
+~3-5 more addons to migrate to the org. The same reference update sweep plus the thin caller workflow setup will be needed for each.
 
 ---
 
 ## Key Files & Locations
 
-| Resource                              | Location                                                                                                                           |
-| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| **Migration plan** (with checkboxes)  | `wow-build-tools/docs/org-migration-plan.md`                                                                                       |
-| **This session summary**              | `wow-build-tools/docs/org-migration-session-summary.md`                                                                            |
-| **Endeavoring pending branch**        | Merged                                                                                                                             |
-| **RPGLootFeed reference PR**          | [PR #527](https://github.com/McTalian-WoW-Addons/RPGLootFeed/pull/527) — Merged                                                    |
-| **wow-build-tools pending branch**    | Merged                                                                                                                             |
-| **Ruleset canonical config**          | `.github/rulesets/default.json`                                                                                                    |
-| **Ruleset apply script**              | `.github/scripts/apply-ruleset.sh`                                                                                                 |
-| **Reusable workflows**                | `wow-build-tools/.github/workflows/` (on `feat/reusable-workflows` branch, pending merge to beta)                                  |
-| **Endeavoring reusable workflows PR** | [PR #15](https://github.com/McTalian-WoW-Addons/Endeavoring/pull/15) on `chore/reusable-stale-workflow` — caller refs updated ✅   |
-| **RPGLootFeed reusable workflows PR** | [PR #528](https://github.com/McTalian-WoW-Addons/RPGLootFeed/pull/528) on `chore/reusable-stale-workflow` — caller refs updated ✅ |
+| Resource                             | Location                                                                                                               |
+| ------------------------------------ | ---------------------------------------------------------------------------------------------------------------------- |
+| **Migration plan** (with checkboxes) | `wow-build-tools/docs/org-migration-plan.md`                                                                           |
+| **This session summary**             | `wow-build-tools/docs/org-migration-session-summary.md`                                                                |
+| **Ruleset canonical config**         | `.github/rulesets/default.json`                                                                                        |
+| **Ruleset apply script**             | `.github/scripts/apply-ruleset.sh`                                                                                     |
+| **Reusable workflows**               | `wow-build-tools/.github/workflows/` (on `beta`, tagged `v1-beta`)                                                     |
+| **WBT Phase 5 PR**                   | [PR #71](https://github.com/McTalian-WoW-Addons/wow-build-tools/pull/71) — `feat/phase-5-consolidation`, pending merge |
+| **Endeavoring cleanup branch**       | `chore/remove-node-tooling` — PR not yet opened                                                                        |
+| **RPGLootFeed cleanup PR**           | [PR #532](https://github.com/McTalian-WoW-Addons/RPGLootFeed/pull/532) — `chore/remove-node-tooling`, commitlint ✅    |
 
 ---
 

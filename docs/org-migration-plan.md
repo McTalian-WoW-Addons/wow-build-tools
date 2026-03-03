@@ -253,43 +253,34 @@ jobs:
 
 ## Phase 5: Consolidate Supporting Scripts & Config
 
-### `post-pkg-comment.cjs`
+### `post-pkg-comment.cjs` ✅
 
-The scripts **differ significantly** between the two addons. Endeavoring's version is more robust:
+- [x] Backport Endeavoring's improvements to RPGLootFeed
+- [x] Move the consolidated script into `wow-build-tools/.github/scripts/` (landed in Phase 4 squash merge)
 
-- Uses a formatted markdown table
-- Handles first-release scenarios (no previous sizes to compare)
-- Conditional standard/nolib package display
-- `formatBytes()` utility for human-readable sizes
+### Node Tooling Centralization ✅ (pending merge)
 
-**Action:**
+Addon repos eliminated entirely: `package.json`, `package-lock.json`, `.releaserc.json`, `commitlint.config.js`, `.nvmrc`. All sourced from WBT at runtime.
 
-- [ ] Backport Endeavoring's improvements to RPGLootFeed
-- [ ] Move the consolidated script into `wow-build-tools` (either as part of the reusable PR checks workflow or as a standalone composite action)
-
-### Identical Config Files
-
-These files are 100% identical between both addons and can be shared:
-
-| File                   | Strategy                                                          |
-| ---------------------- | ----------------------------------------------------------------- |
-| `commitlint.config.js` | Publish as shared npm config or include in `wow-build-tools init` |
-| `.releaserc.json`      | Same — shared config or template                                  |
-
-- [ ] Decide on sharing mechanism (npm package vs template vs reusable workflow artifact)
+- [x] Add canonical `commitlint.config.js` and `.releaserc.json` to WBT
+- [x] Add `wbt-ref` input (default `v1-beta`) to `ci.yml` and `pr-checks.yml`
+- [x] Update `ci.yml` release job to run `npm ci --prefix .wbt`, use WBT's `.releaserc.json`
+- [x] Update `pr-checks.yml` commitlint job to use `--config .wbt/commitlint.config.js`
+- [x] Create `chore/remove-node-tooling` branches on both addon repos
+- [ ] Merge WBT PR #71 to beta, update `v1-beta` tag
+- [ ] Update addon branches: swap `feat/phase-5-consolidation` → `v1-beta`, remove `wbt-ref` inputs
+- [ ] Merge addon PRs — verify semantic-release works cleanly
+- [ ] Move commitlint deps into WBT `package.json` for npm install caching
 
 ### Near-Identical Config Files (Parameterize)
 
-| File                    | Differs Only By                             |
-| ----------------------- | ------------------------------------------- |
-| `package.json`          | Addon name, description, keywords, repo URL |
-| `.luacov`               | Project name, include pattern, exclude list |
-| Rockspec                | Package name, source URL                    |
-| Makefile (core targets) | Addon name, spec dir, rockspec name         |
-| `.nvmrc`                | `v24` vs `24.10.0`                          |
-
-- [ ] Standardize `.nvmrc` to a single format
-- [ ] Consider including these in `wow-build-tools init` scaffolding (Phase 6)
+| File                    | Status                           |
+| ----------------------- | -------------------------------- |
+| `package.json`          | ✅ Eliminated from addon repos   |
+| `.luacov`               | Minor differences — low priority |
+| Rockspec                | Minor differences — low priority |
+| Makefile (core targets) | Minor differences — low priority |
+| `.nvmrc`                | ✅ Eliminated from addon repos   |
 
 ### Lua Version Alignment
 
@@ -333,12 +324,12 @@ wow-build-tools init --name MyAddon --flavors retail,classic --platforms cursefo
 | **Phase 2**: Transfer repos                  | ~15 min    | ✅ Complete    |
 | **Phase 3**: Update references               | ~30 min    | ✅ Complete    |
 | **Phase 3.5**: Standardize rulesets          | ~1 hour    | ✅ Complete    |
-| **Phase 4a**: Stale issues reusable workflow | ~30 min    | ⚠️ Move to WBT |
-| **Phase 4b**: Package & distribute reusable  | ~45 min    | ⚠️ Move to WBT |
-| **Phase 4c**: CI reusable workflow           | ~1 hour    | ⬜ Not started |
-| **Phase 4d**: PR checks reusable workflow    | ~1.5 hours | ⬜ Not started |
-| **Phase 4e**: TOC updater reusable workflow  | ~45 min    | ⚠️ Move to WBT |
-| **Phase 5**: Script/config consolidation     | ~1 hour    | ⬜ Not started |
+| **Phase 4a**: Stale issues reusable workflow | ~30 min    | ✅ Complete    |
+| **Phase 4b**: Package & distribute reusable  | ~45 min    | ✅ Complete    |
+| **Phase 4c**: CI reusable workflow           | ~1 hour    | ✅ Complete    |
+| **Phase 4d**: PR checks reusable workflow    | ~1.5 hours | ✅ Complete    |
+| **Phase 4e**: TOC updater reusable workflow  | ~45 min    | ✅ Complete    |
+| **Phase 5**: Script/config consolidation     | ~1 hour    | 🔄 In Progress |
 | **Phase 6**: `init` command                  | ~Half day  | ⬜ Future      |
 
 ---
