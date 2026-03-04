@@ -1,6 +1,7 @@
 {
   "name": "wow-build-tools",
   "private": true,
+  "type": "module",
   "author": "Rob 'McTalian' Anderson",
   "license": "MIT",
   "devDependencies": {
