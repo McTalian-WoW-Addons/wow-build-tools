@@ -261,10 +261,11 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version-file: .wbt/.nvmrc
+          cache: npm
+          cache-dependency-path: .wbt/package-lock.json
 
-      - name: Install commitlint
-        run: |
-          npm install @commitlint/config-conventional @commitlint/cli
+      - name: Install dependencies
+        run: npm ci --prefix .wbt
 
       - name: Run commitlint (PR)
         if: ${{ github.event_name == 'pull_request' }}
