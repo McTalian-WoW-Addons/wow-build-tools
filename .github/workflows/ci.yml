@@ -34,6 +34,11 @@ on:
         required: false
         type: boolean
         default: false
+      wbt-ref:
+        description: wow-build-tools ref to use for configs/deps (default v1-beta)
+        required: false
+        type: string
+        default: v1-beta
 
 permissions: {}
 
@@ -108,15 +113,26 @@ jobs:
         with:
           fetch-depth: 0
 
+      - name: Checkout wow-build-tools (release config and deps)
+        uses: actions/checkout@v4
+        with:
+          repository: McTalian-WoW-Addons/wow-build-tools
+          ref: ${{ inputs.wbt-ref }}
+          path: .wbt
+
       - name: Set up Node.js
         uses: actions/setup-node@v4
         with:
-          node-version-file: .nvmrc
+          node-version-file: .wbt/.nvmrc
+          cache: npm
+          cache-dependency-path: .wbt/package-lock.json
 
       - name: Install dependencies
-        run: npm install
+        run: npm ci --prefix .wbt
 
       - name: Run semantic-release
         env:
           GITHUB_TOKEN: ${{ secrets.GH_PAT }}
-        run: npm run semantic-release
+        run: |
+          cp .wbt/.releaserc.json .releaserc.json
+          npx --prefix .wbt semantic-release
