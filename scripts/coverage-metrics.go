@@ -316,48 +316,48 @@ func formatText(metrics Metrics, threshold int) string {
 	var sb strings.Builder
 	sb.WriteString("Coverage Metrics Report\n")
 	sb.WriteString("=======================\n")
-	sb.WriteString(fmt.Sprintf("Total Functions: %d\n", metrics.TotalFunctions))
+	fmt.Fprintf(&sb, "Total Functions: %d\n", metrics.TotalFunctions)
 	sb.WriteString("\n")
 
 	sb.WriteString("COVERAGE METRICS\n")
 	sb.WriteString("----------------\n")
-	sb.WriteString(fmt.Sprintf("Statement Coverage:         %.1f%% (total statements covered)\n", metrics.StatementCoverage))
-	sb.WriteString(fmt.Sprintf("Mean Function Coverage:     %.1f%% (average across all functions)\n", metrics.AvgFunctionCoverage))
-	sb.WriteString(fmt.Sprintf("Median Function Coverage:   %.1f%% (typical function)\n", metrics.MedianFunctionCoverage))
-	sb.WriteString(fmt.Sprintf("High-Complexity Coverage:   %.1f%% (complexity > %d, %d functions)\n",
-		metrics.HighComplexityCoverage, threshold, metrics.HighComplexityCount))
+	fmt.Fprintf(&sb, "Statement Coverage:         %.1f%% (total statements covered)\n", metrics.StatementCoverage)
+	fmt.Fprintf(&sb, "Mean Function Coverage:     %.1f%% (average across all functions)\n", metrics.AvgFunctionCoverage)
+	fmt.Fprintf(&sb, "Median Function Coverage:   %.1f%% (typical function)\n", metrics.MedianFunctionCoverage)
+	fmt.Fprintf(&sb, "High-Complexity Coverage:   %.1f%% (complexity > %d, %d functions)\n",
+		metrics.HighComplexityCoverage, threshold, metrics.HighComplexityCount)
 	sb.WriteString("\n")
 
 	sb.WriteString("COMPLEXITY METRICS\n")
 	sb.WriteString("------------------\n")
-	sb.WriteString(fmt.Sprintf("Max Complexity:             %d\n", metrics.MaxComplexity))
-	sb.WriteString(fmt.Sprintf("Mean Complexity:            %.1f\n", metrics.AvgComplexity))
-	sb.WriteString(fmt.Sprintf("Median Complexity:          %.1f\n", metrics.MedianComplexity))
-	sb.WriteString(fmt.Sprintf("Min Complexity:             %d\n", metrics.MinComplexity))
+	fmt.Fprintf(&sb, "Max Complexity:             %d\n", metrics.MaxComplexity)
+	fmt.Fprintf(&sb, "Mean Complexity:            %.1f\n", metrics.AvgComplexity)
+	fmt.Fprintf(&sb, "Median Complexity:          %.1f\n", metrics.MedianComplexity)
+	fmt.Fprintf(&sb, "Min Complexity:             %d\n", metrics.MinComplexity)
 	sb.WriteString("\n")
 
 	sb.WriteString("RISK METRICS\n")
 	sb.WriteString("------------\n")
 	sb.WriteString("Risk = (100 - coverage%) × complexity\n")
 	sb.WriteString("\n")
-	sb.WriteString(fmt.Sprintf("Total Risk Score:           %.1f\n", metrics.TotalRiskScore))
-	sb.WriteString(fmt.Sprintf("Avg Risk Per Function:      %.1f (normalized for codebase size)\n", metrics.AvgRiskPerFunction))
-	sb.WriteString(fmt.Sprintf("High-Risk Functions:        %d (risk > 100)\n", metrics.HighRiskFunctions))
+	fmt.Fprintf(&sb, "Total Risk Score:           %.1f\n", metrics.TotalRiskScore)
+	fmt.Fprintf(&sb, "Avg Risk Per Function:      %.1f (normalized for codebase size)\n", metrics.AvgRiskPerFunction)
+	fmt.Fprintf(&sb, "High-Risk Functions:        %d (risk > 100)\n", metrics.HighRiskFunctions)
 	sb.WriteString("\n")
 
 	sb.WriteString("Top 10 Riskiest Functions:\n")
 	sb.WriteString("\n")
-	sb.WriteString(fmt.Sprintf("%-8s %-12s %-8s %s\n", "Risk", "Coverage", "Complexity", "Function"))
+	fmt.Fprintf(&sb, "%-8s %-12s %-8s %s\n", "Risk", "Coverage", "Complexity", "Function")
 	sb.WriteString(strings.Repeat("-", 80) + "\n")
 
 	for _, f := range metrics.TopRiskyFunctions {
 		risk := (100.0 - f.Coverage) * float64(f.Complexity)
 		funcPath := fmt.Sprintf("%s:%d %s", f.File, f.Line, f.Function)
-		sb.WriteString(fmt.Sprintf("%-8.1f %-12s %-10d %s\n",
+		fmt.Fprintf(&sb, "%-8.1f %-12s %-10d %s\n",
 			risk,
 			fmt.Sprintf("%.1f%%", f.Coverage),
 			f.Complexity,
-			funcPath))
+			funcPath)
 	}
 
 	return sb.String()
@@ -437,27 +437,27 @@ func formatMarkdown(metrics Metrics, threshold int) string {
 
 	// Summary badges
 	sb.WriteString("## Summary\n\n")
-	sb.WriteString(fmt.Sprintf("**Total Functions:** %d\n\n", metrics.TotalFunctions))
+	fmt.Fprintf(&sb, "**Total Functions:** %d\n\n", metrics.TotalFunctions)
 
 	// Coverage Metrics Table
 	sb.WriteString("### Coverage Metrics\n\n")
 	sb.WriteString("| Metric | Value | Description |\n")
 	sb.WriteString("|--------|-------|-------------|\n")
-	sb.WriteString(fmt.Sprintf("| **Statement Coverage** | %.1f%% | Total statements covered |\n", metrics.StatementCoverage))
-	sb.WriteString(fmt.Sprintf("| **Mean Function Coverage** | %.1f%% | Average across all functions |\n", metrics.AvgFunctionCoverage))
-	sb.WriteString(fmt.Sprintf("| **Median Function Coverage** | %.1f%% | Typical function |\n", metrics.MedianFunctionCoverage))
-	sb.WriteString(fmt.Sprintf("| **High-Complexity Coverage** | %.1f%% | Functions with complexity > %d (%d functions) |\n",
-		metrics.HighComplexityCoverage, threshold, metrics.HighComplexityCount))
+	fmt.Fprintf(&sb, "| **Statement Coverage** | %.1f%% | Total statements covered |\n", metrics.StatementCoverage)
+	fmt.Fprintf(&sb, "| **Mean Function Coverage** | %.1f%% | Average across all functions |\n", metrics.AvgFunctionCoverage)
+	fmt.Fprintf(&sb, "| **Median Function Coverage** | %.1f%% | Typical function |\n", metrics.MedianFunctionCoverage)
+	fmt.Fprintf(&sb, "| **High-Complexity Coverage** | %.1f%% | Functions with complexity > %d (%d functions) |\n",
+		metrics.HighComplexityCoverage, threshold, metrics.HighComplexityCount)
 	sb.WriteString("\n")
 
 	// Complexity Metrics Table
 	sb.WriteString("### Complexity Metrics\n\n")
 	sb.WriteString("| Metric | Value | Description |\n")
 	sb.WriteString("|--------|-------|-------------|\n")
-	sb.WriteString(fmt.Sprintf("| **Max Complexity** | %d | Most complex function |\n", metrics.MaxComplexity))
-	sb.WriteString(fmt.Sprintf("| **Mean Complexity** | %.1f | Average complexity across all functions |\n", metrics.AvgComplexity))
-	sb.WriteString(fmt.Sprintf("| **Median Complexity** | %.1f | Typical function complexity |\n", metrics.MedianComplexity))
-	sb.WriteString(fmt.Sprintf("| **Min Complexity** | %d | Simplest function |\n", metrics.MinComplexity))
+	fmt.Fprintf(&sb, "| **Max Complexity** | %d | Most complex function |\n", metrics.MaxComplexity)
+	fmt.Fprintf(&sb, "| **Mean Complexity** | %.1f | Average complexity across all functions |\n", metrics.AvgComplexity)
+	fmt.Fprintf(&sb, "| **Median Complexity** | %.1f | Typical function complexity |\n", metrics.MedianComplexity)
+	fmt.Fprintf(&sb, "| **Min Complexity** | %d | Simplest function |\n", metrics.MinComplexity)
 	sb.WriteString("\n")
 
 	// Risk Metrics Table
@@ -465,9 +465,9 @@ func formatMarkdown(metrics Metrics, threshold int) string {
 	sb.WriteString("_Risk = (100 - coverage%) × complexity_\n\n")
 	sb.WriteString("| Metric | Value | Description |\n")
 	sb.WriteString("|--------|-------|-------------|\n")
-	sb.WriteString(fmt.Sprintf("| **Total Risk Score** | %.1f | Sum of all function risks |\n", metrics.TotalRiskScore))
-	sb.WriteString(fmt.Sprintf("| **Avg Risk Per Function** | %.1f | Normalized for codebase size |\n", metrics.AvgRiskPerFunction))
-	sb.WriteString(fmt.Sprintf("| **High-Risk Functions** | %d | Functions with risk > 100 |\n", metrics.HighRiskFunctions))
+	fmt.Fprintf(&sb, "| **Total Risk Score** | %.1f | Sum of all function risks |\n", metrics.TotalRiskScore)
+	fmt.Fprintf(&sb, "| **Avg Risk Per Function** | %.1f | Normalized for codebase size |\n", metrics.AvgRiskPerFunction)
+	fmt.Fprintf(&sb, "| **High-Risk Functions** | %d | Functions with risk > 100 |\n", metrics.HighRiskFunctions)
 	sb.WriteString("\n")
 
 	// Top 10 Riskiest Functions
@@ -478,11 +478,11 @@ func formatMarkdown(metrics Metrics, threshold int) string {
 	for _, f := range metrics.TopRiskyFunctions {
 		risk := (100.0 - f.Coverage) * float64(f.Complexity)
 		funcPath := fmt.Sprintf("`%s:%d` **%s**", f.File, f.Line, f.Function)
-		sb.WriteString(fmt.Sprintf("| %.1f | %.1f%% | %d | %s |\n",
+		fmt.Fprintf(&sb, "| %.1f | %.1f%% | %d | %s |\n",
 			risk,
 			f.Coverage,
 			f.Complexity,
-			funcPath))
+			funcPath)
 	}
 
 	sb.WriteString("\n---\n\n")

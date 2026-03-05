@@ -1,0 +1,14 @@
+[[IgnoredVulns]]
+id = "GHSA-23c5-xmqv-rm74"
+ignoreUntil = 2026-09-04
+reason = "minimatch ReDoS in npm's own bundled deps (node_modules/npm/node_modules/minimatch). Originates from semantic-release -> @semantic-release/npm -> npm@^11. Cannot be overridden externally. Check 'npm audit' after npm@11.x ships a fix."
+
+[[IgnoredVulns]]
+id = "GHSA-7r86-cg39-jmmj"
+ignoreUntil = 2026-09-04
+reason = "minimatch ReDoS in npm's own bundled deps (node_modules/npm/node_modules/minimatch). Originates from semantic-release -> @semantic-release/npm -> npm@^11. Cannot be overridden externally. Check 'npm audit' after npm@11.x ships a fix."
+
+[[IgnoredVulns]]
+id = "GHSA-qffp-2rhf-9h96"
+ignoreUntil = 2026-09-04
+reason = "tar path traversal in npm's own bundled deps (node_modules/npm/node_modules/tar). Originates from semantic-release -> @semantic-release/npm -> npm@^11. Cannot be overridden externally. Check 'npm audit' after npm@11.x ships a fix."
