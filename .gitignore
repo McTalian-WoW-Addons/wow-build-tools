@@ -2,7 +2,6 @@
 .test-results/
 .release/
 dist/*
-!dist/wow-build-tools
 node_modules/
 
 .env

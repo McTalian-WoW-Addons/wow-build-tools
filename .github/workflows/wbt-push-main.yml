@@ -79,10 +79,10 @@ jobs:
           path: ./.coverage
           include-hidden-files: true
 
-  trigger-dist:
+  release:
     name: Release
     permissions:
       contents: write
     needs: [trunk-check, test]
-    uses: ./.github/workflows/build-dist-main.yml
+    uses: ./.github/workflows/wbt-release.yml
     secrets: inherit
