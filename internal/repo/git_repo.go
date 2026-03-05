@@ -451,7 +451,7 @@ func (gR *GitRepo) getProjectTag() (tag7 string, tag0 string, tagCount int, err 
 
 func (gR *GitRepo) buildChangelogHeader(title string) string {
 	var header strings.Builder
-	header.WriteString(fmt.Sprintf("# %s\n\n", title))
+	fmt.Fprintf(&header, "# %s\n\n", title)
 
 	var versionLink, changeLink string
 	previousReleasesLink := fmt.Sprintf("[Previous Releases](%s/releases)", gR.gitHubUrl)
@@ -474,8 +474,8 @@ func (gR *GitRepo) buildChangelogHeader(title string) string {
 	}
 	t := time.Unix(gR.projectTimestamp, 0).UTC()
 	changelogDate := t.Format("2006-01-02")
-	header.WriteString(fmt.Sprintf("## %s (%s)\n", versionLink, changelogDate))
-	header.WriteString(fmt.Sprintf("%s %s\n\n", changeLink, previousReleasesLink))
+	fmt.Fprintf(&header, "## %s (%s)\n", versionLink, changelogDate)
+	fmt.Fprintf(&header, "%s %s\n\n", changeLink, previousReleasesLink)
 
 	return header.String()
 }
@@ -513,7 +513,7 @@ func (gR *GitRepo) GetChangelog(title string) (string, error) {
 		normalizedMessage = strings.ReplaceAll(normalizedMessage, "[ci skip]", "")
 		normalizedMessage = strings.ReplaceAll(normalizedMessage, "[skip ci]", "")
 
-		changelog.WriteString(fmt.Sprintf("- %s  \n", normalizedMessage))
+		fmt.Fprintf(&changelog, "- %s  \n", normalizedMessage)
 		return nil
 	})
 	if err != nil && err != ErrFoundPrevVersion {

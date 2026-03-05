@@ -308,7 +308,7 @@ func runNewCLI(t *testing.T, input, output string) {
 	if err != nil {
 		t.Fatalf("Failed to open /dev/null: %v", err)
 	}
-	defer devNull.Close()
+	defer func() { _ = devNull.Close() }()
 
 	os.Stdout = devNull
 	os.Stderr = devNull
