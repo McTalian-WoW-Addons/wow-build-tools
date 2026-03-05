@@ -6,7 +6,7 @@ on:
 permissions: {}
 
 concurrency:
-  group: ${{ github.event_name == 'pull_request' && format('pr-checks-{0}', github.event.pull_request.number) || format('merge-queue-{0}', github.run_id) }}
+  group: pr-checks-${{ github.event.pull_request.number || github.run_id }}
   cancel-in-progress: true
 
 jobs:
