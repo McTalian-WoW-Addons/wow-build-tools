@@ -102,7 +102,7 @@ jobs:
       - name: Run Tests
         run: make test-ci
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: luacov-html
           path: luacov-html/
@@ -179,7 +179,7 @@ jobs:
 
       - name: Upload Standard Package
         if: steps.capture-filenames.outputs.HAS_STANDARD == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         id: upload-zips-standard
         with:
           name: pr-pkg
@@ -187,7 +187,7 @@ jobs:
 
       - name: Upload NoLib Package
         if: steps.capture-filenames.outputs.HAS_NOLIB == 'true'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         id: upload-zips-nolib
         with:
           name: pr-pkg-nolib
