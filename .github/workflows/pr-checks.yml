@@ -60,7 +60,7 @@ jobs:
       contents: read
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up uv
         uses: astral-sh/setup-uv@v7
@@ -86,7 +86,7 @@ jobs:
       actions: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - uses: lewis6991/gh-actions-lua@01aab24c4de9555717b685f9b142a2abbe12ef14
         with:
@@ -116,7 +116,7 @@ jobs:
       pull-requests: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           ref: ${{ github.event.pull_request.head.ref }}
           repository: ${{ github.event.pull_request.head.repo.full_name }}
@@ -194,7 +194,7 @@ jobs:
           path: ${{ steps.capture-filenames.outputs.NOLIBZIP }}
 
       - name: Checkout wow-build-tools scripts
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: McTalian-WoW-Addons/wow-build-tools
           ref: ${{ inputs.wbt-ref }}
@@ -228,7 +228,7 @@ jobs:
       checks: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Trunk Cache
         uses: actions/cache@v4
@@ -246,12 +246,12 @@ jobs:
     env:
       TITLE: ${{ github.event.pull_request.title }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           ref: ${{ github.sha }}
 
       - name: Checkout wow-build-tools (commitlint config)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: McTalian-WoW-Addons/wow-build-tools
           ref: ${{ inputs.wbt-ref }}
