@@ -52,7 +52,7 @@ jobs:
       issues: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Set up uv
         uses: astral-sh/setup-uv@v7
@@ -78,7 +78,7 @@ jobs:
       actions: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - uses: lewis6991/gh-actions-lua@01aab24c4de9555717b685f9b142a2abbe12ef14
         with:
@@ -109,12 +109,12 @@ jobs:
       issues: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
       - name: Checkout wow-build-tools (release config and deps)
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
         with:
           repository: McTalian-WoW-Addons/wow-build-tools
           ref: ${{ inputs.wbt-ref }}
