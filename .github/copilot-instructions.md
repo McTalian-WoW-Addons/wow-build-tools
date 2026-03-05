@@ -3,11 +3,11 @@
 ## Code Style
 
 - **Go 1.24.11** - Follow standard Go formatting (gofmt)
-- **Error handling**: Wrap errors with `fmt.Errorf` and `%w` for error chains (see [build.go](../internal/build/build.go#L76))
-- **Named return values**: Use for deferred error logging pattern (see [build.go](../internal/build/build.go#L64-L72))
+- **Error handling**: Wrap errors with `fmt.Errorf` and `%w` for error chains
+- **Named return values**: Use for deferred error logging pattern (see [build.go](../internal/build/build.go#L63-L70))
 - **Resource cleanup**: Always defer cleanup with `_` for ignored errors: `defer func() { _ = file.Close() }()`
 - **Package logger**: Declare `var l = logger.DefaultLogger` at package level
-- **Test helpers**: Prefix with `reset` and use deferred cleanup (see [build_test.go](../internal/build/build_test.go#L17-L19))
+- **Test helpers**: Prefix with `reset` and use deferred cleanup (see [build_test.go](../internal/build/build_test.go#L19-L23))
 
 ## Architecture
 
@@ -43,9 +43,11 @@
 **Build Commands:**
 
 ```bash
-make build      # Build to dist/
-make tools      # Install dev dependencies
-make test       # Run tests with coverage (uses scripts/test.sh)
+make build      # Build to dist/ (Linux + Windows/amd64)
+make tools      # Install dev dependencies (go.tools + jq check)
+make test       # Run tests with coverage, CC_THRESHOLD=10 (uses scripts/test.sh)
+make run        # Build then execute the binary
+make clean      # Remove dist/
 go test ./...   # Run all tests
 ```
 
@@ -69,7 +71,7 @@ go test ./...   # Run all tests
 - Sub-loggers with context: `logger.GetSubLog("EXT")`
 - Emoji prefixes configurable (disable with `--no-emoji`)
 - Use `l.Success()` for completion messages
-- Performance timing: `l.Time(start, "operation complete")`
+- Performance timing: `l.Timing(format, v...)`
 
 **Configuration (Viper):**
 
@@ -79,13 +81,13 @@ go test ./...   # Run all tests
 
 **Concurrency:**
 
-- Use WaitGroups for parallel operations (see [pkgmeta.go](../internal/pkg/pkgmeta.go#L91-L95))
+- Use WaitGroups for parallel operations (see [pkgmeta.go](../internal/pkg/pkgmeta.go#L86))
 - Error channels for async operations
 - File watching with `fsnotify/fsnotify`
 
 **Build Parameters:**
 
-- Centralized struct in [build.go](../internal/build/build.go#L17-L44)
+- Centralized `BuildArgs` struct in [build.go](../internal/build/build.go)
 - Feature flags via `Skip*` fields: `SkipCopy`, `SkipUpload`, `SkipZip`
 
 **Environment-Aware Execution:**
@@ -129,3 +131,9 @@ go test ./...   # Run all tests
 - Custom error types for missing tokens: `ErrNoCurseApiKey`, `ErrNoWagoApiKey`
 - Proper file permissions: 0755 for dirs, 0644 for files
 - GitHub Actions integration uses `secrets.*` properly
+
+## Release
+
+- Releases managed via semantic-release (`.releaserc`) with `conventionalcommits` preset
+- Branches: `main` (stable), `beta` (prerelease), `alpha` (prerelease)
+- Plugins: `@semantic-release/commit-analyzer`, `@semantic-release/release-notes-generator`, `@semantic-release/github`
