@@ -84,7 +84,7 @@ jobs:
         with:
           luaVersion: ${{ inputs.lua-version }}
 
-      - uses: leafo/gh-actions-luarocks@v4
+      - uses: leafo/gh-actions-luarocks@v6
         with:
           luaRocksVersion: 3.11.1
 
