@@ -71,16 +71,19 @@ Five scripts, all shipping to `scripts/i18n/` in WBT:
 ## Phase 2 — BeaconUnitFrames: Migrate to centralized scripts
 
 **Branch:** `chore/centralize-i18n`  
-**Status:** [ ] Blocked on Phase 1
+**Status:** [x] Complete
 
 ### Tasks
 
-- [ ] Set `i18n-enabled: true` in `main.yml`
-- [ ] Set `i18n-enabled: true` in `pr-checks.yml`
-- [ ] Pass any non-default inputs (e.g. `locale-key-prefix: ns.L`, `locale-xml: index.xml`)
-- [ ] Delete `.scripts/` (all 5 scripts now in WBT)
-- [ ] Simplify or remove `pyproject.toml` (no longer needed for scripts; keep if used for other tooling)
-- [ ] Verify CI passes
+- [x] Set `i18n-enabled: true` in `main.yml`
+- [x] Set `i18n-enabled: true` in `pr-checks.yml`
+- [x] Pass any non-default inputs (e.g. `locale-key-prefix: ns.L`, `locale-xml: index.xml`)
+- [x] Delete `.scripts/` (all 5 scripts now in WBT)
+- [x] Simplify or remove `pyproject.toml` (no longer needed for scripts; keep if used for other tooling)
+- [x] Update `Makefile`: add `wbt_setup` target; update `i18n_check` and `i18n_fmt` to use `.wbt/scripts/i18n/`
+- [x] Update `.trunk/trunk.yaml`: `organize-translations` action uses `.wbt/scripts/i18n/organize_translations.py`
+- [x] Add `.wbt/` to `.gitignore`
+- [x] Verify CI passes
 
 ---
 
