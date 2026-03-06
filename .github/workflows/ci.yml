@@ -43,7 +43,7 @@ on:
         type: string
         default: ""
       locale-xml:
-        description: XML file listing locale scripts within locale-dir (default: index.xml)
+        description: "XML file listing locale scripts within locale-dir (default: index.xml)"
         required: false
         type: string
         default: "index.xml"

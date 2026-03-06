@@ -53,12 +53,12 @@ on:
         type: string
         default: ""
       locale-xml:
-        description: XML file listing locale scripts within locale-dir (default: index.xml)
+        description: "XML file listing locale scripts within locale-dir (default: index.xml)"
         required: false
         type: string
         default: "index.xml"
       locale-table:
-        description: Locale table name used in addon code (default: L). Matches ns.L, G_RLF.L, etc. automatically.
+        description: "Locale table name used in addon code (default: L). Matches ns.L, G_RLF.L, etc. automatically."
         required: false
         type: string
         default: "L"
