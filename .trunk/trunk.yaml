@@ -17,6 +17,10 @@ runtimes:
     - python@3.10.8
 # This is the section where you manage your linters. (https://docs.trunk.io/check/configuration)
 lint:
+  ignore:
+    - linters: [markdownlint]
+      paths:
+        - .github/docs/**
   enabled:
     - actionlint@1.7.11
     - golangci-lint2@2.10.1
