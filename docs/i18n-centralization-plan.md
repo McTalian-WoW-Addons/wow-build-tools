@@ -1,7 +1,7 @@
 # i18n Centralization Plan
 
 **Created:** March 6, 2026  
-**Status:** Phase 1 in progress
+**Status:** Phase 1 complete — Phase 2/3 ready to begin
 
 The goal is to move all i18n tooling into `wow-build-tools` so that any addon can opt into `i18n-enabled: true` in the reusable CI/PR workflows without needing to maintain addon-specific Python scripts.
 
@@ -45,26 +45,26 @@ Five scripts, all shipping to `scripts/i18n/` in WBT:
 ## Phase 1 — WBT: Ship generic scripts
 
 **Branch:** `feat/centralize-i18n`  
-**Status:** [ ] Not started
+**Status:** [x] Complete
 
 ### Tasks
 
-- [ ] Create `scripts/i18n/` directory in WBT
-- [ ] Port each script from BUF (as the more advanced base), replacing all hardcoded values with `argparse` CLI parameters
-  - [ ] `missing_translation_check.py`
-  - [ ] `create_or_update_i18n_issues.py`
-  - [ ] `check_for_missing_locale_keys.py`
-  - [ ] `hardcode_string_check.py`
-  - [ ] `organize_translations.py`
-- [ ] Add `pyproject.toml` at WBT root (or `scripts/i18n/pyproject.toml`) with script deps: `defusedxml`, `requests`
-- [ ] Update `ci.yml` reusable workflow:
-  - [ ] Add inputs: `locale-dir` (default `{addon-name}/locale`), `locale-xml` (default `index.xml`), `locale-key-prefix` (default `L`)
-  - [ ] Checkout WBT repo into `.wbt/` at the pinned ref used by the calling workflow
-  - [ ] Run scripts from `.wbt/scripts/i18n/` with computed args
-  - [ ] Remove assumption that `.scripts/` exists in calling repo
-- [ ] Update `pr-checks.yml` reusable workflow with the same changes
-- [ ] Keep backward compatibility: if `.scripts/missing_translation_check.py` still exists in the calling repo, warn but don't break (migration window)
-- [ ] Document inputs in workflow comments
+- [x] Create `scripts/i18n/` directory in WBT
+- [x] Port each script from BUF (as the more advanced base), replacing all hardcoded values with `argparse` CLI parameters
+  - [x] `missing_translation_check.py`
+  - [x] `create_or_update_i18n_issues.py`
+  - [x] `check_for_missing_locale_keys.py`
+  - [x] `hardcode_string_check.py`
+  - [x] `organize_translations.py`
+- [x] Add `scripts/i18n/pyproject.toml` with script deps: `defusedxml`, `requests`
+- [x] Update `ci.yml` reusable workflow:
+  - [x] Add inputs: `locale-dir` (default `{addon-name}/locale`), `locale-xml` (default `index.xml`), `locale-key-prefix` (default `L`)
+  - [x] Checkout WBT repo into `.wbt/` at the pinned ref used by the calling workflow
+  - [x] Run scripts from `.wbt/scripts/i18n/` via `uv run --with <dep> --no-project`
+  - [x] Remove assumption that `.scripts/` exists in calling repo
+- [x] Update `pr-checks.yml` reusable workflow with the same changes
+- [x] Keep backward compatibility: if `.scripts/missing_translation_check.py` still exists in the calling repo, emit a `::warning::` annotation
+- [x] Document inputs in workflow comments
 
 ---
 

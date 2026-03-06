@@ -4,10 +4,12 @@
 # translation checks, and semantic-release.
 #
 # Inputs:
-#   addon-name:     Addon directory name (e.g., Endeavoring, RPGLootFeed)
-#   rockspec-name:  Rockspec filename (e.g., endeavoring-1-1.rockspec)
-#   lua-version:    Lua version for tests (e.g., 5.4.4, 5.3.5)
-#   i18n-enabled:   Whether to run i18n translation checks
+#   addon-name:          Addon directory name (e.g., Endeavoring, RPGLootFeed)
+#   rockspec-name:       Rockspec filename (e.g., endeavoring-1-1.rockspec)
+#   lua-version:         Lua version for tests (default 5.4.4)
+#   i18n-enabled:        Whether to run i18n translation checks
+#   locale-dir:          Locale directory path (default: {addon-name}/locale)
+#   locale-xml:          XML file listing locale scripts (default: index.xml)
 #
 # Requires secrets (via `secrets: inherit`):
 #   - GH_PAT (org-level) for semantic-release
@@ -26,14 +28,25 @@ on:
         required: true
         type: string
       lua-version:
-        description: Lua version for tests (e.g., 5.4.4, 5.3.5)
-        required: true
+        description: Lua version for tests (default 5.4.4)
+        required: false
         type: string
+        default: "5.4.4"
       i18n-enabled:
         description: Whether to run i18n translation checks
         required: false
         type: boolean
         default: false
+      locale-dir:
+        description: Locale directory path (default: {addon-name}/locale)
+        required: false
+        type: string
+        default: ""
+      locale-xml:
+        description: XML file listing locale scripts within locale-dir (default: index.xml)
+        required: false
+        type: string
+        default: "index.xml"
       wbt-ref:
         description: wow-build-tools ref to use for configs/deps (default v1-beta)
         required: false
@@ -54,22 +67,45 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
+      - name: Checkout wow-build-tools (i18n scripts)
+        uses: actions/checkout@v6
+        with:
+          repository: McTalian-WoW-Addons/wow-build-tools
+          ref: ${{ inputs.wbt-ref }}
+          path: .wbt
+
       - name: Set up uv
         uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
 
-      - name: Sync uv environment
-        run: uv sync
+      - name: Sync uv (WBT i18n dependencies)
+        run: uv sync --project .wbt/scripts/i18n
+
+      - name: Deprecation warning for local i18n scripts
+        run: |
+          if [ -f ".scripts/missing_translation_check.py" ]; then
+            echo "::warning::'.scripts/missing_translation_check.py' found — i18n scripts are now centralized in wow-build-tools. Remove the i18n scripts from '.scripts/' after upgrading."
+          fi
 
       - name: Run translation check script
-        run: uv run .scripts/missing_translation_check.py
+        run: |
+          LOCALE_DIR="${{ inputs.locale-dir || format('{0}/locale', inputs.addon-name) }}"
+          uv run --project .wbt/scripts/i18n \
+            .wbt/scripts/i18n/missing_translation_check.py \
+            --locale-dir "$LOCALE_DIR" \
+            --locale-xml "${{ inputs.locale-xml }}"
+        env:
+          GITHUB_REPOSITORY: ${{ github.repository }}
 
       - name: Create or Update Issues
         if: github.event_name == 'push' && github.ref == 'refs/heads/main'
-        run: uv run .scripts/create_or_update_i18n_issues.py
+        run: |
+          uv run --project .wbt/scripts/i18n \
+            .wbt/scripts/i18n/create_or_update_i18n_issues.py
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
 
   run_tests:
     runs-on: ubuntu-latest
