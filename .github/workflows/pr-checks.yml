@@ -48,7 +48,7 @@ on:
         type: boolean
         default: false
       locale-dir:
-        description: Locale directory path (default: {addon-name}/locale)
+        description: "Locale directory path (default: {addon-name}/locale)"
         required: false
         type: string
         default: ""
