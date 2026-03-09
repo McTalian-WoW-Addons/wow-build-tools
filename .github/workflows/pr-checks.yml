@@ -70,7 +70,7 @@ on:
         type: string
         default: ""
       i18n-ignore-files:
-        description: "Space-separated list of filenames to ignore in hardcode string check"
+        description: Space-separated list of filenames to ignore in hardcode string check
         required: false
         type: string
         default: ""
