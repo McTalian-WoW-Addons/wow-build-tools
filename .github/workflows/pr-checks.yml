@@ -13,6 +13,8 @@
 #   locale-dir:          Locale directory path (default: {addon-name}/locale)
 #   locale-xml:          XML file listing locale scripts (default: index.xml)
 #   locale-table:        Locale table name used in addon code (default: L)
+#   i18n-ignore-dirs:    Extra directories to ignore in hardcode string check
+#   i18n-ignore-files:   Extra files to ignore in hardcode string check
 #
 # Expects in the calling repo:
 #   - Makefile with test-ci target
@@ -62,6 +64,16 @@ on:
         required: false
         type: string
         default: L
+      i18n-ignore-dirs:
+        description: "Space-separated list of directory names to ignore in hardcode string check (appended to defaults: icons locale)"
+        required: false
+        type: string
+        default: ""
+      i18n-ignore-files:
+        description: "Space-separated list of filenames to ignore in hardcode string check"
+        required: false
+        type: string
+        default: ""
       wbt-ref:
         description: wow-build-tools ref to use for configs/scripts (default v1-beta)
         required: false
@@ -113,9 +125,20 @@ jobs:
 
       - name: Check for hard-coded strings
         run: |
+          EXTRA_DIRS="${{ inputs.i18n-ignore-dirs }}"
+          EXTRA_FILES="${{ inputs.i18n-ignore-files }}"
+          DIR_ARGS=""
+          FILE_ARGS=""
+          if [ -n "$EXTRA_DIRS" ]; then
+            DIR_ARGS="--ignore-dirs icons locale $EXTRA_DIRS"
+          fi
+          if [ -n "$EXTRA_FILES" ]; then
+            FILE_ARGS="--ignore-files $EXTRA_FILES"
+          fi
           uv run --project .wbt/scripts/i18n \
             .wbt/scripts/i18n/hardcode_string_check.py \
-            --addon-dir "${{ inputs.addon-name }}"
+            --addon-dir "${{ inputs.addon-name }}" \
+            $DIR_ARGS $FILE_ARGS
 
       - name: Run missing locale keys check
         run: |
