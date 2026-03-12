@@ -57,6 +57,11 @@ def check_hardcoded_strings(file_content, filename):
     """Return a list of hard-coded string issues found in file_content."""
     issues = []
 
+    # Strip lines with inline suppression comment before any checks.
+    # Use `-- nocheck` on a line to suppress false positives.
+    lines = file_content.splitlines()
+    file_content = "\n".join(line for line in lines if "-- nocheck" not in line)
+
     # Print(...) calls with hard-coded string arguments
     print_matches = re.findall(
         r'(?:\w+:)?Print\(\s*"([^"]+)(?:"(?:\s*\+|\s*\.\.)\s*|\s*"\s*\))',
