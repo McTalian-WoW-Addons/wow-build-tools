@@ -23,6 +23,9 @@ type populateTokensArgs struct {
 	buildDateIso      string
 	buildDateInteger  string
 	buildYear         string
+	forceAlpha        bool
+	forceBeta         bool
+	forceDev          bool
 	vR                repo.VcsRepo
 	packageDir        string
 	unixLineEndings   bool
@@ -68,30 +71,63 @@ func populateTokens(args populateTokensArgs) (result populateTokensResult, err e
 	if err = args.vR.GetInjectionValues(&tokenMap); err != nil {
 		return
 	}
+	forcedBuildType := ""
+	if args.forceAlpha {
+		forcedBuildType = "alpha"
+	} else if args.forceBeta {
+		forcedBuildType = "beta"
+	} else if args.forceDev {
+		forcedBuildType = "dev"
+	}
 
-	tag := args.vR.GetCurrentTag()
-	l.Verbose("Current Tag: %s", tag)
-	if tag != "" {
-		if strings.Contains(tag, "alpha") {
+	if forcedBuildType != "" {
+		l.Warn("Forced build mode active: %s (git/tag auto-detection disabled)", forcedBuildType)
+		switch forcedBuildType {
+		case "alpha":
+			flags[tokens.AlphaFlag] = "-alpha"
+			bTTM[tokens.Alpha] = true
+			bTTM[tokens.Beta] = false
+			bTTM[tokens.Debug] = false
+			releaseType = "alpha"
+		case "beta":
+			flags[tokens.BetaFlag] = "-beta"
+			bTTM[tokens.Alpha] = false
+			bTTM[tokens.Beta] = true
+			bTTM[tokens.Debug] = false
+			releaseType = "beta"
+		case "dev":
+			flags[tokens.AlphaFlag] = "-alpha"
+			bTTM[tokens.Alpha] = true
+			bTTM[tokens.Beta] = false
+			bTTM[tokens.Debug] = true
+			releaseType = "alpha"
+		}
+	} else {
+
+		tag := args.vR.GetCurrentTag()
+		l.Verbose("Current Tag: %s", tag)
+		if tag != "" {
+			if strings.Contains(tag, "alpha") {
+				flags[tokens.AlphaFlag] = "-alpha"
+				bTTM[tokens.Alpha] = true
+				bTTM[tokens.Beta] = false
+				releaseType = "alpha"
+			} else if strings.Contains(tag, "beta") {
+				flags[tokens.BetaFlag] = "-beta"
+				bTTM[tokens.Alpha] = false
+				bTTM[tokens.Beta] = true
+				releaseType = "beta"
+			} else {
+				bTTM[tokens.Alpha] = false
+				bTTM[tokens.Beta] = false
+				releaseType = "release"
+			}
+		} else {
 			flags[tokens.AlphaFlag] = "-alpha"
 			bTTM[tokens.Alpha] = true
 			bTTM[tokens.Beta] = false
 			releaseType = "alpha"
-		} else if strings.Contains(tag, "beta") {
-			flags[tokens.BetaFlag] = "-beta"
-			bTTM[tokens.Alpha] = false
-			bTTM[tokens.Beta] = true
-			releaseType = "beta"
-		} else {
-			bTTM[tokens.Alpha] = false
-			bTTM[tokens.Beta] = false
-			releaseType = "release"
 		}
-	} else {
-		flags[tokens.AlphaFlag] = "-alpha"
-		bTTM[tokens.Alpha] = true
-		bTTM[tokens.Beta] = false
-		releaseType = "alpha"
 	}
 	l.Verbose("Release Type: %s", releaseType)
 	flavors := toc.GetGameFlavors()

@@ -70,10 +70,15 @@ func init() {
 	buildCmd.Flags().BoolVarP(&build.BuildParams.ForceExternals, "forceExternals", "E", false, "Force fetching externals, bypassing the cache.")
 	buildCmd.Flags().BoolVarP(&build.BuildParams.SkipZip, "skipZip", "z", false, "Skip zipping the package (and uploading).")
 	buildCmd.Flags().BoolVarP(&build.BuildParams.SkipUpload, "skipUpload", "d", false, "Skip uploading.")
+	buildCmd.PersistentFlags().BoolVar(&build.BuildParams.ForceAlpha, "force-alpha", false, "Force alpha build type and bypass git/tag auto-detection.")
+	buildCmd.PersistentFlags().BoolVar(&build.BuildParams.ForceBeta, "force-beta", false, "Force beta build type and bypass git/tag auto-detection.")
+	buildCmd.PersistentFlags().BoolVar(&build.BuildParams.ForceDev, "force-dev", false, "Force dev build type (enables @debug@ tokens) and bypass git/tag auto-detection.")
 	buildCmd.Flags().StringVarP(&build.BuildParams.NameTemplate, "nameTemplate", "n", "", "Set the name template to use for the release file. Use \"-n help\" for more info.")
 	buildCmd.Flags().BoolVarP(&build.BuildParams.SkipLocalization, "skipLocalization", "l", false, "Skip @localization@ keyword replacement.")
 	buildCmd.Flags().BoolVarP(&build.BuildParams.OnlyLocalization, "onlyLocalization", "L", false, "Only do @localization@ keyword replacement (skip upload to CurseForge).")
 	buildCmd.Flags().BoolVarP(&build.BuildParams.SplitToc, "splitToc", "S", false, "Create a package supporting multiple game types from a single TOC file.")
 	buildCmd.Flags().BoolVarP(&build.BuildParams.UnixLineEndings, "unixLineEndings", "u", false, "Use Unix line endings in TOC and XML files.")
 	buildCmd.Flags().StringVarP(&build.BuildParams.GameVersion, "gameVersion", "g", "", "Set the game version to use for uploading.")
+
+	buildCmd.MarkFlagsMutuallyExclusive("force-alpha", "force-beta", "force-dev")
 }

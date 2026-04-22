@@ -21,6 +21,10 @@ type BuildArgs struct {
 	PkgmetaFile string
 	GameVersion string
 
+	ForceAlpha bool
+	ForceBeta  bool
+	ForceDev   bool
+
 	WatchMode bool
 
 	CurseId string
@@ -97,6 +101,9 @@ func Build(args *BuildArgs) (err error) {
 		buildDateIso:      timeNowUtc.Format("2006-01-02T15:04:05Z"),
 		buildDateInteger:  timeNowUtc.Format("20060102150405"),
 		buildYear:         timeNowUtc.Format("2006"),
+		forceAlpha:        args.ForceAlpha,
+		forceBeta:         args.ForceBeta,
+		forceDev:          args.ForceDev,
 	}
 
 	topDir := args.TopDir
