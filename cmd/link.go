@@ -33,6 +33,11 @@ var linkCmd = &cobra.Command{
 	Short: "Create symlinks in World of Warcraft AddOns directory to the addon(s) in the build output directory",
 	Long: dedent.Dedent(`
 		Create symlinks in the World of Warcraft AddOns directory to the addon(s) in the build output directory.
+
+		By default, link targets are filtered to client installs that are compatible with your addon's TOC Interface version(s).
+		Compatibility is resolved from TOC files in the project top directory first.
+		If none are found there, the command will also inspect TOCs in the release directory (including --wsl-path-to-addon-release-dir).
+		Use --all-flavors to bypass TOC compatibility filtering and link to all selected client installs.
 		
 		By default, the release directory is assumed to be a ".release" directory in the top level directory of the addon.
 		
@@ -56,7 +61,8 @@ func init() {
 	// Cobra supports local flags which will only run when this command
 	// is called directly, e.g.:
 	// linkCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	linkCmd.Flags().BoolVar(&build.LinkParams.AllFlavors, "all-flavors", false, "Link into all selected client installations instead of filtering by TOC interface compatibility")
 	linkCmd.Flags().StringVarP(&build.LinkParams.WSLPathToAddonReleaseDir, "wsl-path-to-addon-release-dir", "w", "", "Path to the addon release directory in WSL")
-	linkCmd.Flags().BoolVarP(&build.LinkParams.Force, "force", "f", false, "Force linking even if the destination exists (will overwrite)")
+	linkCmd.Flags().BoolVarP(&build.LinkParams.Force, "force", "f", false, "Force overwrite when the destination exists as a non-symlink file/directory")
 	linkCmd.Flags().StringSliceVar(&build.LinkParams.OnlyFlavors, "flavor", []string{}, "Only create links in the specified flavor installations")
 }

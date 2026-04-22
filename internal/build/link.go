@@ -8,12 +8,14 @@ import (
 
 	"github.com/McTalian/wow-build-tools/internal/flavor"
 	"github.com/McTalian/wow-build-tools/internal/logger"
+	"github.com/McTalian/wow-build-tools/internal/toc"
 	"github.com/spf13/viper"
 )
 
 type Flavor = flavor.Flavor
 
 type LinkArgs struct {
+	AllFlavors  bool
 	Force       bool
 	OnlyFlavors []string
 
@@ -84,6 +86,19 @@ func Link() error {
 		return fmt.Errorf("no addon directories found in release directory")
 	}
 
+	if !LinkParams.AllFlavors {
+		compatibleFlavors, err := getCompatibleInstallFlavors(BuildParams.TopDir, releaseDir, addonDirs)
+		if err != nil {
+			l.Warn("Unable to derive compatible WoW clients from TOC interface versions: %v", err)
+			l.Warn("Falling back to linking for all selected client installations")
+		} else if len(compatibleFlavors) > 0 {
+			flavors = intersectFlavors(flavors, compatibleFlavors)
+			l.Debug("TOC-compatible WoW clients: %v", flavorIds(compatibleFlavors))
+		}
+	}
+
+	linksCreated := 0
+
 	for k, wowPath := range wowPaths {
 		if k == "base" {
 			continue
@@ -108,23 +123,154 @@ func Link() error {
 			}
 		}
 		for _, addonDir := range addonDirs {
-			if forceLink {
-				l.Debug("Removing existing symlink %s", filepath.Join(wowPath, "Interface", "AddOns", addonDir))
-				err = os.RemoveAll(filepath.Join(wowPath, "Interface", "AddOns", addonDir))
-				if err != nil && !os.IsNotExist(err) {
-					l.Error("Error removing existing symlink: %v", err)
-					return err
-				}
-			}
 			source := filepath.Join(releaseDir, addonDir)
 			target := filepath.Join(wowPath, "Interface", "AddOns", addonDir)
+
+			if linkErr := handleExistingTarget(target, forceLink, l); linkErr != nil {
+				return linkErr
+			}
+
 			l.Info("Linking %s to %s", source, target)
 			err = os.Symlink(source, target)
 			if err != nil {
 				l.Error("Error creating symlink: %v", err)
 				return err
 			}
+			linksCreated++
 		}
 	}
+
+	if linksCreated == 0 {
+		l.Warn("No compatible World of Warcraft client installations were selected for linking")
+	}
+
+	return nil
+}
+
+func getCompatibleInstallFlavors(topDir, releaseDir string, addonDirs []string) ([]Flavor, error) {
+	compatibleFlavors, topDirErr := getCompatibleInstallFlavorsFromDir(topDir)
+	if topDirErr == nil && len(compatibleFlavors) > 0 {
+		return compatibleFlavors, nil
+	}
+
+	compatibleFlavors, releaseDirErr := getCompatibleInstallFlavorsFromReleaseDir(releaseDir, addonDirs)
+	if releaseDirErr == nil && len(compatibleFlavors) > 0 {
+		return compatibleFlavors, nil
+	}
+
+	if topDirErr != nil && releaseDirErr != nil {
+		return nil, fmt.Errorf("topDir lookup failed (%s): %v; releaseDir lookup failed (%s): %v", topDir, topDirErr, releaseDir, releaseDirErr)
+	}
+
+	return nil, fmt.Errorf("no compatible install flavors were derived from TOCs in %s or %s", topDir, releaseDir)
+}
+
+func getCompatibleInstallFlavorsFromDir(dir string) ([]Flavor, error) {
+	_, tocFiles, err := getTocFiles(dir)
+	if err != nil {
+		return nil, err
+	}
+
+	return collectCompatibleFlavors(tocFiles), nil
+}
+
+func getCompatibleInstallFlavorsFromReleaseDir(releaseDir string, addonDirs []string) ([]Flavor, error) {
+	var allTocs []*toc.Toc
+
+	_, releaseRootTocs, err := getTocFiles(releaseDir)
+	if err == nil {
+		allTocs = append(allTocs, releaseRootTocs...)
+	}
+
+	for _, addonDir := range addonDirs {
+		addonPath := filepath.Join(releaseDir, addonDir)
+		_, addonTocs, addonErr := getTocFiles(addonPath)
+		if addonErr != nil {
+			continue
+		}
+		allTocs = append(allTocs, addonTocs...)
+	}
+
+	if len(allTocs) == 0 {
+		return nil, fmt.Errorf("no TOC files found in release directory %s", releaseDir)
+	}
+
+	return collectCompatibleFlavors(allTocs), nil
+}
+
+func collectCompatibleFlavors(tocFiles []*toc.Toc) []Flavor {
+
+	compatibleFlavors := []Flavor{}
+	seenFlavorIds := make(map[string]bool)
+	for _, tocFile := range tocFiles {
+		for _, installFlavor := range tocFile.CompatibleInstallFlavors() {
+			if seenFlavorIds[installFlavor.Id] {
+				continue
+			}
+
+			compatibleFlavors = append(compatibleFlavors, installFlavor)
+			seenFlavorIds[installFlavor.Id] = true
+		}
+	}
+
+	return compatibleFlavors
+}
+
+func intersectFlavors(left []Flavor, right []Flavor) []Flavor {
+	rightById := make(map[string]bool, len(right))
+	for _, rightFlavor := range right {
+		rightById[rightFlavor.Id] = true
+	}
+
+	intersection := []Flavor{}
+	for _, leftFlavor := range left {
+		if rightById[leftFlavor.Id] {
+			intersection = append(intersection, leftFlavor)
+		}
+	}
+
+	return intersection
+}
+
+func flavorIds(flavors []Flavor) []string {
+	ids := make([]string, 0, len(flavors))
+	for _, compatibleFlavor := range flavors {
+		ids = append(ids, compatibleFlavor.Id)
+	}
+
+	return ids
+}
+
+func handleExistingTarget(target string, forceLink bool, l *logger.Logger) error {
+	info, err := os.Lstat(target)
+	if os.IsNotExist(err) {
+		return nil
+	}
+	if err != nil {
+		l.Error("Error checking existing target %s: %v", target, err)
+		return err
+	}
+
+	if info.Mode()&os.ModeSymlink != 0 {
+		l.Debug("Replacing existing symlink %s", target)
+		if removeErr := os.Remove(target); removeErr != nil {
+			l.Error("Error removing existing symlink %s: %v", target, removeErr)
+			return removeErr
+		}
+		return nil
+	}
+
+	if !forceLink {
+		err = fmt.Errorf("destination exists and is not a symlink: %s (use --force to overwrite)", target)
+		l.Error("%v", err)
+		return err
+	}
+
+	l.Debug("--force enabled, removing existing non-symlink target %s", target)
+	if removeErr := os.RemoveAll(target); removeErr != nil {
+		l.Error("Error removing existing target %s: %v", target, removeErr)
+		return removeErr
+	}
+
 	return nil
 }
