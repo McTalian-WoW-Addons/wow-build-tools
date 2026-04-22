@@ -317,6 +317,24 @@ func TestCopyToWow(t *testing.T) {
 }
 
 func TestTriggerBuild(t *testing.T) {
+	t.Run("inherits force build type flags", func(t *testing.T) {
+		BuildParams = &BuildArgs{
+			TopDir:     "/tmp/top",
+			ReleaseDir: "/tmp/release",
+			ForceAlpha: false,
+			ForceBeta:  true,
+			ForceDev:   false,
+		}
+
+		args := buildArgsForWatch()
+
+		assert.Equal(t, BuildParams.TopDir, args.TopDir)
+		assert.Equal(t, BuildParams.ReleaseDir, args.ReleaseDir)
+		assert.True(t, args.ForceBeta)
+		assert.False(t, args.ForceAlpha)
+		assert.False(t, args.ForceDev)
+	})
+
 	t.Run("sets correct build parameters", func(t *testing.T) {
 		// Setup
 		tmpDir := t.TempDir()
@@ -434,6 +452,159 @@ func TestSetupWatchEnvironment(t *testing.T) {
 		err := setupWatchEnvironment(releaseDir, true)
 
 		assert.NoError(t, err)
+	})
+}
+
+func TestIsPathWithinConfiguredAddOns(t *testing.T) {
+	tmpDir := t.TempDir()
+	wowRetail := filepath.Join(tmpDir, "wow", "_retail_")
+	wowClassic := filepath.Join(tmpDir, "wow", "_classic_")
+
+	wowPaths := map[string]string{
+		"base":    filepath.Join(tmpDir, "wow"),
+		"retail":  wowRetail,
+		"classic": wowClassic,
+	}
+
+	insidePath := filepath.Join(wowRetail, "Interface", "AddOns", "MyAddon")
+	outsidePath := filepath.Join(tmpDir, "repos", "MyAddon")
+
+	assert.True(t, isPathWithinConfiguredAddOns(insidePath, wowPaths))
+	assert.False(t, isPathWithinConfiguredAddOns(outsidePath, wowPaths))
+}
+
+func TestIsLinkedFromConfiguredAddOns(t *testing.T) {
+	t.Run("detects symlink regardless of target (WSL-safe)", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		topDir := filepath.Join(tmpDir, "repo")
+		releaseDir := filepath.Join(tmpDir, "release")
+		wowRetail := filepath.Join(tmpDir, "wow", "_retail_")
+		addOnsDir := filepath.Join(wowRetail, "Interface", "AddOns")
+
+		require.NoError(t, os.MkdirAll(topDir, 0755))
+		require.NoError(t, os.MkdirAll(addOnsDir, 0755))
+		require.NoError(t, os.MkdirAll(filepath.Join(releaseDir, "MyAddon"), 0755))
+		require.NoError(t, os.WriteFile(filepath.Join(topDir, "MyAddon.toc"), []byte("## Interface: 110007\n"), 0644))
+
+		// The target could be any path (e.g. a UNC Windows path in WSL) — only existence matters.
+		linkPath := filepath.Join(addOnsDir, "MyAddon")
+		require.NoError(t, os.Symlink(filepath.Join(releaseDir, "MyAddon"), linkPath))
+
+		wowPaths := map[string]string{
+			"base":   filepath.Join(tmpDir, "wow"),
+			"retail": wowRetail,
+		}
+
+		linked, err := isLinkedFromConfiguredAddOns(topDir, releaseDir, wowPaths)
+		require.NoError(t, err)
+		assert.True(t, linked)
+	})
+
+	t.Run("returns false when no matching symlink exists", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		topDir := filepath.Join(tmpDir, "repo")
+		releaseDir := filepath.Join(tmpDir, "release")
+		wowRetail := filepath.Join(tmpDir, "wow", "_retail_")
+
+		require.NoError(t, os.MkdirAll(topDir, 0755))
+		require.NoError(t, os.MkdirAll(filepath.Join(wowRetail, "Interface", "AddOns"), 0755))
+		require.NoError(t, os.WriteFile(filepath.Join(topDir, "MyAddon.toc"), []byte("## Interface: 110007\n"), 0644))
+
+		wowPaths := map[string]string{
+			"base":   filepath.Join(tmpDir, "wow"),
+			"retail": wowRetail,
+		}
+
+		linked, err := isLinkedFromConfiguredAddOns(topDir, releaseDir, wowPaths)
+		require.NoError(t, err)
+		assert.False(t, linked)
+	})
+
+	t.Run("treats existing non-symlink entry as deployed", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		topDir := filepath.Join(tmpDir, "repo")
+		releaseDir := filepath.Join(tmpDir, "release")
+		wowRetail := filepath.Join(tmpDir, "wow", "_retail_")
+
+		addonPath := filepath.Join(wowRetail, "Interface", "AddOns", "MyAddon")
+		require.NoError(t, os.MkdirAll(topDir, 0755))
+		require.NoError(t, os.MkdirAll(addonPath, 0755))
+		require.NoError(t, os.WriteFile(filepath.Join(topDir, "MyAddon.toc"), []byte("## Interface: 110007\n"), 0644))
+
+		wowPaths := map[string]string{
+			"base":   filepath.Join(tmpDir, "wow"),
+			"retail": wowRetail,
+		}
+
+		linked, err := isLinkedFromConfiguredAddOns(topDir, releaseDir, wowPaths)
+		require.NoError(t, err)
+		assert.True(t, linked)
+	})
+
+	t.Run("detects deployment with base-only wowPath config", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		topDir := filepath.Join(tmpDir, "repo")
+		releaseDir := filepath.Join(tmpDir, "release")
+		baseWow := filepath.Join(tmpDir, "wow")
+		addonPath := filepath.Join(baseWow, "_retail_", "Interface", "AddOns", "MyAddon")
+
+		require.NoError(t, os.MkdirAll(topDir, 0755))
+		require.NoError(t, os.MkdirAll(addonPath, 0755))
+		require.NoError(t, os.WriteFile(filepath.Join(topDir, "MyAddon.toc"), []byte("## Interface: 110007\n"), 0644))
+
+		wowPaths := map[string]string{
+			"base": baseWow,
+		}
+
+		linked, err := isLinkedFromConfiguredAddOns(topDir, releaseDir, wowPaths)
+		require.NoError(t, err)
+		assert.True(t, linked)
+	})
+}
+
+func TestConfiguredAddOnsPaths(t *testing.T) {
+	t.Run("uses explicit flavor paths when configured", func(t *testing.T) {
+		wowPaths := map[string]string{
+			"base":    "/wow",
+			"retail":  "/wow/_retail_",
+			"classic": "/wow/_classic_",
+		}
+
+		paths := configuredAddOnsPaths(wowPaths)
+		assert.Contains(t, paths, filepath.Join("/wow/_retail_", "Interface", "AddOns"))
+		assert.Contains(t, paths, filepath.Join("/wow/_classic_", "Interface", "AddOns"))
+	})
+
+	t.Run("falls back to base plus known flavor dirs", func(t *testing.T) {
+		wowPaths := map[string]string{
+			"base": "/wow",
+		}
+
+		paths := configuredAddOnsPaths(wowPaths)
+		assert.Contains(t, paths, filepath.Join("/wow", "_retail_", "Interface", "AddOns"))
+		assert.Contains(t, paths, filepath.Join("/wow", "_classic_", "Interface", "AddOns"))
+		assert.Contains(t, paths, filepath.Join("/wow", "_classic_era_", "Interface", "AddOns"))
+	})
+}
+
+func TestDetermineProjectNameForWatch(t *testing.T) {
+	t.Run("uses toc-derived project name when available", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		require.NoError(t, os.WriteFile(filepath.Join(tmpDir, "MyAddon.toc"), []byte("## Interface: 110007\n"), 0644))
+
+		name, err := determineProjectNameForWatch(tmpDir)
+		require.NoError(t, err)
+		assert.Equal(t, "MyAddon", name)
+	})
+
+	t.Run("falls back to directory name when no toc exists", func(t *testing.T) {
+		tmpDir := t.TempDir()
+		topDir := filepath.Join(tmpDir, "RPGLootFeed")
+		require.NoError(t, os.MkdirAll(topDir, 0755))
+
+		name, err := determineProjectNameForWatch(topDir)
+		require.NoError(t, err)
+		assert.Equal(t, "RPGLootFeed", name)
 	})
 }
 

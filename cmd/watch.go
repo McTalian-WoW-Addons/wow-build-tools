@@ -39,6 +39,8 @@ var watchCmd = &cobra.Command{
 	Short: "Run build when files change",
 	Long: dedent.Dedent(`
 	Watches the current directory for changes and runs the build command when a change is detected.
+
+	Build command flags can also be passed to this subcommand, including --force-alpha, --force-beta, and --force-dev.
 	
 	Running "wow-build-tools link" before running this command is recommended to ensure that the build output directories are symlinked to your WoW installation directories.
 	

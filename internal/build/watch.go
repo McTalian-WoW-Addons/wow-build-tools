@@ -6,10 +6,12 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/McTalian/wow-build-tools/internal/flavor"
 	"github.com/McTalian/wow-build-tools/internal/logger"
 	"github.com/McTalian/wow-build-tools/internal/osutil"
 	"github.com/McTalian/wow-build-tools/internal/toc"
@@ -203,15 +205,7 @@ func copyDir(src, dst string) error {
 }
 
 func triggerBuild() error {
-	buildArgs := &BuildArgs{
-		TopDir:         BuildParams.TopDir,
-		ReleaseDir:     BuildParams.ReleaseDir,
-		SkipChangelog:  true,
-		SkipUpload:     true,
-		SkipZip:        true,
-		KeepPackageDir: true,
-		WatchMode:      true,
-	}
+	buildArgs := buildArgsForWatch()
 	logger.Clear()
 	err := Build(buildArgs)
 	if err != nil {
@@ -220,6 +214,21 @@ func triggerBuild() error {
 	}
 	fmt.Println()
 	return nil
+}
+
+func buildArgsForWatch() *BuildArgs {
+	return &BuildArgs{
+		TopDir:         BuildParams.TopDir,
+		ReleaseDir:     BuildParams.ReleaseDir,
+		SkipChangelog:  true,
+		SkipUpload:     true,
+		SkipZip:        true,
+		KeepPackageDir: true,
+		WatchMode:      true,
+		ForceAlpha:     BuildParams.ForceAlpha,
+		ForceBeta:      BuildParams.ForceBeta,
+		ForceDev:       BuildParams.ForceDev,
+	}
 }
 
 func determineDirsToWatch(topdir string) (dirsToWatch []string, err error) {
@@ -309,13 +318,36 @@ func setupWatchEnvironment(releaseDir string, copyToWowDirs bool) error {
 	}
 
 	if osutil.IsWSL() && !copyToWowDirs {
-		winPath, err := osutil.GetWindowsPath(releaseDir)
-		if err != nil {
-			return fmt.Errorf("failed to get Windows path: %w", err)
+		wowPaths := viper.GetStringMapString("wowPath")
+		topDir := BuildParams.TopDir
+		l.Debug("WSL watch wowPath config keys: %v", mapKeys(wowPaths))
+		shouldShowWslLinkReminder := true
+
+		if len(wowPaths) == 0 {
+			l.Debug("No local wowPath config found in this environment; cannot validate AddOns context, so keeping WSL link reminder enabled")
+		} else {
+
+			inConfiguredAddOns := isPathWithinConfiguredAddOns(topDir, wowPaths)
+			linkedFromConfiguredAddOns, linkDetectErr := isLinkedFromConfiguredAddOns(topDir, releaseDir, wowPaths)
+			if linkDetectErr != nil {
+				l.Debug("Could not determine if addon is linked from configured AddOns directories: %v", linkDetectErr)
+			}
+			l.Debug("WSL watch context: topDir=%s releaseDir=%s inConfiguredAddOns=%t linkedFromConfiguredAddOns=%t", topDir, releaseDir, inConfiguredAddOns, linkedFromConfiguredAddOns)
+
+			if inConfiguredAddOns || linkedFromConfiguredAddOns {
+				shouldShowWslLinkReminder = false
+			}
 		}
 
-		l.Warn("To create symlinks to your release directory in WSL, run this command in Windows in an elevated command prompt:")
-		l.Warn("wow-build-tools.exe build link -w \"%s\"", winPath)
+		if shouldShowWslLinkReminder {
+			winPath, err := osutil.GetWindowsPath(releaseDir)
+			if err != nil {
+				return fmt.Errorf("failed to get Windows path: %w", err)
+			}
+
+			l.Warn("To create symlinks to your release directory in WSL, run this command in Windows in an elevated command prompt:")
+			l.Warn("wow-build-tools.exe build link -w \"%s\"", winPath)
+		}
 	}
 
 	// Clean the release directory
@@ -324,6 +356,137 @@ func setupWatchEnvironment(releaseDir string, copyToWowDirs bool) error {
 	}
 
 	return nil
+}
+
+func isPathWithinConfiguredAddOns(path string, wowPaths map[string]string) bool {
+	absPath, err := filepath.Abs(path)
+	if err != nil {
+		l.Debug("Could not resolve absolute path for %s: %v", path, err)
+		return false
+	}
+
+	addOnsPaths := configuredAddOnsPaths(wowPaths)
+	for _, addOnsPath := range addOnsPaths {
+		l.Debug("Checking whether %s is within AddOns path %s", absPath, addOnsPath)
+		if isPathWithinDirectory(absPath, addOnsPath) {
+			l.Debug("Path %s is inside configured AddOns path %s", absPath, addOnsPath)
+			return true
+		}
+	}
+
+	return false
+}
+
+// isLinkedFromConfiguredAddOns reports whether any configured WoW AddOns directory
+// already contains a symlink named after this project. We intentionally do not
+// inspect the symlink target: Windows-created symlinks (from `build link -w`) store
+// a UNC path (\\wsl.localhost\...) that will never match a Linux absolute path when
+// read from WSL, so target comparison is unreliable across the WSL boundary.
+func isLinkedFromConfiguredAddOns(topDir, _ string, wowPaths map[string]string) (bool, error) {
+	projectName, err := determineProjectNameForWatch(topDir)
+	if err != nil {
+		return false, err
+	}
+	l.Debug("Checking AddOns symlink presence for project name %s", projectName)
+
+	addOnsPaths := configuredAddOnsPaths(wowPaths)
+	for _, addOnsPath := range addOnsPaths {
+		addonPath := filepath.Join(addOnsPath, projectName)
+		l.Debug("Checking AddOns symlink at %s", addonPath)
+		info, statErr := os.Lstat(addonPath)
+		if statErr != nil {
+			l.Debug("No entry found at %s: %v", addonPath, statErr)
+			continue
+		}
+
+		if info.Mode()&os.ModeSymlink != 0 {
+			l.Debug("Found AddOns symlink for project at %s", addonPath)
+			return true, nil
+		}
+
+		// In WSL, Windows-created links can surface as non-symlink entries
+		// depending on mount metadata behavior. Existence is enough to infer
+		// the addon is already deployed from an AddOns path.
+		l.Debug("Entry exists (non-symlink) at %s; treating as linked/deployed", addonPath)
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func determineProjectNameForWatch(topDir string) (string, error) {
+	projectName, _, err := getTocFiles(topDir)
+	if err == nil {
+		return projectName, nil
+	}
+
+	// Fallback for monorepo/workspace roots where TOCs are not directly under topDir.
+	fallback := filepath.Base(filepath.Clean(topDir))
+	if fallback == "." || fallback == string(os.PathSeparator) || fallback == "" {
+		return "", err
+	}
+
+	l.Debug("Could not derive project name from TOCs in %s, using directory name fallback: %s", topDir, fallback)
+	return fallback, nil
+}
+
+func isPathWithinDirectory(path, directory string) bool {
+	absDirectory, err := filepath.Abs(directory)
+	if err != nil {
+		return false
+	}
+
+	rel, err := filepath.Rel(absDirectory, path)
+	if err != nil {
+		return false
+	}
+
+	return rel == "." || (rel != ".." && !strings.HasPrefix(rel, ".."+string(os.PathSeparator)))
+}
+
+func configuredAddOnsPaths(wowPaths map[string]string) []string {
+	paths := []string{}
+	pathSeen := make(map[string]bool)
+
+	for key, wowPath := range wowPaths {
+		if key == "base" {
+			continue
+		}
+
+		addOnsPath := filepath.Join(wowPath, "Interface", "AddOns")
+		if !pathSeen[addOnsPath] {
+			paths = append(paths, addOnsPath)
+			pathSeen[addOnsPath] = true
+		}
+	}
+
+	if len(paths) > 0 {
+		return paths
+	}
+
+	basePath, hasBase := wowPaths["base"]
+	if !hasBase || basePath == "" {
+		return paths
+	}
+
+	for _, knownFlavor := range flavor.KnownFlavors {
+		addOnsPath := filepath.Join(basePath, knownFlavor.Dir, "Interface", "AddOns")
+		if !pathSeen[addOnsPath] {
+			paths = append(paths, addOnsPath)
+			pathSeen[addOnsPath] = true
+		}
+	}
+
+	return paths
+}
+
+func mapKeys(m map[string]string) []string {
+	keys := make([]string, 0, len(m))
+	for key := range m {
+		keys = append(keys, key)
+	}
+	slices.Sort(keys)
+	return keys
 }
 
 // runInitialBuild performs the initial build before starting the watch loop.
