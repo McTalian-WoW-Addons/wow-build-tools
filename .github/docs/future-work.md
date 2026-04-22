@@ -32,7 +32,7 @@ The following addons still live under the personal `McTalian` account and need t
 
 **After all addons are migrated:**
 
-- [ ] Retire old personal PAT (`McTalian` account fine-grained token)
+- [x] Retire old personal PAT (`McTalian` account fine-grained token)
 
 ---
 
@@ -53,25 +53,29 @@ wow-build-tools init --name MyAddon --flavors retail,classic --platforms cursefo
 - `.luacov`
 - Basic addon skeleton (`MyAddon/MyAddon.toc`, `MyAddon/Core.lua`)
 
+When `--i18n` is passed, also scaffold:
+
+- `locale/` directory with `enUS.lua` stub and locale stubs for all supported locales
+- `index.xml` listing all locale files
+- Wire `i18n-enabled: true` in generated workflows
+
 - [ ] Design the command interface and template system
 - [ ] Implement template files
 - [ ] Add to wow-build-tools CLI
 
 ---
 
-## WBT: Centralize i18n Tooling for Reusable Workflows
+## ~~WBT: Centralize i18n Tooling for Reusable Workflows~~ ✅ Complete (March 2026)
 
-> **Detailed plan:** [docs/i18n-centralization-plan.md](i18n-centralization-plan.md)
+All 5 phases complete. Generic, parameterized i18n scripts now ship in `scripts/i18n/` and are checked out into `.wbt/` by the reusable `ci.yml` and `pr-checks.yml` workflows. All addons have been migrated.
 
-The `i18n-enabled` flag in the reusable `ci.yml` and `pr-checks.yml` workflows expects addon-specific Python scripts to exist in the calling repo. The plan is to ship generic, parameterized versions in WBT (Option A — checked out into `.wbt/`) and update all addons to use them.
-
-**Addons and target state:** RPGLootFeed ✅ → migrate, BeaconUnitFrames → enable, DeviceLayoutPreset → enable, Endeavoring → add locale support + enable. TokenTransmogTooltips: not needed.
-
-- [ ] Phase 1: Ship generic scripts in WBT + update reusable workflows (`feat/centralize-i18n`)
-- [ ] Phase 2: BeaconUnitFrames — migrate to centralized scripts
-- [ ] Phase 3: DeviceLayoutPreset — enable i18n
-- [ ] Phase 4: Endeavoring — add locale support + enable i18n
-- [ ] Phase 5: RPGLootFeed — migrate (deferred until rearch merges)
+| Addon                 | Status                                      |
+| --------------------- | ------------------------------------------- |
+| RPGLootFeed           | ✅ Migrated (Phase 5)                       |
+| BeaconUnitFrames      | ✅ Enabled (Phase 2)                        |
+| DeviceLayoutPreset    | ✅ Enabled (Phase 3)                        |
+| Endeavoring           | ✅ Locale support added + enabled (Phase 4) |
+| TokenTransmogTooltips | N/A (no user-facing text)                   |
 
 ---
 

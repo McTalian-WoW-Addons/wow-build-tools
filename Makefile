@@ -16,7 +16,7 @@ clean:
 run: build
 	./$(OUTPUT_DIR)/$(BINARY_NAME)
 
-release:
+release: build
 	@cp -f ./$(OUTPUT_DIR)/$(BINARY_NAME) ~/bin/$(BINARY_NAME)
 	@cp -f ./$(OUTPUT_DIR)/$(BINARY_NAME).exe /mnt/c/Users/robpa/bin/$(BINARY_NAME).exe
 
