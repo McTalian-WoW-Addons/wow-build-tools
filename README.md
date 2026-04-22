@@ -82,6 +82,54 @@ In addition to feature parity with `BigWigsMods/packager`, I have a few ideas fo
 - [ ] New Addon Scaffolding
 - [ ] A badge to proudly display that your addon is built with `wow-build-tools`!
 
+## Link Command
+
+The `wow-build-tools build link` command creates symlinks from your built addon(s) into configured WoW client AddOns directories.
+
+By default, linking is TOC-interface aware and only targets compatible client installs.
+
+Compatibility lookup order:
+
+1. TOC files in the project top directory
+2. TOC files in the release directory
+3. TOC files inside each addon folder in the release directory
+
+If no TOC compatibility can be derived, the command falls back to linking all selected installs.
+
+### Common usage
+
+```bash
+# Link using local .release output and TOC-compatible client filtering
+wow-build-tools build link
+
+# Force linking into all selected clients (skip TOC compatibility filtering)
+wow-build-tools build link --all-flavors
+
+# WSL workflow: use the Windows path to your release directory
+wow-build-tools.exe build link -w "C:\\path\\to\\addon\\.release"
+
+# Restrict linking to specific configured clients
+wow-build-tools build link --flavor retail --flavor classicEra
+```
+
+If a destination already exists as a symlink, it is replaced automatically.
+Use `--force` only when overwriting an existing non-symlink file or directory.
+
+## Watch Command
+
+The `wow-build-tools build watch` command rebuilds when addon files change.
+
+Because `watch` is a subcommand of `build`, it also supports build flags like forced build types:
+
+```bash
+# Typical active development loop: always build in alpha mode
+wow-build-tools build watch --force-alpha
+
+# Alternative forced modes
+wow-build-tools build watch --force-beta
+wow-build-tools build watch --force-dev
+```
+
 ## Inspiration and acknowledgements
 
 My main inspiration comes from my desire to always make developer experience as smooth as possible. I've had a few different roles across different companies and industries that have focused on developer experience, and I've always found it to be a rewarding challenge and a force multiplier for teams. What better way to give back to the WoW community than to align my passions and expertise to help make the development process easier for addon authors?
