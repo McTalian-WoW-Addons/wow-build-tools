@@ -41,3 +41,14 @@ actions:
     - trunk-check-pre-push
     - trunk-fmt-pre-commit
     - trunk-upgrade-available
+    - prevent-dist-binary-commit
+  definitions:
+    - id: prevent-dist-binary-commit
+      triggers:
+        - git_hooks: [pre-commit]
+      run: |
+        if git diff --cached --name-only --diff-filter=ACMR | grep -Eq '^dist/wow-build-tools(\.exe)?$'; then
+          echo "error: refusing to commit generated binary in dist/"
+          echo "error: unstage it with: git restore --staged dist/wow-build-tools dist/wow-build-tools.exe"
+          exit 1
+        fi
