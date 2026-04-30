@@ -5,7 +5,7 @@ go 1.26.0
 require (
 	github.com/blang/semver v3.5.1+incompatible
 	github.com/fatih/color v1.19.0
-	github.com/fsnotify/fsnotify v1.9.0
+	github.com/fsnotify/fsnotify v1.10.0
 	github.com/go-git/go-git/v5 v5.18.0
 	github.com/hashicorp/go-version v1.9.0
 	github.com/joho/godotenv v1.5.1
