@@ -1,4 +1,4 @@
-"""
+r"""
 create_or_update_i18n_issues.py
 
 Reads per-locale markdown reports from --output-dir (produced by
@@ -74,7 +74,7 @@ def get_all_translation_issues(repo_owner, repo_name):
         title = issue["title"]
         # Strip the 'i18n: ' prefix and ' Translations' suffix to extract the locale
         if title.startswith("i18n: ") and title.endswith(" Translations"):
-            locale = title[len("i18n: "):-len(" Translations")]
+            locale = title[len("i18n: ") : -len(" Translations")]
             issues_dict[locale] = issue
 
     return issues_dict
@@ -98,9 +98,7 @@ def create_issue(repo_owner, repo_name, locale, markdown_content):
 
 def update_issue(repo_owner, repo_name, issue_number, markdown_content):
     """Update an existing GitHub issue with new markdown content."""
-    issue_url = (
-        f"{GITHUB_API_URL}/repos/{repo_owner}/{repo_name}/issues/{issue_number}"
-    )
+    issue_url = f"{GITHUB_API_URL}/repos/{repo_owner}/{repo_name}/issues/{issue_number}"
 
     response = requests.patch(
         issue_url,

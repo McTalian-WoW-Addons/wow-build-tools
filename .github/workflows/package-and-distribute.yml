@@ -53,6 +53,7 @@ jobs:
       - name: Package and distribute
         env:
           GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
+        # trunk-ignore(pinact/parse-error)
         uses: McTalian-WoW-Addons/wow-build-tools@v1-beta
         with:
           args: -t ./${{ inputs.addon-name }} -r ./.release

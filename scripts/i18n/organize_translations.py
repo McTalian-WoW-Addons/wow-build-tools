@@ -1,4 +1,4 @@
-"""
+r"""
 organize_translations.py
 
 Sorts locale file entries within --#region / --#endregion blocks:
@@ -46,9 +46,7 @@ def parse_locales_xml(xml_file):
     tree = ET.parse(xml_file)
     root = tree.getroot()
     namespace = {"ns": root.tag.split("}")[0].strip("{")}
-    return [
-        script.attrib["file"] for script in root.findall("ns:Script", namespace)
-    ]
+    return [script.attrib["file"] for script in root.findall("ns:Script", namespace)]
 
 
 def parse_locale_file_with_regions(file_path):

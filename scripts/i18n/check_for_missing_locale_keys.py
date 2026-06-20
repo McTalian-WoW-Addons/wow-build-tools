@@ -1,4 +1,4 @@
-"""
+r"""
 check_for_missing_locale_keys.py
 
 Verifies that every locale key used in addon Lua source code has a
@@ -47,8 +47,8 @@ def parse_args():
         default="L",
         help=(
             "Name of the locale table (default: L). "
-            "Matches bare usage (L[\"key\"]) and any namespace prefix "
-            "(ns.L[\"key\"], G_RLF.L[\"key\"], etc.) automatically."
+            'Matches bare usage (L["key"]) and any namespace prefix '
+            '(ns.L["key"], G_RLF.L["key"], etc.) automatically.'
         ),
     )
     return parser.parse_args()
@@ -65,9 +65,7 @@ def get_locale_keys(addon_dir, locale_dir, table_name):
     Matches bare usage (L["key"]) and any namespace prefix (ns.L["key"],
     G_RLF.L["key"], etc.) by anchoring on a word boundary before the table name.
     """
-    locale_key_pattern = re.compile(
-        rf'\b{re.escape(table_name)}\["(.*?)"\]'
-    )
+    locale_key_pattern = re.compile(rf'\b{re.escape(table_name)}\["(.*?)"\]')
     locale_keys = set()
     abs_locale_dir = os.path.abspath(locale_dir)
     files_scanned = 0
@@ -85,7 +83,9 @@ def get_locale_keys(addon_dir, locale_dir, table_name):
                         if not comment_pattern.match(line):
                             locale_keys.update(locale_key_pattern.findall(line))
 
-    print(f"  Scanned {files_scanned} .lua source file(s), found {len(locale_keys)} unique key usage(s)")
+    print(
+        f"  Scanned {files_scanned} .lua source file(s), found {len(locale_keys)} unique key usage(s)"
+    )
     return locale_keys
 
 
@@ -125,7 +125,9 @@ def check_missing_keys(addon_dir, locale_dir, table_name):
     print(f"  addon-dir:    {os.path.abspath(addon_dir)}")
     print(f"  locale-dir:   {os.path.abspath(locale_dir)}")
     print(f"  enUS file:    {os.path.abspath(enUS_file)}")
-    print(f"  locale-table: {table_name}  (matches: {table_name}[\"key\"], ns.{table_name}[\"key\"], etc.)")
+    print(
+        f'  locale-table: {table_name}  (matches: {table_name}["key"], ns.{table_name}["key"], etc.)'
+    )
     print()
 
     locale_keys = get_locale_keys(addon_dir, locale_dir, table_name)
