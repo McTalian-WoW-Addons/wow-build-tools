@@ -21,7 +21,7 @@ jobs:
       issues: write
       pull-requests: write
     steps:
-      - uses: actions/stale@v10
+      - uses: actions/stale@eb5cf3af3ac0a1aa4c9c45633dd1ae542a27a899 # v10.3.0
         with:
           days-before-issue-stale: 14
           stale-issue-message: ":robot: This issue has been marked as stale because the repository maintainer(s) have not received a response to the request for more information. If you are still interested in getting this implemented, please provide the requested information within the next 7 days or the issue will be automatically closed. Thank you!"

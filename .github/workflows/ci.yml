@@ -65,17 +65,17 @@ jobs:
       issues: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Checkout wow-build-tools (i18n scripts)
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           repository: McTalian-WoW-Addons/wow-build-tools
           ref: ${{ inputs.wbt-ref }}
           path: .wbt
 
       - name: Set up uv
-        uses: astral-sh/setup-uv@v7
+        uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
         with:
           enable-cache: true
 
@@ -114,13 +114,13 @@ jobs:
       actions: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
-      - uses: lewis6991/gh-actions-lua@01aab24c4de9555717b685f9b142a2abbe12ef14
+      - uses: McTalian-WoW-Addons/gh-actions-lua@1f72809a86125ad840634b2252eff8e2d759302d # v1.0.0
         with:
           luaVersion: ${{ inputs.lua-version }}
 
-      - uses: leafo/gh-actions-luarocks@v6
+      - uses: leafo/gh-actions-luarocks@35d062def313a7699a0d513e996bcf4352f05389 # v6.1.0
         with:
           luaRocksVersion: 3.11.1
 
@@ -130,7 +130,7 @@ jobs:
       - name: Run Tests
         run: make test-ci
 
-      - uses: actions/upload-artifact@v7
+      - uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: luacov-html
           path: luacov-html/
@@ -145,23 +145,21 @@ jobs:
       issues: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
 
       - name: Checkout wow-build-tools (release config and deps)
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           repository: McTalian-WoW-Addons/wow-build-tools
           ref: ${{ inputs.wbt-ref }}
           path: .wbt
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: volta-cli/action@5c175f92dea6f48441c436471e6479dbc192e194 # v4.2.1
         with:
-          node-version-file: .wbt/.nvmrc
-          cache: npm
-          cache-dependency-path: .wbt/package-lock.json
+          package-json-path: .wbt/package.json
 
       - name: Install dependencies
         run: npm ci --prefix .wbt
