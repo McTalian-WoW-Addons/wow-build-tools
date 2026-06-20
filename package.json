@@ -4,6 +4,10 @@
   "type": "module",
   "author": "Rob 'McTalian' Anderson",
   "license": "MIT",
+  "volta": {
+    "node": "24.17.0",
+    "npm": "11.17.0"
+  },
   "devDependencies": {
     "@commitlint/cli": "21.0.2",
     "@commitlint/config-conventional": "21.0.2",

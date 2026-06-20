@@ -39,9 +39,7 @@ jobs:
           ./dist/wow-build-tools --help
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6
-        with:
-          node-version-file: .nvmrc
+        uses: volta-cli/action@v4
 
       - name: Install Node dependencies
         run: npm install

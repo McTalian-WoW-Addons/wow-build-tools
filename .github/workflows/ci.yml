@@ -157,11 +157,9 @@ jobs:
           path: .wbt
 
       - name: Set up Node.js
-        uses: actions/setup-node@v6
+        uses: volta-cli/action@v4
         with:
-          node-version-file: .wbt/.nvmrc
-          cache: npm
-          cache-dependency-path: .wbt/package-lock.json
+          package-json-path: .wbt/package.json
 
       - name: Install dependencies
         run: npm ci --prefix .wbt
