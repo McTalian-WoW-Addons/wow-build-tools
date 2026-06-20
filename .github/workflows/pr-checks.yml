@@ -217,6 +217,7 @@ jobs:
           fi
 
       - name: Package
+        # trunk-ignore(pinact/parse-error)
         uses: McTalian-WoW-Addons/wow-build-tools@v1-beta
         with:
           args: -d -t ./${{ inputs.addon-name }} -r ./.release --skipChangelog -n {package-name}-pr${{github.event.number}}-{nolib}{classic}

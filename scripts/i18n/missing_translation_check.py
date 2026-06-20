@@ -1,4 +1,4 @@
-"""
+r"""
 missing_translation_check.py
 
 Compares each non-enUS locale file against enUS.lua and outputs per-locale
@@ -61,9 +61,7 @@ def parse_locales_xml(xml_file):
     tree = ET.parse(xml_file)
     root = tree.getroot()
     namespace = {"ns": root.tag.split("}")[0].strip("{")}
-    return [
-        script.attrib["file"] for script in root.findall("ns:Script", namespace)
-    ]
+    return [script.attrib["file"] for script in root.findall("ns:Script", namespace)]
 
 
 def load_lua_file(lua_file):
@@ -110,7 +108,9 @@ def compare_translations(reference_dict, target_dict, locale, locale_dir, repo):
         )
         markdown_report += f"Missing translations: {len(missing_keys)}\n\n"
         markdown_report += "<details>\n"
-        markdown_report += "    <summary>Missing Keys and their enUS values</summary>\n\n"
+        markdown_report += (
+            "    <summary>Missing Keys and their enUS values</summary>\n\n"
+        )
         markdown_report += "| Missing Key | enUS Value |\n"
         markdown_report += "|-------------|------------|\n"
         markdown_report += "\n".join(missing_keys)
@@ -126,8 +126,7 @@ def compare_translations(reference_dict, target_dict, locale, locale_dir, repo):
         translation_stub = "\n".join(
             [f'L["{key.split("|")[1].strip()}"] = ""' for key in missing_keys]
         )
-        details_section = textwrap.dedent(
-            f"""
+        details_section = textwrap.dedent(f"""
 
 <details>
     <summary>Please provide one or more of these values in a Pull Request or a Comment on this issue</summary>
@@ -137,8 +136,7 @@ def compare_translations(reference_dict, target_dict, locale, locale_dir, repo):
 ```
 </details>
 
-"""
-        )
+""")
         markdown_report += details_section
     else:
         markdown_report = None
@@ -180,7 +178,9 @@ def main():
     reference_file = "enUS.lua"
     reference_path = os.path.join(locale_dir, reference_file)
     reference_dict = load_lua_file(reference_path)
-    print(f"Reference (enUS): {os.path.abspath(reference_path)} — {len(reference_dict)} keys")
+    print(
+        f"Reference (enUS): {os.path.abspath(reference_path)} — {len(reference_dict)} keys"
+    )
     print()
 
     has_extra_keys = False

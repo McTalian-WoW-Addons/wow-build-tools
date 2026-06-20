@@ -1,4 +1,4 @@
-"""
+r"""
 hardcode_string_check.py
 
 Scans .lua files for hard-coded strings that should be localized:
@@ -69,9 +69,7 @@ def check_hardcoded_strings(file_content, filename):
         re.DOTALL,
     )
     for match in print_matches:
-        issues.append(
-            f'Hard-coded string in Print(...) in {filename}: "{match}"'
-        )
+        issues.append(f'Hard-coded string in Print(...) in {filename}: "{match}"')
 
     # Ace3 config entries with hard-coded name/desc fields
     config_matches = re.findall(
@@ -104,9 +102,7 @@ def scan_directory(directory, ignore_files=None, ignore_dirs=None):
     for root, dirs, files in os.walk(directory):
         # Prune ignored directories in-place so os.walk won't descend into them
         dirs[:] = [
-            d
-            for d in dirs
-            if not should_ignore(os.path.join(root, d), [], ignore_dirs)
+            d for d in dirs if not should_ignore(os.path.join(root, d), [], ignore_dirs)
         ]
 
         for file in files:
