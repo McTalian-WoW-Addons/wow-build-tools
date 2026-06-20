@@ -46,7 +46,7 @@ jobs:
 
     steps:
       - name: Clone project
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: 0
 
@@ -65,7 +65,7 @@ jobs:
 
     steps:
       - name: Clone project
-        uses: actions/checkout@v6
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Parse TOC for distribution IDs
         id: toc
@@ -121,7 +121,7 @@ jobs:
           fi
 
       - name: Announce release
-        uses: tsickert/discord-webhook@b217a69502f52803de774ded2b1ab7c282e99645
+        uses: tsickert/discord-webhook@b217a69502f52803de774ded2b1ab7c282e99645 # v7.0.0
         with:
           webhook-url: ${{ secrets.DISCORD_RELEASES_WEBHOOK }}
           username: ${{ inputs.addon-name }} Releases
