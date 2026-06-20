@@ -116,7 +116,7 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v6
 
-      - uses: lewis6991/gh-actions-lua@01aab24c4de9555717b685f9b142a2abbe12ef14
+      - uses: McTalian-WoW-Addons/gh-actions-lua@1f72809a86125ad840634b2252eff8e2d759302d
         with:
           luaVersion: ${{ inputs.lua-version }}
 
