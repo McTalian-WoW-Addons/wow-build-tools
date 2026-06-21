@@ -96,6 +96,7 @@ func TestGetReleaseMetadataContents_FlavorMapping(t *testing.T) {
 	version := "1.0.0"
 	gameInterfaces := toc.GameInterfaces{
 		toc.Retail:         []int{110000},
+		toc.TbcClassic:     []int{20500},
 		toc.CurrentClassic: []int{11503},
 	}
 	zipFileNames := []string{"TestAddon-1.0.0.zip"}
@@ -112,11 +113,16 @@ func TestGetReleaseMetadataContents_FlavorMapping(t *testing.T) {
 
 	// Check that retail is mapped to "mainline"
 	hasMainline := false
+	hasBcc := false
 	hasMists := false
 	for _, m := range release.Metadata {
 		if m.Flavor == "mainline" {
 			hasMainline = true
 			assert.Equal(t, 110000, m.Interface)
+		}
+		if m.Flavor == "bcc" {
+			hasBcc = true
+			assert.Equal(t, 20500, m.Interface)
 		}
 		if m.Flavor == "mists" {
 			hasMists = true
@@ -125,6 +131,7 @@ func TestGetReleaseMetadataContents_FlavorMapping(t *testing.T) {
 	}
 
 	assert.True(t, hasMainline, "retail should be mapped to mainline")
+	assert.True(t, hasBcc, "burning crusade classic should be mapped to bcc")
 	assert.True(t, hasMists, "current classic (mists) should be present")
 }
 

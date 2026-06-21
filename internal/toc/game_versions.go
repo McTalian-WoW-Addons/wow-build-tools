@@ -33,7 +33,7 @@ func (g GameFlavor) ToString() string {
 	case ClassicEra:
 		return "classic"
 	case TbcClassic:
-		return "tbc"
+		return "bcc"
 	case WotlkClassic:
 		return "wrath"
 	case CataClassic:
