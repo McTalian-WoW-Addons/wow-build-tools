@@ -37,7 +37,7 @@ jobs:
         uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
 
       - name: Update TOC Interface version
-        # trunk-ignore(pinact/parse-error)
+        # trunk-ignore(pinact/unpinned-action)
         uses: McTalian-WoW-Addons/wow-build-tools/toc/update@v1
         with:
           args: -a ${{ inputs.addon-name }} -b -p
