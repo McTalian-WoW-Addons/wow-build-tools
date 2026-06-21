@@ -65,10 +65,10 @@ jobs:
       issues: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Checkout wow-build-tools (i18n scripts)
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           repository: McTalian-WoW-Addons/wow-build-tools
           ref: ${{ inputs.wbt-ref }}
@@ -114,7 +114,7 @@ jobs:
       actions: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - uses: McTalian-WoW-Addons/gh-actions-lua@1f72809a86125ad840634b2252eff8e2d759302d # v1.0.0
         with:
@@ -145,12 +145,12 @@ jobs:
       issues: write
     steps:
       - name: Checkout code
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           fetch-depth: 0
 
       - name: Checkout wow-build-tools (release config and deps)
-        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
         with:
           repository: McTalian-WoW-Addons/wow-build-tools
           ref: ${{ inputs.wbt-ref }}
