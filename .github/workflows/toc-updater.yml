@@ -38,7 +38,7 @@ jobs:
 
       - name: Update TOC Interface version
         # trunk-ignore(pinact/parse-error)
-        uses: McTalian-WoW-Addons/wow-build-tools/toc/update@v1-beta
+        uses: McTalian-WoW-Addons/wow-build-tools/toc/update@v1
         with:
           args: -a ${{ inputs.addon-name }} -b -p
 

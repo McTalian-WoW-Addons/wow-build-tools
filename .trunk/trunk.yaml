@@ -13,8 +13,11 @@ plugins:
 runtimes:
   enabled:
     - go@1.25.11
-    - node@>=22.0.0
+    - node@>=24.0.0
     - python@3.14.4
+  definitions:
+    - type: node
+      system_version: ignored
 # This is the section where you manage your linters. (https://docs.trunk.io/check/configuration)
 lint:
   ignore:
@@ -60,3 +63,6 @@ actions:
           echo "error: unstage it with: git restore --staged dist/wow-build-tools dist/wow-build-tools.exe"
           exit 1
         fi
+tools:
+  runtimes:
+    - node

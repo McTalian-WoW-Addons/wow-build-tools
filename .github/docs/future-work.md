@@ -98,7 +98,7 @@ Comprehensive pre-release validation to run before tagging a version or releasin
 
 ## Tooling: Pin GitHub Actions to Commit SHAs (`pinact`)
 
-Run `pinact` as a one-shot local operation to replace mutable tag refs (e.g. `@v4`, `@v1-beta`) with pinned commit SHAs in all workflow files. Dependabot (`github-actions` ecosystem, now configured on all repos) will keep them updated from there.
+Run `pinact` as a one-shot local operation to replace mutable tag refs (e.g. `@v4`, `@v1`) with pinned commit SHAs in all workflow files. Dependabot (`github-actions` ecosystem, now configured on all repos) will keep them updated from there.
 
 **Repos to run against:** `Endeavoring`, `RPGLootFeed`, `wow-build-tools`, `DeviceLayoutPreset`
 

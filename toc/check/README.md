@@ -6,7 +6,7 @@ GitHub Action to check for common issues in your World of Warcraft addon TOC fil
 
 ```yaml
 - name: Check TOC files
-  uses: McTalian-WoW-Addons/wow-build-tools/toc/check@v1-beta
+  uses: McTalian-WoW-Addons/wow-build-tools/toc/check@v1
 ```
 
 ## What It Checks
@@ -40,14 +40,14 @@ This action validates your addon TOC files for:
 
 ```yaml
 - name: Check TOC files
-  uses: McTalian-WoW-Addons/wow-build-tools/toc/check@beta
+  uses: McTalian-WoW-Addons/wow-build-tools/toc/check@v1
 ```
 
 ### Ignore specific files
 
 ```yaml
 - name: Check TOC files
-  uses: McTalian-WoW-Addons/wow-build-tools/toc/check@beta
+  uses: McTalian-WoW-Addons/wow-build-tools/toc/check@v1
   with:
     args: "--ignore test.lua --ignore docs.lua"
 ```
@@ -56,7 +56,7 @@ This action validates your addon TOC files for:
 
 ```yaml
 - name: Check TOC files
-  uses: McTalian-WoW-Addons/wow-build-tools/toc/check@beta
+  uses: McTalian-WoW-Addons/wow-build-tools/toc/check@v1
   with:
     args: "--skip-interface-check"
 ```
@@ -65,7 +65,7 @@ This action validates your addon TOC files for:
 
 ```yaml
 - name: Check TOC files
-  uses: McTalian-WoW-Addons/wow-build-tools/toc/check@beta
+  uses: McTalian-WoW-Addons/wow-build-tools/toc/check@v1
   with:
     args: "--ptr"
 ```

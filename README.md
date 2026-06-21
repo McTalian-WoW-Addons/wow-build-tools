@@ -7,7 +7,7 @@ This repository aims to be a collection of tools to help with the development of
 
 ## Installation
 
-Once this project is out of beta, the installation process should be a one-time thing as the tool is written to self update on non-pre-release versions. For now, you'll need to manually download the latest version of the tool when new versions are released.
+The installation process is a one-time thing as the tool is written to self update on stable versions.
 
 ### Local
 
@@ -53,7 +53,7 @@ jobs:
         env:
           # GitHub Token, required for creating releases
           GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
-        uses: McTalian-WoW-Addons/wow-build-tools@v1-beta
+        uses: McTalian-WoW-Addons/wow-build-tools@v1
 ```
 
 ## Features

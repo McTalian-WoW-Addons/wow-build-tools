@@ -135,5 +135,5 @@ go test ./...   # Run all tests
 ## Release
 
 - Releases managed via semantic-release (`.releaserc`) with `conventionalcommits` preset
-- Branches: `main` (stable), `beta` (prerelease), `alpha` (prerelease)
+- Branches: `main` (stable releases)
 - Plugins: `@semantic-release/commit-analyzer`, `@semantic-release/release-notes-generator`, `@semantic-release/github`

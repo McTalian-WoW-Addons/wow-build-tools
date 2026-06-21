@@ -54,7 +54,7 @@ jobs:
         env:
           GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
         # trunk-ignore(pinact/parse-error)
-        uses: McTalian-WoW-Addons/wow-build-tools@v1-beta
+        uses: McTalian-WoW-Addons/wow-build-tools@v1
         with:
           args: -t ./${{ inputs.addon-name }} -r ./.release
 
