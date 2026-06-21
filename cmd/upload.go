@@ -1,0 +1,79 @@
+/*
+Copyright © 2025 Rob "McTalian" Anderson
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in
+all copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
+THE SOFTWARE.
+*/
+package cmd
+
+import (
+	"github.com/McTalian/wow-build-tools/internal/upload"
+	"github.com/spf13/cobra"
+)
+
+// uploadCmd represents the upload command
+var uploadCmd = &cobra.Command{
+	Use:   "upload",
+	Short: "Upload your addon to one of the supported distribution platforms",
+	Long: `Upload your addon to one of the supported distribution platforms:
+    - WoWInterface (https://www.wowinterface.com/)
+    - CurseForge (https://www.curseforge.com/wow)
+    - Wago (https://addons.wago.io/)`,
+	RunE: func(cmd *cobra.Command, args []string) error {
+		return cmd.Help()
+	},
+}
+
+func init() {
+	rootCmd.AddCommand(uploadCmd)
+
+	// Here you will define your flags and configuration settings.
+
+	// Cobra supports Persistent Flags which will work for this command
+	// and all subcommands, e.g.:
+	// uploadCmd.PersistentFlags().String("foo", "", "A help for foo")
+	uploadCmd.PersistentFlags().StringVarP(&upload.UploadParams.Input, "input", "i", "", "Path to the addon zip file to upload")
+	err := uploadCmd.MarkPersistentFlagFilename("input")
+	if err != nil {
+		panic(err)
+	}
+	err = uploadCmd.MarkPersistentFlagRequired("input")
+	if err != nil {
+		panic(err)
+	}
+	uploadCmd.PersistentFlags().StringVarP(&upload.UploadParams.Label, "label", "l", "", "Label for the uploaded file")
+	err = uploadCmd.MarkPersistentFlagRequired("label")
+	if err != nil {
+		panic(err)
+	}
+	uploadCmd.PersistentFlags().IntSliceVar(&upload.UploadParams.InterfaceVersions, "interface-versions", []int{}, "Interface versions that your addon supports.")
+	err = uploadCmd.MarkPersistentFlagRequired("interface-versions")
+	if err != nil {
+		panic(err)
+	}
+	uploadCmd.PersistentFlags().StringVarP(&upload.UploadParams.Changelog, "changelog", "c", "", "Path to the changelog file")
+	err = uploadCmd.MarkPersistentFlagFilename("changelog")
+	if err != nil {
+		panic(err)
+	}
+	uploadCmd.PersistentFlags().StringVarP(&upload.UploadParams.ReleaseType, "release-type", "r", "alpha", "Release type for the uploaded file")
+
+	// Cobra supports local flags which will only run when this command
+	// is called directly, e.g.:
+	// uploadCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+}

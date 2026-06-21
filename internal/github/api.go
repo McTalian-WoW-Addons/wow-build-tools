@@ -1,0 +1,59 @@
+package github
+
+import (
+	"fmt"
+	"net/http"
+	"os"
+
+	"github.com/McTalian/wow-build-tools/internal/logger"
+)
+
+var githubApiUrl = "https://api.github.com/"
+var githubUploadUrl = "https://uploads.github.com/"
+var authHeaderValue string
+
+func IsTokenSet() bool {
+	return os.Getenv("GITHUB_OAUTH") != ""
+}
+
+func getAuthHeaderValue() (string, error) {
+	if authHeaderValue == "" {
+		if !IsTokenSet() {
+			logger.Error("GITHUB_OAUTH not set")
+			err := fmt.Errorf("GITHUB_OAUTH not set")
+			return "", err
+		}
+
+		authHeaderValue = fmt.Sprintf("token %s", os.Getenv("GITHUB_OAUTH"))
+	}
+
+	return authHeaderValue, nil
+}
+
+func addAcceptHeader(req *http.Request) {
+	req.Header.Add("Accept", "application/vnd.github.v3+json")
+}
+
+func addAuthHeader(req *http.Request) error {
+	tokenValue, err := getAuthHeaderValue()
+	if err != nil {
+		return err
+	}
+
+	req.Header.Add("Authorization", tokenValue)
+
+	return nil
+}
+
+func clientRequest(req *http.Request) (*http.Response, error) {
+	client := &http.Client{}
+
+	addAcceptHeader(req)
+
+	err := addAuthHeader(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to set authorization header: %w", err)
+	}
+
+	return client.Do(req)
+}

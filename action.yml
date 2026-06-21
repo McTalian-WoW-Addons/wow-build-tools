@@ -1,0 +1,61 @@
+name: WoW Build Tools
+description: Build and release your World of Warcraft addons with ease.
+branding:
+  icon: zap
+  color: blue
+
+inputs:
+  args:
+    description: Arguments to pass to `wow-build-tools build`.
+    required: false
+    default: ""
+
+outputs:
+  package-name:
+    description: The name of the package that was built.
+  main-zip-path:
+    description: The path to the main zip file that was built.
+  nolib-zip-path:
+    description: The path to the nolib zip file that was built, if applicable.
+  project-version:
+    description: The determined version of the project.
+
+runs:
+  using: composite
+  steps:
+    - name: Handle inputs
+      id: handle-inputs
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        # TODO: Add options to the action itself rather than just args
+        if [ -z "${{ inputs.args }}" ]; then
+          INPUT_ARGS=""
+        else
+          INPUT_ARGS="${{ inputs.args }}"
+        fi
+
+        echo "INPUT_ARGS=${INPUT_ARGS}" >> $GITHUB_OUTPUT
+    - name: Check for Subversion
+      id: check-svn
+      shell: bash
+      run: |
+        if command -v svn &> /dev/null; then
+          echo "found=true" >> $GITHUB_OUTPUT
+          echo "✓ Subversion is already installed: $(svn --version --quiet)"
+        else
+          echo "found=false" >> $GITHUB_OUTPUT
+        fi
+    - name: Install Subversion
+      if: steps.check-svn.outputs.found != 'true'
+      uses: awalsh128/cache-apt-pkgs-action@681749ae568c81c2037cb9185e38b709b261bd2f # v1.6.1
+      with:
+        packages: subversion
+        version: 1.14
+    - name: Run wow-build-tools
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        ${GITHUB_ACTION_PATH}/dist/wow-build-tools build ${{ steps.handle-inputs.outputs.INPUT_ARGS }}

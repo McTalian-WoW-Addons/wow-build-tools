@@ -1,0 +1,7 @@
+[project]
+name = "wbt-i18n-scripts"
+version = "0.1.0"
+description = "Python utility scripts for wow-build-tools i18n addon workflows"
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = ["defusedxml>=0.7.1", "requests>=2.32.5"]

@@ -1,0 +1,137 @@
+# Reusable workflow: Package, distribute, and announce addon releases
+#
+# Triggered by release:published. Packages the addon via wow-build-tools,
+# uploads to addon platforms, and announces on Discord.
+#
+# Distribution links are built dynamically from the addon's .toc file:
+#   - X-Curse-Project-ID → CurseForge link
+#   - X-WoWI-ID → WoWInterface link
+#   - X-Wago-ID → Wago link
+# If a TOC field is missing, the corresponding link is omitted from the
+# Discord announcement.
+#
+# Inputs:
+#   addon-name: The addon directory/name (e.g., "Endeavoring", "RPGLootFeed")
+#   avatar-url:  Discord embed avatar URL
+#
+# Requires secrets (via `secrets: inherit`):
+#   - CF_API_KEY, WOWI_API_TOKEN, WAGO_API_TOKEN (org-level)
+#   - DISCORD_RELEASES_WEBHOOK (repo-level, standardized name)
+
+name: Package and release
+
+on:
+  workflow_call:
+    inputs:
+      addon-name:
+        description: Addon directory name (e.g., Endeavoring, RPGLootFeed)
+        required: true
+        type: string
+      avatar-url:
+        description: Discord embed avatar image URL
+        required: true
+        type: string
+
+permissions: {}
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    env:
+      CF_API_KEY: ${{ secrets.CF_API_KEY }}
+      WOWI_API_TOKEN: ${{ secrets.WOWI_API_TOKEN }}
+      WAGO_API_TOKEN: ${{ secrets.WAGO_API_TOKEN }}
+
+    steps:
+      - name: Clone project
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+        with:
+          fetch-depth: 0
+
+      - name: Package and distribute
+        env:
+          GITHUB_OAUTH: ${{ secrets.GITHUB_TOKEN }}
+        # trunk-ignore(pinact/parse-error)
+        uses: McTalian-WoW-Addons/wow-build-tools@v1
+        with:
+          args: -t ./${{ inputs.addon-name }} -r ./.release
+
+  announce:
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Clone project
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Parse TOC for distribution IDs
+        id: toc
+        run: |
+          TOC_FILE="${{ inputs.addon-name }}/${{ inputs.addon-name }}.toc"
+          if [[ ! -f "$TOC_FILE" ]]; then
+            echo "::warning::TOC file not found: $TOC_FILE"
+            exit 0
+          fi
+
+          # Extract distribution IDs from TOC
+          CURSE_ID=$(grep -oP '^## X-Curse-Project-ID:\s*\K\S+' "$TOC_FILE" || echo "")
+          WOWI_ID=$(grep -oP '^## X-WoWI-ID:\s*\K\S+' "$TOC_FILE" || echo "")
+          WAGO_ID=$(grep -oP '^## X-Wago-ID:\s*\K\S+' "$TOC_FILE" || echo "")
+
+          echo "curse_id=$CURSE_ID" >> $GITHUB_OUTPUT
+          echo "wowi_id=$WOWI_ID" >> $GITHUB_OUTPUT
+          echo "wago_id=$WAGO_ID" >> $GITHUB_OUTPUT
+
+          # Lowercase addon name for URL slugs
+          ADDON_SLUG=$(echo "${{ inputs.addon-name }}" | tr '[:upper:]' '[:lower:]')
+          echo "addon_slug=$ADDON_SLUG" >> $GITHUB_OUTPUT
+
+      - name: Build distribution links
+        id: distro-links
+        run: |
+          ADDON_SLUG="${{ steps.toc.outputs.addon_slug }}"
+          CURSE_ID="${{ steps.toc.outputs.curse_id }}"
+          WOWI_ID="${{ steps.toc.outputs.wowi_id }}"
+          WAGO_ID="${{ steps.toc.outputs.wago_id }}"
+
+          LINKS=""
+          if [[ -n "$CURSE_ID" ]]; then
+            LINKS="${LINKS}* :fire: [CurseForge](https://www.curseforge.com/wow/addons/${ADDON_SLUG})"$'\n'
+          fi
+          if [[ -n "$WOWI_ID" ]]; then
+            LINKS="${LINKS}* :wireless: [WoWInterface](https://www.wowinterface.com/downloads/info${WOWI_ID}-${{ inputs.addon-name }}.html)"$'\n'
+          fi
+          if [[ -n "$WAGO_ID" ]]; then
+            LINKS="${LINKS}* :knot: [Wago](https://addons.wago.io/addons/${ADDON_SLUG})"$'\n'
+          fi
+
+          if [[ -n "$LINKS" ]]; then
+            {
+              echo "links<<LINKS_EOF"
+              echo ""
+              echo "Once approved it will also be available via:"
+              echo "$LINKS"
+              echo "LINKS_EOF"
+            } >> $GITHUB_OUTPUT
+          else
+            echo "links=" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Announce release
+        uses: tsickert/discord-webhook@b217a69502f52803de774ded2b1ab7c282e99645 # v7.0.0
+        with:
+          webhook-url: ${{ secrets.DISCORD_RELEASES_WEBHOOK }}
+          username: ${{ inputs.addon-name }} Releases
+          avatar-url: ${{ inputs.avatar-url }}
+          embed-title: "New ${{ inputs.addon-name }} Release: ${{ github.event.release.tag_name || ':tada:' }}"
+          embed-description: |
+            ${{ github.event.release.body || '' }}
+
+            Be the first to download via :octopus: [GitHub](${{ github.event.release.html_url || format('https://github.com/{0}/releases', github.repository) }}) :coin:
+            ${{ steps.distro-links.outputs.links }}
+            > _**Running into issues?** Let me know on [GitHub](https://github.com/${{ github.repository }}/issues) or join the [Discord](https://discord.gg/czRYVWhe33) for the fastest updates and support!_
+          embed-color: 15105570
