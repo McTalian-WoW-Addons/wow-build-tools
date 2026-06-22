@@ -1,0 +1,50 @@
+name: Check release.json Schema
+
+on:
+  schedule:
+    - cron: 0 6 * * * # Daily: 6am UTC
+  workflow_dispatch:
+
+permissions: {}
+
+jobs:
+  check-schema:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
+
+      - name: Fetch remote schema
+        run: |
+          curl -sSL -o /tmp/remote-schema.json \
+            https://raw.githubusercontent.com/ogri-la/release.json-specification/refs/heads/master/schema.json
+
+      - name: Compare schemas
+        id: compare
+        run: |
+          if diff <(jq -S . /tmp/remote-schema.json) <(jq -S . internal/github/release_schema.json); then
+            echo "Schemas match. No update needed."
+          else
+            echo "Schemas differ. Updating embedded schema."
+            cp /tmp/remote-schema.json internal/github/release_schema.json
+            echo "updated=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Create pull request
+        if: steps.compare.outputs.updated == 'true'
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        with:
+          token: ${{ secrets.GH_PAT }}
+          title: "chore: update embedded release.json schema"
+          commit-message: "chore: update embedded release.json schema"
+          branch: update-release-schema
+          body: |
+            The upstream [release.json-specification](https://github.com/ogri-la/release.json-specification) schema has changed.
+
+            This PR updates the embedded copy at `internal/github/release_schema.json` to match.
+
+            Automated check — review and merge if the changes look correct.
+          delete-branch: true

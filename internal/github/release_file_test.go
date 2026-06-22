@@ -2,12 +2,49 @@ package github
 
 import (
 	"encoding/json"
+	"net/http"
 	"testing"
 
 	"github.com/McTalian/wow-build-tools/internal/toc"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
+
+const remoteSchemaURL = "https://raw.githubusercontent.com/ogri-la/release.json-specification/refs/heads/master/schema.json"
+
+func TestEmbeddedSchemaMatchesRemote(t *testing.T) {
+	resp, err := http.Get(remoteSchemaURL)
+	if err != nil {
+		t.Logf("Could not fetch remote schema (%v), skipping", err)
+		return
+	}
+	defer func() {
+		err := resp.Body.Close()
+		if err != nil {
+			t.Logf("Error closing response body: %v", err)
+		}
+	}()
+
+	if resp.StatusCode != http.StatusOK {
+		t.Logf("Remote schema returned status %d, skipping", resp.StatusCode)
+		return
+	}
+
+	var remoteDoc any
+	require.NoError(t, json.NewDecoder(resp.Body).Decode(&remoteDoc))
+
+	localRaw, err := schemaFS.ReadFile("release_schema.json")
+	require.NoError(t, err)
+
+	var localDoc any
+	require.NoError(t, json.Unmarshal(localRaw, &localDoc))
+
+	remoteJSON, _ := json.Marshal(remoteDoc)
+	localJSON, _ := json.Marshal(localDoc)
+
+	assert.Equal(t, string(localJSON), string(remoteJSON),
+		"Embedded schema differs from remote. Run 'curl -o internal/github/release_schema.json %s' to update.", remoteSchemaURL)
+}
 
 func TestGetReleaseMetadataContents(t *testing.T) {
 	tests := []struct {
@@ -188,4 +225,84 @@ func TestGetReleaseMetadataContents_EmptyInputs(t *testing.T) {
 	require.NoError(t, err)
 
 	assert.Empty(t, metadata.Releases)
+}
+
+func TestValidateReleaseJSON_Valid(t *testing.T) {
+	valid := `{
+		"releases": [
+			{
+				"name": "MyAddon",
+				"version": "1.0.0",
+				"filename": "MyAddon-1.0.0.zip",
+				"nolib": false,
+				"metadata": [
+					{ "flavor": "mainline", "interface": 110000 }
+				]
+			}
+		]
+	}`
+	err := ValidateReleaseJSON(valid)
+	assert.NoError(t, err)
+}
+
+func TestValidateReleaseJSON_InvalidFlavor(t *testing.T) {
+	invalid := `{
+		"releases": [
+			{
+				"name": "MyAddon",
+				"version": "1.0.0",
+				"filename": "MyAddon-1.0.0.zip",
+				"nolib": false,
+				"metadata": [
+					{ "flavor": "invalid_flavor", "interface": 110000 }
+				]
+			}
+		]
+	}`
+	err := ValidateReleaseJSON(invalid)
+	assert.Error(t, err)
+	assert.Contains(t, err.Error(), "must be one of")
+}
+
+func TestValidateReleaseJSON_MissingRequiredField(t *testing.T) {
+	invalid := `{
+		"releases": [
+			{
+				"name": "MyAddon",
+				"version": "1.0.0",
+				"filename": "MyAddon-1.0.0.zip",
+				"nolib": false,
+				"metadata": [
+					{ "flavor": "mainline" }
+				]
+			}
+		]
+	}`
+	err := ValidateReleaseJSON(invalid)
+	assert.Error(t, err)
+}
+
+func TestValidateReleaseJSON_MissingReleases(t *testing.T) {
+	invalid := `{}`
+	err := ValidateReleaseJSON(invalid)
+	assert.Error(t, err)
+}
+
+func TestValidateReleaseJSON_AdditionalProperty(t *testing.T) {
+	invalid := `{
+		"releases": [
+			{
+				"name": "MyAddon",
+				"version": "1.0.0",
+				"filename": "MyAddon-1.0.0.zip",
+				"nolib": false,
+				"extraField": "not allowed",
+				"metadata": [
+					{ "flavor": "mainline", "interface": 110000 }
+				]
+			}
+		]
+	}`
+	err := ValidateReleaseJSON(invalid)
+	assert.Error(t, err)
 }
