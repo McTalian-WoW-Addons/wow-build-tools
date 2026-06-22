@@ -1,0 +1,63 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "https://raw.githubusercontent.com/ogri-la/release.json-specification/refs/tags/1-0-2/schema.json",
+    "type": "object",
+    "definitions": {
+        "flavor": {
+            "enum": ["mainline", "classic", "bcc", "wrath", "titan", "cata", "mists"]
+        }
+    },
+    "properties": {
+        "releases": {
+            "type": "array",
+            "items": {
+                "type": "object",
+                "properties": {
+                    "name": {
+                        "type": "string"
+                    },
+                    "version": {
+                        "type": "string"
+                    },
+                    "filename": {
+                        "type": "string"
+                    },
+                    "nolib": {
+                        "type": "boolean"
+                    },
+                    "metadata": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "flavor": {
+                                    "anyOf": [
+                                        { "$ref": "#/definitions/flavor" }
+                                    ]
+                                },
+                                "interface": {
+                                    "type": "number"
+                                }
+                            },
+                            "required": [
+                                "flavor",
+                                "interface"
+                            ],
+                            "additionalProperties": false
+                        }
+                    }
+                },
+                "required": [
+                    "filename",
+                    "nolib",
+                    "metadata"
+                ],
+                "additionalProperties": false
+            }
+        }
+    },
+    "required": [
+        "releases"
+    ],
+    "additionalProperties": false
+}

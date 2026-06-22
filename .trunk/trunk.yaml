@@ -24,6 +24,9 @@ lint:
     - linters: [markdownlint]
       paths:
         - .github/docs/**
+    - linters: [ALL]
+      paths:
+        - internal/github/release_schema.json
 
   enabled:
     - golangci-lint2@2.12.2
