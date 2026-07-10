@@ -1,0 +1,150 @@
+# Release Checks (Reusable)
+#
+# Validates commit message format and applies release labels.
+# Called by addon PR workflows and WBT's wrapper.
+#
+# Inputs:
+#   wbt-ref:             wow-build-tools ref to use for configs (default v1)
+#   squash_allowed:      Whether to validate PR title for squash merge (default true)
+#   rebase_allowed:      Whether to validate all commits for rebase merge (default true)
+#
+# Outputs:
+#   squash_valid:        Whether PR title is valid
+#   rebase_valid:        Whether all commits in range are valid
+#   title_type:          Type extracted from PR title
+#   title_release_type:  Release type from PR title
+#   commit_release_type: Release type from commits
+#   labels:              Space-separated labels to apply
+
+name: Release Checks
+
+on:
+  workflow_call:
+    inputs:
+      wbt-ref:
+        description: wow-build-tools ref to use for configs
+        required: false
+        type: string
+        default: v1
+      squash_allowed:
+        description: Whether to validate PR title for squash merge
+        required: false
+        type: boolean
+        default: true
+      rebase_allowed:
+        description: Whether to validate all commits for rebase merge
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  commitlint-and-label:
+    name: Validate Commits & Label Release Impact
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    outputs:
+      squash_valid: ${{ steps.validate.outputs.squash_valid }}
+      rebase_valid: ${{ steps.validate.outputs.rebase_valid }}
+      title_type: ${{ steps.validate.outputs.title_type }}
+      title_release_type: ${{ steps.validate.outputs.title_release_type }}
+      commit_release_type: ${{ steps.validate.outputs.commit_release_type }}
+      labels: ${{ steps.validate.outputs.labels }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Checkout wow-build-tools (configs)
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          repository: McTalian-WoW-Addons/wow-build-tools
+          ref: ${{ inputs.wbt-ref }}
+          path: .wbt
+
+      - name: Setup Node.js
+        uses: volta-cli/action@615a78f6c83e116339c53b94f3f82b4d6c0b7d18 # v5.0.0
+        with:
+          package-json-path: .wbt/package.json
+
+      - name: Install dependencies (wbt)
+        run: npm ci --prefix .wbt
+
+      - name: Run release validation
+        id: validate
+        env:
+          PR_TITLE: ${{ github.event.pull_request.title || '' }}
+        run: |
+          BASE="${{ github.event.pull_request.base.sha || github.event.merge_group.head_sha }}"
+          HEAD="${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha }}"
+          TITLE="$PR_TITLE"
+
+          if [[ "${{ github.event_name }}" == "merge_group" ]]; then
+            BASE=$(git merge-base origin/main "$HEAD")
+          fi
+
+          cd .wbt
+
+          node .github/scripts/release-validate.mjs validate-pr \
+            "$BASE" "$HEAD" "$TITLE" \
+            ${{ inputs.squash_allowed }} \
+            ${{ inputs.rebase_allowed }} > validation-result.json
+
+          cat validation-result.json
+
+          # Parse and set outputs
+          squash_valid=$(jq -r '.squashValid' validation-result.json)
+          rebase_valid=$(jq -r '.rebaseValid' validation-result.json)
+          title_type=$(jq -r '.titleType' validation-result.json)
+          title_release_type=$(jq -r '.titleReleaseType' validation-result.json)
+          commit_release_type=$(jq -r '.commitReleaseType' validation-result.json)
+          labels=$(jq -r '.labels | join(" ")' validation-result.json)
+
+          echo "squash_valid=$squash_valid" >> $GITHUB_OUTPUT
+          echo "rebase_valid=$rebase_valid" >> $GITHUB_OUTPUT
+          echo "title_type=$title_type" >> $GITHUB_OUTPUT
+          echo "title_release_type=$title_release_type" >> $GITHUB_OUTPUT
+          echo "commit_release_type=$commit_release_type" >> $GITHUB_OUTPUT
+          echo "labels=$labels" >> $GITHUB_OUTPUT
+
+      - name: Apply labels
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0        uses: actions/github-script@v9
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const newLabels = ('${{ steps.validate.outputs.labels }}' || '').split(' ').filter(Boolean);
+            const existingLabels = await github.rest.issues.listLabelsOnIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+            const removeLabels = existingLabels.data
+              .filter(l => ['squash valid', 'rebase valid', 'release:major', 'release:minor', 'release:patch', 'release:no-release'].includes(l.name))
+              .map(l => l.name);
+
+            // Remove old labels
+            for (const label of removeLabels) {
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                name: label
+              });
+            }
+
+            // Add new labels
+            for (const label of newLabels) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                labels: [label]
+              });
+            }
