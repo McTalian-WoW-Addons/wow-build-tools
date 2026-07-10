@@ -22,6 +22,7 @@ jobs:
   release-checks:
     uses: ./.github/workflows/release-checks.yml
     with:
+      wbt-ref: ${{ github.ref }}
       squash_allowed: true
       rebase_allowed: false
     secrets: inherit

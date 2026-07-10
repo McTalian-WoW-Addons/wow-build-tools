@@ -3,15 +3,15 @@ on:
   pull_request:
     types: [opened, synchronize, reopened]
     paths:
-      - ".github/scripts/release-validate.mjs"
-      - ".releaserc.json"
-      - "package.json"
+      - .github/scripts/release-validate.mjs
+      - .releaserc.json
+      - package.json
   push:
     branches: [main]
     paths:
-      - ".github/scripts/release-validate.mjs"
-      - ".releaserc.json"
-      - "package.json"
+      - .github/scripts/release-validate.mjs
+      - .releaserc.json
+      - package.json
   workflow_dispatch:
 
 permissions:
@@ -23,12 +23,12 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0        uses: actions/checkout@v7
         with:
           fetch-depth: 0
 
       - name: Setup Node.js
-        uses: volta-cli/action@v5
+        uses: volta-cli/action@615a78f6c83e116339c53b94f3f82b4d6c0b7d18 # v5.0.0        uses: volta-cli/action@v5
 
       - name: Install dependencies
         run: npm ci
