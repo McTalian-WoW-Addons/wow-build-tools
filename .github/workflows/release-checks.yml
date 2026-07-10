@@ -89,10 +89,27 @@ jobs:
             BASE=$(git merge-base origin/main "$HEAD")
           fi
 
-          node .wbt/.github/scripts/release-validate.mjs validate-pr \
+          node .github/scripts/release-validate.mjs validate-pr \
             "$BASE" "$HEAD" "$TITLE" \
             ${{ inputs.squash_allowed }} \
-            ${{ inputs.rebase_allowed }}
+            ${{ inputs.rebase_allowed }} > validation-result.json
+
+          cat validation-result.json
+
+          # Parse and set outputs
+          squash_valid=$(jq -r '.squashValid' validation-result.json)
+          rebase_valid=$(jq -r '.rebaseValid' validation-result.json)
+          title_type=$(jq -r '.titleType' validation-result.json)
+          title_release_type=$(jq -r '.titleReleaseType' validation-result.json)
+          commit_release_type=$(jq -r '.commitReleaseType' validation-result.json)
+          labels=$(jq -r '.labels | join(" ")' validation-result.json)
+
+          echo "squash_valid=$squash_valid" >> $GITHUB_OUTPUT
+          echo "rebase_valid=$rebase_valid" >> $GITHUB_OUTPUT
+          echo "title_type=$title_type" >> $GITHUB_OUTPUT
+          echo "title_release_type=$title_release_type" >> $GITHUB_OUTPUT
+          echo "commit_release_type=$commit_release_type" >> $GITHUB_OUTPUT
+          echo "labels=$labels" >> $GITHUB_OUTPUT
 
       - name: Apply labels
         if: github.event_name == 'pull_request' && steps.validate.outputs.labels != ''
