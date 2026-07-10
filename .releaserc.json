@@ -19,16 +19,14 @@
           "types": [
             { "type": "feat", "section": "✨ Features" },
             { "type": "fix", "section": "🪲 Bug Fixes" },
-            { "type": "perf", "section": "⚡ Performance", "hidden": false },
+            { "type": "perf", "section": "⚡ Performance" },
             {
               "type": "locale",
-              "section": "🌏 i18n Translations",
-              "hidden": false
+              "section": "🌏 i18n Translations"
             },
             {
               "type": "toc",
-              "section": "📋 TOC Version Changes",
-              "hidden": false
+              "section": "📋 TOC Version Changes"
             }
           ]
         }
