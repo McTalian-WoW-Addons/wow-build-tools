@@ -43,6 +43,51 @@ jobs:
       - name: Run release notes test
         run: npm run test:release-notes
 
+  test-release-validate:
+    name: Test Release Validate
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: volta-cli/action@615a78f6c83e116339c53b94f3f82b4d6c0b7d18 # v5.0.0
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Test valid PR with feat + fix
+        run: |
+          node .github/scripts/release-validate.mjs validate-pr v1.1.1 v1.2.0 "feat: test feature" true true
+
+      - name: Test invalid title, valid commits
+        run: |
+          node .github/scripts/release-validate.mjs validate-pr v1.1.1 v1.2.0 "invalid title" true true
+
+      - name: Test valid title, no commits
+        run: |
+          node .github/scripts/release-validate.mjs validate-pr v1.2.2 v1.2.2 "feat: test" true true
+
+      - name: Test invalid title, no commits
+        run: |
+          node .github/scripts/release-validate.mjs validate-pr v1.2.2 v1.2.2 "invalid" true true || true
+
+      - name: Test squash only allowed
+        run: |
+          node .github/scripts/release-validate.mjs validate-pr v1.1.1 v1.2.0 "feat: test" true false
+
+      - name: Test rebase only allowed
+        run: |
+          node .github/scripts/release-validate.mjs validate-pr v1.1.1 v1.2.0 "invalid" false true
+
+      - name: Test both false (should fail)
+        run: |
+          node .github/scripts/release-validate.mjs validate-pr v1.1.1 v1.2.0 "feat: test" false false || true
+
   test:
     runs-on: ubuntu-latest
     permissions:
@@ -128,7 +173,7 @@ jobs:
     name: Passing PR Checks
     runs-on: ubuntu-latest
     if: always()
-    needs: [trunk-check, test, test-release-notes]
+    needs: [trunk-check, test, test-release-notes, test-release-validate]
     steps:
       - name: Export needs results as JSON
         id: export-needs
