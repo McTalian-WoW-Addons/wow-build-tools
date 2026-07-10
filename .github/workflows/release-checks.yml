@@ -114,12 +114,33 @@ jobs:
           echo "labels=$labels" >> $GITHUB_OUTPUT
 
       - name: Apply labels
-        if: github.event_name == 'pull_request' && steps.validate.outputs.labels != ''
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0        uses: actions/github-script@v9
         with:
           script: |
-            const labels = '${{ steps.validate.outputs.labels }}'.split(' ');
-            for (const label of labels) {
+            const prNumber = context.payload.pull_request.number;
+            const newLabels = ('${{ steps.validate.outputs.labels }}' || '').split(' ').filter(Boolean);
+            const existingLabels = await github.rest.issues.listLabelsOnIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+            const removeLabels = existingLabels.data
+              .filter(l => ['squash valid', 'rebase valid', 'release:major', 'release:minor', 'release:patch', 'release:no-release'].includes(l.name))
+              .map(l => l.name);
+
+            // Remove old labels
+            for (const label of removeLabels) {
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                name: label
+              });
+            }
+
+            // Add new labels
+            for (const label of newLabels) {
               await github.rest.issues.addLabels({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
