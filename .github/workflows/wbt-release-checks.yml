@@ -1,0 +1,27 @@
+# WBT Release Checks
+#
+# Wrapper workflow that calls the shared release-checks.yml
+# Runs on PR events and merge_group for WBT itself.
+
+name: WBT Release Checks
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, edited]
+  merge_group:
+
+permissions:
+  contents: read
+  pull-requests: write
+
+concurrency:
+  group: wbt-release-checks-${{ github.event.pull_request.number || github.run_id }}
+  cancel-in-progress: true
+
+jobs:
+  release-checks:
+    uses: ./.github/workflows/release-checks.yml
+    with:
+      squash_allowed: true
+      rebase_allowed: false
+    secrets: inherit

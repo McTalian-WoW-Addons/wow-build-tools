@@ -2,7 +2,7 @@
 #
 # Triggered on pull_request and merge_group events. Runs Lua tests, optional
 # i18n translation checks, test packaging with PR comment, optional trunk
-# linting, and commitlint.
+# linting.
 #
 # Inputs:
 #   addon-name:          Addon directory name (e.g., Endeavoring, RPGLootFeed)
@@ -18,7 +18,6 @@
 #
 # Expects in the calling repo:
 #   - Makefile with test-ci target
-#   - commitlint.config.js
 
 name: PR Checks
 
@@ -309,46 +308,11 @@ jobs:
       - name: Trunk Code Quality
         uses: trunk-io/trunk-action@04ba50e7658c81db7356da96657e6e77f220bfa3 # v1.3.1
 
-  commitlint:
-    runs-on: ubuntu-latest
-    permissions:
-      contents: read
-    env:
-      TITLE: ${{ github.event.pull_request.title }}
-    steps:
-      - uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          ref: ${{ github.sha }}
-
-      - name: Checkout wow-build-tools (commitlint config)
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
-        with:
-          repository: McTalian-WoW-Addons/wow-build-tools
-          ref: ${{ inputs.wbt-ref }}
-          path: .wbt
-
-      - name: Install Node.js
-        uses: volta-cli/action@615a78f6c83e116339c53b94f3f82b4d6c0b7d18 # v5.0.0
-        with:
-          package-json-path: .wbt/package.json
-
-      - name: Install dependencies
-        run: npm ci --prefix .wbt
-
-      - name: Run commitlint (PR)
-        if: ${{ github.event_name == 'pull_request' }}
-        run: echo "${TITLE}" | npx --prefix .wbt commitlint --config .wbt/commitlint.config.js
-
-      - name: Run commitlint (Merge Group)
-        if: ${{ github.event_name == 'merge_group' }}
-        run: npx --prefix .wbt commitlint --last --config .wbt/commitlint.config.js
-
   all_pr_checks:
     name: Passing PR Checks
     runs-on: ubuntu-latest
     if: always()
-    needs:
-      [check_translations, run_tests, test_package, trunk-check, commitlint]
+    needs: [check_translations, run_tests, test_package, trunk-check]
     steps:
       - name: Export needs results as JSON
         id: export-needs

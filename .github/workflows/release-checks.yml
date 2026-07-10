@@ -1,0 +1,108 @@
+# Release Checks (Reusable)
+#
+# Validates commit message format and applies release labels.
+# Called by addon PR workflows and WBT's wrapper.
+#
+# Inputs:
+#   wbt-ref:             wow-build-tools ref to use for configs (default v1)
+#   squash_allowed:      Whether to validate PR title for squash merge (default true)
+#   rebase_allowed:      Whether to validate all commits for rebase merge (default true)
+#
+# Outputs:
+#   squash_valid:        Whether PR title is valid
+#   rebase_valid:        Whether all commits in range are valid
+#   title_type:          Type extracted from PR title
+#   title_release_type:  Release type from PR title
+#   commit_release_type: Release type from commits
+#   labels:              Space-separated labels to apply
+
+name: Release Checks
+
+on:
+  workflow_call:
+    inputs:
+      wbt-ref:
+        description: wow-build-tools ref to use for configs
+        required: false
+        type: string
+        default: v1
+      squash_allowed:
+        description: Whether to validate PR title for squash merge
+        required: false
+        type: boolean
+        default: true
+      rebase_allowed:
+        description: Whether to validate all commits for rebase merge
+        required: false
+        type: boolean
+        default: true
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  commitlint-and-label:
+    name: Validate Commits & Label Release Impact
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    outputs:
+      squash_valid: ${{ steps.validate.outputs.squash_valid }}
+      rebase_valid: ${{ steps.validate.outputs.rebase_valid }}
+      title_type: ${{ steps.validate.outputs.title_type }}
+      title_release_type: ${{ steps.validate.outputs.title_release_type }}
+      commit_release_type: ${{ steps.validate.outputs.commit_release_type }}
+      labels: ${{ steps.validate.outputs.labels }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Checkout wow-build-tools (configs)
+        uses: actions/checkout@v4
+        with:
+          repository: McTalian-WoW-Addons/wow-build-tools
+          ref: ${{ inputs.wbt-ref }}
+          path: .wbt
+
+      - name: Setup Node.js
+        uses: volta-cli/action@v5
+        with:
+          package-json-path: .wbt/package.json
+
+      - name: Install dependencies
+        run: npm ci --prefix .wbt
+
+      - name: Run release validation
+        id: validate
+        run: |
+          BASE="${{ github.event.pull_request.base.sha || github.event.merge_group.head_sha }}"
+          HEAD="${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha }}"
+          TITLE="${{ github.event.pull_request.title || '' }}"
+
+          if [[ "${{ github.event_name }}" == "merge_group" ]]; then
+            BASE=$(git merge-base origin/main "$HEAD")
+          fi
+
+          node .wbt/.github/scripts/release-validate.mjs validate-pr \
+            "$BASE" "$HEAD" "$TITLE" \
+            ${{ inputs.squash_allowed }} \
+            ${{ inputs.rebase_allowed }}
+
+      - name: Apply labels
+        if: github.event_name == 'pull_request' && steps.validate.outputs.labels != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const labels = '${{ steps.validate.outputs.labels }}'.split(' ');
+            for (const label of labels) {
+              await github.rest.issues.addLabels({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                labels: [label]
+              });
+            }
