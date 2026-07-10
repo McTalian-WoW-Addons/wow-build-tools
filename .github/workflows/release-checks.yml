@@ -73,7 +73,7 @@ jobs:
         with:
           package-json-path: .wbt/package.json
 
-      - name: Install dependencies
+      - name: Install dependencies (wbt)
         run: npm ci --prefix .wbt
 
       - name: Run release validation
@@ -88,6 +88,8 @@ jobs:
           if [[ "${{ github.event_name }}" == "merge_group" ]]; then
             BASE=$(git merge-base origin/main "$HEAD")
           fi
+
+          cd .wbt
 
           node .github/scripts/release-validate.mjs validate-pr \
             "$BASE" "$HEAD" "$TITLE" \
