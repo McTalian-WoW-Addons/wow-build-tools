@@ -79,14 +79,17 @@ jobs:
       - name: Run release validation
         id: validate
         env:
-          PR_TITLE: ${{ github.event.pull_request.title || '' }}
+          PR_TITLE: ${{ github.event.pull_request.title || github.event.merge_group.head_commit.message || '' }}
         run: |
-          BASE="${{ github.event.pull_request.base.sha || github.event.merge_group.head_sha }}"
-          HEAD="${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha }}"
-          TITLE="$PR_TITLE"
-
           if [[ "${{ github.event_name }}" == "merge_group" ]]; then
-            BASE=$(git merge-base origin/main "$HEAD")
+            BASE="${{ github.event.merge_group.base_sha }}"
+            HEAD="${{ github.event.merge_group.head_sha }}"
+            # Extract PR title from merge commit message: "Merge pull request #123 from owner/branch\n\nPR Title"
+            TITLE=$(echo "$PR_TITLE" | sed -n 's/.*\n\n\(.*\)/\1/p')
+          else
+            BASE="${{ github.event.pull_request.base.sha }}"
+            HEAD="${{ github.event.pull_request.head.sha }}"
+            TITLE="$PR_TITLE"
           fi
 
           cd .wbt
