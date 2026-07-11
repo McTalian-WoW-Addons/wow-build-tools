@@ -2,9 +2,9 @@
 import { analyzeCommits } from "@semantic-release/commit-analyzer";
 import lint from "@commitlint/lint";
 import load from "@commitlint/load";
-import { execa } from "execa";
-import { readFileSync } from "fs";
-import { resolve } from "path";
+import { execa } from "node:execa";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 const getRoot = () => {
   const args = process.argv.slice(2);
@@ -40,9 +40,7 @@ async function getCommits(base, head) {
 }
 
 async function getAnalyzerConfig() {
-  const config = JSON.parse(
-    readFileSync(resolve(ROOT, ".releaserc.json"), "utf8"),
-  );
+  const config = JSON.parse(readFileSync(".releaserc.json", "utf8"));
   const analyzer = config.plugins.find(
     (p) => Array.isArray(p) && p[0] === "@semantic-release/commit-analyzer",
   );
