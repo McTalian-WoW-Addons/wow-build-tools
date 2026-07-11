@@ -79,24 +79,40 @@ jobs:
       - name: Run release validation
         id: validate
         env:
+          MERGE_GROUP_TITLE: ${{ github.event.merge_group.head_commit.message || '' }}
           PR_TITLE: ${{ github.event.pull_request.title || '' }}
         run: |
-          BASE="${{ github.event.pull_request.base.sha || github.event.merge_group.head_sha }}"
-          HEAD="${{ github.event.pull_request.head.sha || github.event.merge_group.head_sha }}"
-          TITLE="$PR_TITLE"
-
           if [[ "${{ github.event_name }}" == "merge_group" ]]; then
-            BASE=$(git merge-base origin/main "$HEAD")
+            BASE="${{ github.event.merge_group.base_sha }}"
+            HEAD="${{ github.event.merge_group.head_sha }}"
+            # Extract PR title from merge commit message: "Merge pull request #123 from branch\n\nActual Title"
+            TITLE="${MERGE_GROUP_TITLE#*$'\n'$'\n'}"
+            # Fallback if no double newline: take last line
+            [[ "$TITLE" == "$MERGE_GROUP_TITLE" ]] && TITLE="${MERGE_GROUP_TITLE##*$'\n'}"
+          else
+            BASE="${{ github.event.pull_request.base.sha }}"
+            HEAD="${{ github.event.pull_request.head.sha }}"
+            TITLE="$PR_TITLE"
           fi
+
+          echo "DEBUG: BASE=$BASE HEAD=$HEAD TITLE=$TITLE"
 
           cd .wbt
 
           node .github/scripts/release-validate.mjs validate-pr \
             "$BASE" "$HEAD" "$TITLE" \
             ${{ inputs.squash_allowed }} \
-            ${{ inputs.rebase_allowed }} > validation-result.json
+            ${{ inputs.rebase_allowed }} > validation-result.json || true
 
           cat validation-result.json
+
+          # Check for script errors
+          script_error=$(jq -r '.error // empty' validation-result.json)
+          if [[ -n "$script_error" ]]; then
+            echo "ERROR: Script failed: $script_error"
+            jq -r '.stack // empty' validation-result.json
+            exit 1
+          fi
 
           # Parse and set outputs
           squash_valid=$(jq -r '.squashValid' validation-result.json)
@@ -104,7 +120,9 @@ jobs:
           title_type=$(jq -r '.titleType' validation-result.json)
           title_release_type=$(jq -r '.titleReleaseType' validation-result.json)
           commit_release_type=$(jq -r '.commitReleaseType' validation-result.json)
-          labels=$(jq -r '.labels | join(" ")' validation-result.json)
+          labels=$(jq -r '.labels // [] | join(" ")' validation-result.json)
+
+          echo "DEBUG: squash_valid=$squash_valid rebase_valid=$rebase_valid title_type=$title_type title_release_type=$title_release_type commit_release_type=$commit_release_type labels=$labels"
 
           echo "squash_valid=$squash_valid" >> $GITHUB_OUTPUT
           echo "rebase_valid=$rebase_valid" >> $GITHUB_OUTPUT
