@@ -127,7 +127,7 @@ jobs:
             "$BASE" "$HEAD" "$TITLE" \
             ${{ inputs.squash_allowed }} \
             ${{ inputs.rebase_allowed }} \
-            --repo-root "${{ github.workspace }}" > validation-result.json || true
+            --repo-root "${{ github.workspace }}" > validation-result.json 2>&1 || true
 
           cat validation-result.json
 
