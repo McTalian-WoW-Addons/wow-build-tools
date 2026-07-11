@@ -85,10 +85,8 @@ jobs:
           if [[ "${{ github.event_name }}" == "merge_group" ]]; then
             BASE="${{ github.event.merge_group.base_sha }}"
             HEAD="${{ github.event.merge_group.head_sha }}"
-            # Extract PR title from merge commit message: "Merge pull request #123 from branch\n\nActual Title"
-            TITLE="${MERGE_GROUP_TITLE#*$'\n'$'\n'}"
-            # Fallback if no double newline: take last line
-            [[ "$TITLE" == "$MERGE_GROUP_TITLE" ]] && TITLE="${MERGE_GROUP_TITLE##*$'\n'}"
+            # Extract PR title from merge commit message: first line (squashed title)
+            TITLE="${MERGE_GROUP_TITLE%%$'\n'*}"
           else
             BASE="${{ github.event.pull_request.base.sha }}"
             HEAD="${{ github.event.pull_request.head.sha }}"
