@@ -121,9 +121,7 @@ jobs:
 
           echo "DEBUG: BASE=$BASE HEAD=$HEAD TITLE=$TITLE"
 
-          cd .wbt
-
-          node .github/scripts/release-validate.mjs validate-pr \
+          node .wbt/.github/scripts/release-validate.mjs validate-pr \
             "$BASE" "$HEAD" "$TITLE" \
             ${{ inputs.squash_allowed }} \
             ${{ inputs.rebase_allowed }} > validation-result.json || true
