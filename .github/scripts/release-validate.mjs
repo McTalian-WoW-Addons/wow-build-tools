@@ -118,8 +118,11 @@ async function main() {
       rebaseAllowed: args[5] !== "false",
     };
 
+    console.error(`DEBUG: About to load config from ROOT=${ROOT}`);
     const analyzerConfig = await getAnalyzerConfig();
+    console.error(`DEBUG: analyzerConfig loaded`);
     const commitlintConfig = await load({ cwd: ROOT });
+    console.error(`DEBUG: commitlintConfig loaded`);
     const results = {};
 
     // Validate squash (title)
