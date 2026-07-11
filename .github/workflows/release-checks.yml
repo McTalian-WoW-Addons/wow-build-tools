@@ -120,7 +120,7 @@ jobs:
           title_type=$(jq -r '.titleType' validation-result.json)
           title_release_type=$(jq -r '.titleReleaseType' validation-result.json)
           commit_release_type=$(jq -r '.commitReleaseType' validation-result.json)
-          labels=$(jq -r '.labels | join(" ")' validation-result.json)
+          labels=$(jq -r '.labels // [] | join(" ")' validation-result.json)
 
           echo "DEBUG: squash_valid=$squash_valid rebase_valid=$rebase_valid title_type=$title_type title_release_type=$title_release_type commit_release_type=$commit_release_type labels=$labels"
 

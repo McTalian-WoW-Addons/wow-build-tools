@@ -54,7 +54,8 @@ async function validateTitle(title, analyzerConfig) {
     const commits = [{ hash: "title", message: title }];
     const releaseType = await getReleaseType(commits, analyzerConfig);
     const type = title.match(/^([^:!( ]+)/)?.[1] || "unknown";
-    return { valid: releaseType !== "no-release", type, releaseType };
+    const valid = type !== "unknown";
+    return { valid, type, releaseType: releaseType || "no-release" };
   } catch {
     return { valid: false, type: "unknown", releaseType: "no-release" };
   }
