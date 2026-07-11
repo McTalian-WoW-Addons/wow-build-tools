@@ -6,7 +6,16 @@ import { execa } from "execa";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 
-const ROOT = resolve(process.cwd());
+const getRoot = () => {
+  const args = process.argv.slice(2);
+  // Check if last arg is --repo-root
+  if (args[args.length - 2] === "--repo-root") {
+    return resolve(args[args.length - 1]);
+  }
+  return resolve(process.cwd());
+};
+
+const ROOT = getRoot();
 
 async function getCommits(base, head) {
   const { stdout } = await execa(
