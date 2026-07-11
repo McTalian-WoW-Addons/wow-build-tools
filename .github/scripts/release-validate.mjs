@@ -6,7 +6,18 @@ import { execa } from "execa";
 import { readFileSync } from "fs";
 import { resolve } from "path";
 
-const ROOT = resolve(process.cwd());
+const getRoot = () => {
+  const args = process.argv.slice(2);
+  // Check if last arg is --repo-root
+  if (args[args.length - 2] === "--repo-root") {
+    const root = resolve(args[args.length - 1]);
+    return root;
+  }
+  const cwd = resolve(process.cwd());
+  return cwd;
+};
+
+const ROOT = getRoot();
 
 async function getCommits(base, head) {
   const { stdout } = await execa(
@@ -25,9 +36,7 @@ async function getCommits(base, head) {
 }
 
 async function getAnalyzerConfig() {
-  const config = JSON.parse(
-    readFileSync(resolve(ROOT, ".releaserc.json"), "utf8"),
-  );
+  const config = JSON.parse(readFileSync(".releaserc.json", "utf8"));
   const analyzer = config.plugins.find(
     (p) => Array.isArray(p) && p[0] === "@semantic-release/commit-analyzer",
   );
@@ -129,8 +138,7 @@ async function main() {
         analyzerConfig,
         commitlintConfig,
       );
-      results.rebaseValid =
-        commitValidation.valid && commitValidation.releaseType !== "no-release";
+      results.rebaseValid = commitValidation.valid;
       results.commitReleaseType = commitValidation.releaseType;
     } else {
       results.rebaseValid = false;

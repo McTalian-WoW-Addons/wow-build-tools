@@ -108,6 +108,12 @@ jobs:
           MERGE_GROUP_TITLE: ${{ github.event.merge_group.head_commit.message || '' }}
           PR_TITLE: ${{ github.event.pull_request.title || '' }}
         run: |
+          debug() {
+            if [[ "${RUNNER_DEBUG}" == "true" ]]; then
+              echo "DEBUG: $@"
+            fi
+          }
+
           if [[ "${{ github.event_name }}" == "merge_group" ]]; then
             BASE="${{ github.event.merge_group.base_sha }}"
             HEAD="${{ github.event.merge_group.head_sha }}"
@@ -119,14 +125,15 @@ jobs:
             TITLE="$PR_TITLE"
           fi
 
-          echo "DEBUG: BASE=$BASE HEAD=$HEAD TITLE=$TITLE"
+          debug "BASE=$BASE HEAD=$HEAD TITLE=$TITLE"
 
           cd .wbt
 
           node .github/scripts/release-validate.mjs validate-pr \
             "$BASE" "$HEAD" "$TITLE" \
             ${{ inputs.squash_allowed }} \
-            ${{ inputs.rebase_allowed }} > validation-result.json || true
+            ${{ inputs.rebase_allowed }} \
+            --repo-root "${{ github.workspace }}" > validation-result.json 2>&1 || true
 
           cat validation-result.json
 
@@ -147,7 +154,7 @@ jobs:
           valid=$(jq -r '.valid' validation-result.json)
           labels=$(jq -r '.labels // [] | join(" ")' validation-result.json)
 
-          echo "DEBUG: squash_valid=$squash_valid rebase_valid=$rebase_valid title_type=$title_type title_release_type=$title_release_type commit_release_type=$commit_release_type labels=$labels"
+          debug "squash_valid=$squash_valid rebase_valid=$rebase_valid title_type=$title_type title_release_type=$title_release_type commit_release_type=$commit_release_type labels=$labels"
 
           echo "squash_valid=$squash_valid" >> $GITHUB_OUTPUT
           echo "rebase_valid=$rebase_valid" >> $GITHUB_OUTPUT
