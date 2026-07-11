@@ -8,20 +8,16 @@ import { resolve } from "path";
 
 const getRoot = () => {
   const args = process.argv.slice(2);
-  console.error(`DEBUG: argv = ${JSON.stringify(args)}`);
   // Check if last arg is --repo-root
   if (args[args.length - 2] === "--repo-root") {
     const root = resolve(args[args.length - 1]);
-    console.error(`DEBUG: Using --repo-root: ${root}`);
     return root;
   }
   const cwd = resolve(process.cwd());
-  console.error(`DEBUG: Using process.cwd(): ${cwd}`);
   return cwd;
 };
 
 const ROOT = getRoot();
-console.error(`DEBUG: ROOT = ${ROOT}`);
 
 async function getCommits(base, head) {
   const { stdout } = await execa(
@@ -116,11 +112,8 @@ async function main() {
       rebaseAllowed: args[5] !== "false",
     };
 
-    console.error(`DEBUG: About to load config from ROOT=${ROOT}`);
     const analyzerConfig = await getAnalyzerConfig();
-    console.error(`DEBUG: analyzerConfig loaded`);
     const commitlintConfig = await load({ cwd: ROOT });
-    console.error(`DEBUG: commitlintConfig loaded`);
     const results = {};
 
     // Validate squash (title)
