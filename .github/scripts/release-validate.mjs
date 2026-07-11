@@ -1,5 +1,7 @@
 #!/usr/bin/env node
 import { analyzeCommits } from "@semantic-release/commit-analyzer";
+import lint from "@commitlint/lint";
+import load from "@commitlint/load";
 import { execa } from "execa";
 import { readFileSync } from "fs";
 import { resolve } from "path";
@@ -49,15 +51,42 @@ async function getReleaseType(commits, analyzerConfig) {
   return releaseType || "no-release";
 }
 
-async function validateTitle(title, analyzerConfig) {
+async function validateTitle(title, analyzerConfig, commitlintConfig) {
   try {
     const commits = [{ hash: "title", message: title }];
     const releaseType = await getReleaseType(commits, analyzerConfig);
-    const type = title.match(/^([^:!( ]+)/)?.[1] || "unknown";
-    const valid = type !== "unknown";
+
+    // Validate using commitlint
+    const lintResult = await lint(title, commitlintConfig.rules, {
+      cwd: ROOT,
+    });
+
+    const valid = lintResult.valid;
+    const typeMatch = title.match(/^([a-z]+)/);
+    const type = typeMatch?.[1] || "unknown";
+
     return { valid, type, releaseType: releaseType || "no-release" };
   } catch {
     return { valid: false, type: "unknown", releaseType: "no-release" };
+  }
+}
+
+async function validateCommits(commits, analyzerConfig, commitlintConfig) {
+  try {
+    const releaseType = await getReleaseType(commits, analyzerConfig);
+
+    // Validate all commits with commitlint
+    const lintResults = await Promise.all(
+      commits.map((commit) =>
+        lint(commit.message, commitlintConfig.rules, { cwd: ROOT }),
+      ),
+    );
+
+    const allValid = lintResults.every((result) => result.valid);
+
+    return { valid: allValid, releaseType };
+  } catch {
+    return { valid: false, releaseType: "no-release" };
   }
 }
 
@@ -75,11 +104,16 @@ async function main() {
     };
 
     const analyzerConfig = await getAnalyzerConfig();
+    const commitlintConfig = await load({ cwd: ROOT });
     const results = {};
 
     // Validate squash (title)
     if (squashAllowed) {
-      const titleResult = await validateTitle(title, analyzerConfig);
+      const titleResult = await validateTitle(
+        title,
+        analyzerConfig,
+        commitlintConfig,
+      );
       results.squashValid = titleResult.valid;
       results.titleType = titleResult.type;
       results.titleReleaseType = titleResult.releaseType;
@@ -90,9 +124,14 @@ async function main() {
     // Validate rebase (all commits)
     if (rebaseAllowed) {
       const commits = await getCommits(baseSha, headSha);
-      const commitReleaseType = await getReleaseType(commits, analyzerConfig);
-      results.rebaseValid = commitReleaseType !== "no-release";
-      results.commitReleaseType = commitReleaseType;
+      const commitValidation = await validateCommits(
+        commits,
+        analyzerConfig,
+        commitlintConfig,
+      );
+      results.rebaseValid =
+        commitValidation.valid && commitValidation.releaseType !== "no-release";
+      results.commitReleaseType = commitValidation.releaseType;
     } else {
       results.rebaseValid = false;
     }
@@ -111,15 +150,15 @@ async function main() {
 
     // Determine labels
     if (results.squashValid && !results.rebaseValid) {
-      results.labels = ["squash valid", results.titleReleaseType];
+      results.labels = ["squash-valid", `release:${results.titleReleaseType}`];
     } else if (!results.squashValid && results.rebaseValid) {
-      results.labels = ["rebase valid", results.commitReleaseType];
+      results.labels = ["rebase-valid", `release:${results.commitReleaseType}`];
     } else if (results.squashValid && results.rebaseValid) {
       if (results.consistent) {
         results.labels = [
-          "squash valid",
-          "rebase valid",
-          results.titleReleaseType,
+          "squash-valid",
+          "rebase-valid",
+          `release:${results.titleReleaseType}`,
         ];
       }
     }

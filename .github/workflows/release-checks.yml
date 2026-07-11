@@ -76,6 +76,32 @@ jobs:
       - name: Install dependencies (wbt)
         run: npm ci --prefix .wbt
 
+      - name: Remove workflow labels
+        if: github.event_name == 'pull_request'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const workflowLabels = ['squash-valid', 'rebase-valid', 'release:major', 'release:minor', 'release:patch', 'release:no-release', 'major', 'minor', 'patch', 'no-release'];
+            const existingLabels = await github.rest.issues.listLabelsOnIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+            const removeLabels = existingLabels.data
+              .filter(l => workflowLabels.includes(l.name))
+              .map(l => l.name);
+
+            // Remove old labels
+            for (const label of removeLabels) {
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                name: label
+              });
+            }
+
       - name: Run release validation
         id: validate
         env:
@@ -85,10 +111,8 @@ jobs:
           if [[ "${{ github.event_name }}" == "merge_group" ]]; then
             BASE="${{ github.event.merge_group.base_sha }}"
             HEAD="${{ github.event.merge_group.head_sha }}"
-            # Extract PR title from merge commit message: "Merge pull request #123 from branch\n\nActual Title"
-            TITLE="${MERGE_GROUP_TITLE#*$'\n'$'\n'}"
-            # Fallback if no double newline: take last line
-            [[ "$TITLE" == "$MERGE_GROUP_TITLE" ]] && TITLE="${MERGE_GROUP_TITLE##*$'\n'}"
+            # Extract PR title from merge commit message: first line (squashed title)
+            TITLE="${MERGE_GROUP_TITLE%%$'\n'*}"
           else
             BASE="${{ github.event.pull_request.base.sha }}"
             HEAD="${{ github.event.pull_request.head.sha }}"
@@ -120,6 +144,7 @@ jobs:
           title_type=$(jq -r '.titleType' validation-result.json)
           title_release_type=$(jq -r '.titleReleaseType' validation-result.json)
           commit_release_type=$(jq -r '.commitReleaseType' validation-result.json)
+          valid=$(jq -r '.valid' validation-result.json)
           labels=$(jq -r '.labels // [] | join(" ")' validation-result.json)
 
           echo "DEBUG: squash_valid=$squash_valid rebase_valid=$rebase_valid title_type=$title_type title_release_type=$title_release_type commit_release_type=$commit_release_type labels=$labels"
@@ -129,40 +154,26 @@ jobs:
           echo "title_type=$title_type" >> $GITHUB_OUTPUT
           echo "title_release_type=$title_release_type" >> $GITHUB_OUTPUT
           echo "commit_release_type=$commit_release_type" >> $GITHUB_OUTPUT
+          echo "valid=$valid" >> $GITHUB_OUTPUT
           echo "labels=$labels" >> $GITHUB_OUTPUT
 
-      - name: Apply labels
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0        uses: actions/github-script@v9
+          # Check validation result
+          if [[ "$valid" != "true" ]]; then
+            echo "ERROR: Validation failed"
+            exit 1
+          fi
+
+      - name: Add validation labels
+        if: github.event_name == 'pull_request' && steps.validate.outputs.valid == 'true'
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
-            const prNumber = context.payload.pull_request.number;
             const newLabels = ('${{ steps.validate.outputs.labels }}' || '').split(' ').filter(Boolean);
-            const existingLabels = await github.rest.issues.listLabelsOnIssue({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber
-            });
-            const removeLabels = existingLabels.data
-              .filter(l => ['squash valid', 'rebase valid', 'release:major', 'release:minor', 'release:patch', 'release:no-release'].includes(l.name))
-              .map(l => l.name);
-
-            // Remove old labels
-            for (const label of removeLabels) {
-              await github.rest.issues.removeLabel({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                name: label
-              });
-            }
-
-            // Add new labels
-            for (const label of newLabels) {
+            if (newLabels.length > 0) {
               await github.rest.issues.addLabels({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
                 issue_number: context.payload.pull_request.number,
-                labels: [label]
+                labels: newLabels
               });
             }
