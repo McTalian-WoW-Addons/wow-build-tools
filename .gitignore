@@ -5,5 +5,3 @@ dist/*
 node_modules/
 
 .env
-
-validation-result.json
