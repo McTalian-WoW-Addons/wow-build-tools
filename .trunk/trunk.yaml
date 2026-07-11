@@ -26,6 +26,7 @@ lint:
         - .github/docs/**
     - linters: [ALL]
       paths:
+        - "**/AGENTS.md"
         - internal/github/release_schema.json
 
   enabled:
