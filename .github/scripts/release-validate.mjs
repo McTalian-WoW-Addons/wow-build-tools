@@ -150,15 +150,15 @@ async function main() {
 
     // Determine labels
     if (results.squashValid && !results.rebaseValid) {
-      results.labels = ["squash valid", results.titleReleaseType];
+      results.labels = ["squash-valid", `release:${results.titleReleaseType}`];
     } else if (!results.squashValid && results.rebaseValid) {
-      results.labels = ["rebase valid", results.commitReleaseType];
+      results.labels = ["rebase-valid", `release:${results.commitReleaseType}`];
     } else if (results.squashValid && results.rebaseValid) {
       if (results.consistent) {
         results.labels = [
-          "squash valid",
-          "rebase valid",
-          results.titleReleaseType,
+          "squash-valid",
+          "rebase-valid",
+          `release:${results.titleReleaseType}`,
         ];
       }
     }
