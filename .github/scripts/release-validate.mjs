@@ -8,14 +8,20 @@ import { resolve } from "path";
 
 const getRoot = () => {
   const args = process.argv.slice(2);
+  console.error(`DEBUG: argv = ${JSON.stringify(args)}`);
   // Check if last arg is --repo-root
   if (args[args.length - 2] === "--repo-root") {
-    return resolve(args[args.length - 1]);
+    const root = resolve(args[args.length - 1]);
+    console.error(`DEBUG: Using --repo-root: ${root}`);
+    return root;
   }
-  return resolve(process.cwd());
+  const cwd = resolve(process.cwd());
+  console.error(`DEBUG: Using process.cwd(): ${cwd}`);
+  return cwd;
 };
 
 const ROOT = getRoot();
+console.error(`DEBUG: ROOT = ${ROOT}`);
 
 async function getCommits(base, head) {
   const { stdout } = await execa(
