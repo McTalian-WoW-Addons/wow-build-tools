@@ -123,6 +123,11 @@ jobs:
 
           cd .wbt
 
+          cat .github/scripts/release-validate.mjs
+
+          echo "${{ github.workspace }}"
+          pwd
+
           node .github/scripts/release-validate.mjs validate-pr \
             "$BASE" "$HEAD" "$TITLE" \
             ${{ inputs.squash_allowed }} \
