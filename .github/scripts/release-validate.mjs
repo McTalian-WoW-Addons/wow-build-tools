@@ -138,8 +138,7 @@ async function main() {
         analyzerConfig,
         commitlintConfig,
       );
-      results.rebaseValid =
-        commitValidation.valid && commitValidation.releaseType !== "no-release";
+      results.rebaseValid = commitValidation.valid;
       results.commitReleaseType = commitValidation.releaseType;
     } else {
       results.rebaseValid = false;
