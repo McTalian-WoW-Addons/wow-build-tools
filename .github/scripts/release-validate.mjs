@@ -2,11 +2,9 @@
 import { analyzeCommits } from "@semantic-release/commit-analyzer";
 import lint from "@commitlint/lint";
 import load from "@commitlint/load";
-import execaPkg from "execa";
-import { readFileSync } from "fs";
-import { resolve } from "path";
-
-const { execa } = execaPkg;
+import execa from "execa";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
 
 const getRoot = () => {
   const args = process.argv.slice(2);
