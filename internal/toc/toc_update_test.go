@@ -1,6 +1,7 @@
 package toc
 
 import (
+	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
@@ -588,6 +589,316 @@ func TestGameFlavorToString(t *testing.T) {
 			result := tt.flavor.ToString()
 			if result != tt.expected {
 				t.Errorf("Expected %q for flavor %v, got %q", tt.expected, tt.flavor, result)
+			}
+		})
+	}
+}
+
+// TestCountAdditions tests counting version additions
+func TestCountAdditions(t *testing.T) {
+	tests := []struct {
+		name        string
+		oldVersions []int
+		newVersions []int
+		expected    int
+	}{
+		{
+			name:        "Single addition",
+			oldVersions: []int{110000},
+			newVersions: []int{110000, 110007},
+			expected:    1,
+		},
+		{
+			name:        "Multiple additions",
+			oldVersions: []int{110000},
+			newVersions: []int{110000, 110007, 110008},
+			expected:    2,
+		},
+		{
+			name:        "No additions",
+			oldVersions: []int{110000},
+			newVersions: []int{110000},
+			expected:    0,
+		},
+		{
+			name:        "All new",
+			oldVersions: []int{},
+			newVersions: []int{110000, 110007},
+			expected:    2,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := countAdditions(tt.oldVersions, tt.newVersions)
+			if result != tt.expected {
+				t.Errorf("Expected %d additions, got %d", tt.expected, result)
+			}
+		})
+	}
+}
+
+// TestCountRemovals tests counting version removals
+func TestCountRemovals(t *testing.T) {
+	tests := []struct {
+		name        string
+		oldVersions []int
+		newVersions []int
+		expected    int
+	}{
+		{
+			name:        "Single removal",
+			oldVersions: []int{110000, 110001},
+			newVersions: []int{110000},
+			expected:    1,
+		},
+		{
+			name:        "Multiple removals",
+			oldVersions: []int{110000, 110001, 110002},
+			newVersions: []int{110000},
+			expected:    2,
+		},
+		{
+			name:        "No removals",
+			oldVersions: []int{110000},
+			newVersions: []int{110000},
+			expected:    0,
+		},
+		{
+			name:        "All removed",
+			oldVersions: []int{110000, 110001},
+			newVersions: []int{},
+			expected:    2,
+		},
+		{
+			name:        "Combined add and remove",
+			oldVersions: []int{40400},
+			newVersions: []int{40401},
+			expected:    1,
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := countRemovals(tt.oldVersions, tt.newVersions)
+			if result != tt.expected {
+				t.Errorf("Expected %d removals, got %d", tt.expected, result)
+			}
+		})
+	}
+}
+
+// TestUpdateResult_JSONMarshaling tests that UpdateResult can be properly marshaled to JSON
+func TestUpdateResult_JSONMarshaling(t *testing.T) {
+	result := &UpdateResult{
+		TotalAdded:   2,
+		TotalRemoved: 1,
+	}
+
+	// Marshal to JSON
+	jsonBytes, err := json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		t.Fatalf("Failed to marshal UpdateResult to JSON: %v", err)
+	}
+
+	// Unmarshal back to verify structure
+	var unmarshaled UpdateResult
+	err = json.Unmarshal(jsonBytes, &unmarshaled)
+	if err != nil {
+		t.Fatalf("Failed to unmarshal JSON: %v", err)
+	}
+
+	// Verify counts
+	if unmarshaled.TotalAdded != result.TotalAdded {
+		t.Errorf("Expected TotalAdded %d, got %d", result.TotalAdded, unmarshaled.TotalAdded)
+	}
+	if unmarshaled.TotalRemoved != result.TotalRemoved {
+		t.Errorf("Expected TotalRemoved %d, got %d", result.TotalRemoved, unmarshaled.TotalRemoved)
+	}
+}
+
+// TestUpdateResult_JSONStructure tests that JSON output has expected structure
+func TestUpdateResult_JSONStructure(t *testing.T) {
+	result := &UpdateResult{
+		TotalAdded:   2,
+		TotalRemoved: 1,
+	}
+
+	jsonBytes, err := json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		t.Fatalf("Failed to marshal: %v", err)
+	}
+
+	jsonStr := string(jsonBytes)
+
+	// Verify JSON contains expected fields
+	if !strings.Contains(jsonStr, "total_added") {
+		t.Error("JSON missing total_added field")
+	}
+	if !strings.Contains(jsonStr, "total_removed") {
+		t.Error("JSON missing total_removed field")
+	}
+
+	// Verify values are correct
+	if !strings.Contains(jsonStr, "\"total_added\": 2") {
+		t.Error("JSON total_added value incorrect")
+	}
+	if !strings.Contains(jsonStr, "\"total_removed\": 1") {
+		t.Error("JSON total_removed value incorrect")
+	}
+}
+
+// TestUpdateResult_AddedRemovedCalculation documents the current calculation behavior
+// when old and new versions have overlapping values
+func TestUpdateResult_AddedRemovedCalculation(t *testing.T) {
+	tests := []struct {
+		name            string
+		oldVersions     []int
+		newVersions     []int
+		expectedAdded   int
+		expectedRemoved int
+		description     string
+	}{
+		{
+			name:            "Version retained and new added",
+			oldVersions:     []int{120000},
+			newVersions:     []int{120000, 120100},
+			expectedAdded:   1,
+			expectedRemoved: 0,
+			description:     "120000 stays, 120100 is new. Only counts 120100 as added.",
+		},
+		{
+			name:            "Version replaced",
+			oldVersions:     []int{40400},
+			newVersions:     []int{40401},
+			expectedAdded:   1,
+			expectedRemoved: 1,
+			description:     "40400 removed, 40401 added. Counts as 1 add + 1 remove.",
+		},
+		{
+			name:            "Multiple new versions",
+			oldVersions:     []int{120000},
+			newVersions:     []int{120000, 120100, 120200},
+			expectedAdded:   2,
+			expectedRemoved: 0,
+			description:     "120000 stays, 120100 and 120200 are new.",
+		},
+		{
+			name:            "Multiple old versions, some removed",
+			oldVersions:     []int{120000, 120001, 120002},
+			newVersions:     []int{120000, 120100},
+			expectedAdded:   1,
+			expectedRemoved: 2,
+			description:     "120000 stays, 120001/120002 removed, 120100 added.",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			added := countAdditions(tt.oldVersions, tt.newVersions)
+			removed := countRemovals(tt.oldVersions, tt.newVersions)
+
+			if added != tt.expectedAdded {
+				t.Errorf("Expected %d added, got %d. %s", tt.expectedAdded, added, tt.description)
+			}
+			if removed != tt.expectedRemoved {
+				t.Errorf("Expected %d removed, got %d. %s", tt.expectedRemoved, removed, tt.description)
+			}
+		})
+	}
+}
+
+// TestUpdateInterfaceVersions_CalculatedResult tests the calculated result from UpdateInterfaceVersions
+// This captures expectations for real scenarios with actual interface lists
+func TestUpdateInterfaceVersions_CalculatedResult(t *testing.T) {
+	tests := []struct {
+		name            string
+		oldInterfaces   []int
+		newInterfaces   map[Product]int
+		expectedAdded   int
+		expectedRemoved int
+		description     string
+	}{
+		{
+			name:            "Single version added",
+			oldInterfaces:   []int{120000},
+			newInterfaces:   map[Product]int{ProductWow: 120100},
+			expectedAdded:   1,
+			expectedRemoved: 1,
+			description:     "120000 replaced with 120100. 1 add + 1 remove.",
+		},
+		{
+			name:            "Version retained and new added",
+			oldInterfaces:   []int{120000, 120007},
+			newInterfaces:   map[Product]int{ProductWow: 120100},
+			expectedAdded:   1,
+			expectedRemoved: 2,
+			description:     "Multiple old versions, one new. Both old versions removed, one new added.",
+		},
+		{
+			name:          "Multiple products, mixed changes",
+			oldInterfaces: []int{11508, 20505, 50504, 120007},
+			newInterfaces: map[Product]int{
+				ProductWowClassicEra:         11508,
+				ProductWowClassicAnniversary: 20506,
+				ProductWowClassic:            50504,
+				ProductWow:                   120100,
+			},
+			expectedAdded:   2,
+			expectedRemoved: 2,
+			description:     "Real scenario: Anniversary 20505→20506 (1add+1remove), Retail 120007→120100 (1add+1remove), others stay. Total: 2 add + 2 remove.",
+		},
+		{
+			name:          "Multiple products, mixed changes",
+			oldInterfaces: []int{11508, 20505, 20506, 50504, 120007, 120100},
+			newInterfaces: map[Product]int{
+				ProductWowClassicEra:         11508,
+				ProductWowClassicAnniversary: 20506,
+				ProductWowClassic:            50504,
+				ProductWow:                   120007,
+				ProductWowTest:               120100,
+			},
+			expectedAdded:   0,
+			expectedRemoved: 1,
+			description:     "Real scenario: drop old bcc version, others stay. Total: 0 add + 1 remove.",
+		},
+		{
+			name:            "All versions removed",
+			oldInterfaces:   []int{120000, 120001},
+			newInterfaces:   map[Product]int{},
+			expectedAdded:   0,
+			expectedRemoved: 2,
+			description:     "No new versions. Both old versions removed.",
+		},
+		{
+			name:            "All new versions",
+			oldInterfaces:   []int{},
+			newInterfaces:   map[Product]int{ProductWow: 120100, ProductWowBeta: 120100},
+			expectedAdded:   1,
+			expectedRemoved: 0,
+			description:     "No old versions. One new version (deduplicated). 1 addition.",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Simulate the calculation logic
+			oldVersions := deduplicateAndSort(tt.oldInterfaces)
+
+			newVersionsList := []int{}
+			for _, iface := range tt.newInterfaces {
+				newVersionsList = append(newVersionsList, iface)
+			}
+			newVersions := deduplicateAndSort(newVersionsList)
+
+			added := countAdditions(oldVersions, newVersions)
+			removed := countRemovals(oldVersions, newVersions)
+
+			if added != tt.expectedAdded {
+				t.Errorf("Expected %d added, got %d. %s", tt.expectedAdded, added, tt.description)
+			}
+			if removed != tt.expectedRemoved {
+				t.Errorf("Expected %d removed, got %d. %s", tt.expectedRemoved, removed, tt.description)
 			}
 		})
 	}

@@ -25,6 +25,12 @@ type Toc struct {
 	tocSpecificInterfaces map[GameFlavor][]int
 }
 
+// UpdateResult contains metadata about version changes
+type UpdateResult struct {
+	TotalAdded   int `json:"total_added"`
+	TotalRemoved int `json:"total_removed"`
+}
+
 var l = logger.DefaultLogger
 
 func (t *Toc) addGameVersionsFromToc() map[GameFlavor][]string {
@@ -138,20 +144,31 @@ func (t *Toc) CheckForInterfaceBumps(flavorReleaseInfo FlavorReleaseInfo) (avail
 	return
 }
 
-func (t *Toc) UpdateInterfaceVersions(flavorReleaseInfo FlavorReleaseInfo) error {
+func (t *Toc) UpdateInterfaceVersions(flavorReleaseInfo FlavorReleaseInfo) (*UpdateResult, error) {
+	result := &UpdateResult{}
+
 	availableInterfaces, err := t.CheckForInterfaceBumps(flavorReleaseInfo)
 	if err != nil {
-		return fmt.Errorf("error checking for interface bumps: %v", err)
+		return nil, fmt.Errorf("error checking for interface bumps: %v", err)
 	}
+
+	// Store old versions before update
+	oldVersions := append([]int{}, t.Interface...)
 
 	// Update the toc file with the new interface versions
 	contents, err := os.ReadFile(t.Filepath)
 	if err != nil {
-		return fmt.Errorf("error reading TOC file: %v", err)
+		return nil, fmt.Errorf("error reading TOC file: %v", err)
 	}
 
 	contentsStr := string(contents)
 	lines := strings.Split(contentsStr, "\n")
+
+	// Store old interface versions before update
+	oldInterfaces := make(map[string][]int)
+	for flavor := range t.tocSpecificInterfaces {
+		oldInterfaces[flavor.ToString()] = append([]int{}, t.tocSpecificInterfaces[flavor]...)
+	}
 
 	// Detect if file uses single-line or multi-line format
 	hasSuffixedLines := false
@@ -247,8 +264,20 @@ func (t *Toc) UpdateInterfaceVersions(flavorReleaseInfo FlavorReleaseInfo) error
 							uniqueIfaces = append(uniqueIfaces, strconv.Itoa(iface))
 						}
 
+						slices.Sort(uniqueIfaces)
 						newIface := strings.Join(uniqueIfaces, ", ")
 						lines[i] = fmt.Sprintf("## Interface-%s: %s", suffix, newIface)
+
+						// Track changes
+						flavorStr := flavor.ToString()
+						oldVer := oldInterfaces[flavorStr]
+						newVer := []int{}
+						for _, v := range uniqueIfaces {
+							val, _ := strconv.Atoi(v)
+							newVer = append(newVer, val)
+						}
+						result.TotalAdded += countAdditions(oldVer, newVer)
+						result.TotalRemoved += countRemovals(oldVer, newVer)
 					}
 					// If no new interfaces were found for this flavor, leave the line unchanged
 				}
@@ -282,6 +311,12 @@ func (t *Toc) UpdateInterfaceVersions(flavorReleaseInfo FlavorReleaseInfo) error
 				}
 				newInterfaceLine := "## Interface: " + strings.Join(interfaceStrings, ", ")
 				lines[i] = newInterfaceLine
+
+				// Track changes
+				oldVer := t.Interface
+				result.TotalAdded += countAdditions(oldVer, interfaces)
+				result.TotalRemoved += countRemovals(oldVer, interfaces)
+
 				break
 			}
 		}
@@ -290,10 +325,73 @@ func (t *Toc) UpdateInterfaceVersions(flavorReleaseInfo FlavorReleaseInfo) error
 	newContents := strings.Join(lines, "\n")
 	err = os.WriteFile(t.Filepath, []byte(newContents), 0644)
 	if err != nil {
-		return fmt.Errorf("error writing updated TOC file: %v", err)
+		return nil, fmt.Errorf("error writing updated TOC file: %v", err)
 	}
 
-	return nil
+	// Calculate changes by comparing old vs new versions
+	newVersions := []int{}
+	for _, iface := range availableInterfaces {
+		newVersions = append(newVersions, iface)
+	}
+	newVersions = deduplicateAndSort(newVersions)
+	oldVersions = deduplicateAndSort(oldVersions)
+
+	result.TotalAdded = countAdditions(oldVersions, newVersions)
+	result.TotalRemoved = countRemovals(oldVersions, newVersions)
+
+	return result, nil
+}
+
+// countAdditions counts how many versions were added
+func countAdditions(oldVersions, newVersions []int) int {
+	oldSet := make(map[int]bool)
+	for _, v := range oldVersions {
+		oldSet[v] = true
+	}
+
+	added := 0
+	for _, v := range newVersions {
+		if !oldSet[v] {
+			added++
+		}
+	}
+	return added
+}
+
+// countRemovals counts how many versions were removed
+func countRemovals(oldVersions, newVersions []int) int {
+	newSet := make(map[int]bool)
+	for _, v := range newVersions {
+		newSet[v] = true
+	}
+
+	removed := 0
+	for _, v := range oldVersions {
+		if !newSet[v] {
+			removed++
+		}
+	}
+	return removed
+}
+
+// deduplicateAndSort removes duplicates from a slice and sorts it
+func deduplicateAndSort(versions []int) []int {
+	if len(versions) == 0 {
+		return versions
+	}
+
+	versionSet := make(map[int]bool)
+	for _, v := range versions {
+		versionSet[v] = true
+	}
+
+	deduped := []int{}
+	for v := range versionSet {
+		deduped = append(deduped, v)
+	}
+
+	slices.Sort(deduped)
+	return deduped
 }
 
 func (t *Toc) GetFlavorsFromInterfaces() []GameFlavor {

@@ -5,10 +5,49 @@ branding:
   color: blue
 
 inputs:
+  addon-dir:
+    description: Path to the addon directory (defaults to current working directory)
+    required: false
+    default: .
+  beta:
+    description: Include beta versions in the TOC update
+    required: false
+    default: "false"
+  ptr:
+    description: Include PTR versions in the TOC update
+    required: false
+    default: "false"
+  debug:
+    description: Enable debug output
+    required: false
+    default: "false"
+  verbose:
+    description: Enable verbose output
+    required: false
+    default: "false"
+  no-color:
+    description: Disable color output
+    required: false
+    default: "false"
+  no-emoji:
+    description: Disable emoji output
+    required: false
+    default: "false"
   args:
-    description: Arguments to pass to `wow-build-tools toc check`.
+    description: (DEPRECATED - use individual inputs instead) Arguments to pass to `wow-build-tools toc update`.
     required: false
     default: ""
+
+outputs:
+  versions-added:
+    description: Number of versions added
+    value: ${{ steps.parse-result.outputs.versions-added }}
+  versions-removed:
+    description: Number of versions removed
+    value: ${{ steps.parse-result.outputs.versions-removed }}
+  result-json:
+    description: Full result JSON with flavor-specific breakdown
+    value: ${{ steps.parse-result.outputs.result-json }}
 
 runs:
   using: composite
@@ -19,17 +58,87 @@ runs:
       run: |
         set -euo pipefail
 
-        # TODO: Add options to the action itself rather than just args
-        if [ -z "${{ inputs.args }}" ]; then
-          INPUT_ARGS=""
-        else
-          INPUT_ARGS="${{ inputs.args }}"
+        INPUT_ARGS=""
+
+        # Build flags from individual inputs
+        if [ "${{ inputs.addon-dir }}" != "." ]; then
+          INPUT_ARGS="${INPUT_ARGS} -a ${{ inputs.addon-dir }}"
+        fi
+
+        if [ "${{ inputs.beta }}" = "true" ]; then
+          INPUT_ARGS="${INPUT_ARGS} -b"
+        fi
+
+        if [ "${{ inputs.ptr }}" = "true" ]; then
+          INPUT_ARGS="${INPUT_ARGS} -p"
+        fi
+
+        # Enable debug if input is true OR RUNNER_DEBUG is set
+        if [ "${{ inputs.debug }}" = "true" ] || [ "${RUNNER_DEBUG:-}" = "1" ]; then
+          INPUT_ARGS="${INPUT_ARGS} -v"
+        fi
+
+        if [ "${{ inputs.verbose }}" = "true" ]; then
+          INPUT_ARGS="${INPUT_ARGS} -V"
+        fi
+
+        if [ "${{ inputs.no-color }}" = "true" ]; then
+          INPUT_ARGS="${INPUT_ARGS} --no-color"
+        fi
+
+        if [ "${{ inputs.no-emoji }}" = "true" ]; then
+          INPUT_ARGS="${INPUT_ARGS} --no-emoji"
+        fi
+
+        # Handle deprecated args input
+        if [ -n "${{ inputs.args }}" ]; then
+          INPUT_ARGS="${INPUT_ARGS} ${{ inputs.args }}"
+          echo "::warning title=Deprecation Warning::The 'args' input is deprecated. Use individual inputs (addon-dir, beta, ptr, debug, verbose, no-color, no-emoji) instead."
         fi
 
         echo "INPUT_ARGS=${INPUT_ARGS}" >> $GITHUB_OUTPUT
+
     - name: Run wow-build-tools
+      id: run-update
       shell: bash
       run: |
         set -euo pipefail
 
-        ${GITHUB_ACTION_PATH}/../../dist/wow-build-tools toc update ${{ steps.handle-inputs.outputs.INPUT_ARGS }}
+        # Capture JSON output from stdout; log messages go to stderr
+        if ! OUTPUT=$(${GITHUB_ACTION_PATH}/../../dist/wow-build-tools toc update ${{ steps.handle-inputs.outputs.INPUT_ARGS }} --json --no-splash 2>&1); then
+          echo "::error::Failed to update TOC versions. Command output:"
+          echo "$OUTPUT"
+          exit 1
+        fi
+
+        echo "JSON_OUTPUT<<EOF" >> $GITHUB_OUTPUT
+        echo "$OUTPUT" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Parse result
+      id: parse-result
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        JSON='${{ steps.run-update.outputs.JSON_OUTPUT }}'
+
+        # Validate JSON before trying to parse it
+        if ! echo "$JSON" | jq empty 2>/dev/null; then
+          echo "::error::Invalid JSON output from wow-build-tools. This may indicate a command failure."
+          echo "Output was:"
+          echo "$JSON"
+          exit 1
+        fi
+
+        # Extract values using jq
+        ADDED=$(echo "$JSON" | jq -r '.total_added // 0')
+        REMOVED=$(echo "$JSON" | jq -r '.total_removed // 0')
+
+        echo "versions-added=$ADDED" >> $GITHUB_OUTPUT
+        echo "versions-removed=$REMOVED" >> $GITHUB_OUTPUT
+
+        # For multiline JSON, use heredoc syntax with proper escaping
+        echo "result-json<<EOF" >> $GITHUB_OUTPUT
+        echo "$JSON" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT

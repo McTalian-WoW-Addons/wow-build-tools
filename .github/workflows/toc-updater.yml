@@ -23,6 +23,16 @@ on:
         description: PR body markdown with test checklist
         required: true
         type: string
+      beta:
+        description: Include beta versions in the TOC update
+        required: false
+        type: boolean
+        default: true
+      ptr:
+        description: Include PTR versions in the TOC update
+        required: false
+        type: boolean
+        default: true
 
 permissions: {}
 
@@ -37,34 +47,32 @@ jobs:
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
 
       - name: Update TOC Interface version
+        id: update-toc
         # trunk-ignore(pinact/unpinned-action)
         uses: McTalian-WoW-Addons/wow-build-tools/toc/update@v1
         with:
-          args: -a ${{ inputs.addon-name }} -b -p
+          addon-dir: ${{ inputs.addon-name }}
+          beta: ${{ inputs.beta }}
+          ptr: ${{ inputs.ptr }}
 
       - name: Detect change type
         id: change-type
         run: |
-          # Extract old and new interface versions from git diff
-          OLD_VERSIONS=$(git diff ${{ inputs.addon-name }}/${{ inputs.addon-name }}.toc | grep '^-## Interface:' | sed 's/^-## Interface: //' || echo "")
-          NEW_VERSIONS=$(git diff ${{ inputs.addon-name }}/${{ inputs.addon-name }}.toc | grep '^+## Interface:' | sed 's/^+## Interface: //' || echo "")
+          VERSIONS_ADDED=${{ steps.update-toc.outputs.versions-added }}
+          VERSIONS_REMOVED=${{ steps.update-toc.outputs.versions-removed }}
 
-          # Count versions in old and new
-          OLD_COUNT=$(echo "$OLD_VERSIONS" | grep -o ',' | wc -l || echo 0)
-          NEW_COUNT=$(echo "$NEW_VERSIONS" | grep -o ',' | wc -l || echo 0)
-
-          # Add 1 to counts since comma count = version count - 1
-          OLD_COUNT=$((OLD_COUNT + 1))
-          NEW_COUNT=$((NEW_COUNT + 1))
-
-          if [ "$NEW_COUNT" -gt "$OLD_COUNT" ]; then
+          if [ "$VERSIONS_ADDED" -gt 0 ]; then
             echo "pr_title=toc: bump versions, please submit any bugs" >> $GITHUB_OUTPUT
             echo "commit_message=toc: bump versions, please submit any bugs" >> $GITHUB_OUTPUT
-            echo "Detected version additions (toc commit): $OLD_COUNT -> $NEW_COUNT versions"
-          else
+            echo "Detected version additions (toc commit): $VERSIONS_ADDED added, $VERSIONS_REMOVED removed"
+          elif [ "$VERSIONS_REMOVED" -gt 0 ]; then
             echo "pr_title=chore: remove old interface versions" >> $GITHUB_OUTPUT
             echo "commit_message=chore: remove old interface versions" >> $GITHUB_OUTPUT
-            echo "Detected only version removals or no change (chore commit): $OLD_COUNT -> $NEW_COUNT versions"
+            echo "Detected only version removals (chore commit): $VERSIONS_REMOVED removed"
+          else
+            echo "pr_title=chore: no version changes" >> $GITHUB_OUTPUT
+            echo "commit_message=chore: no version changes" >> $GITHUB_OUTPUT
+            echo "No version changes detected"
           fi
 
       - name: Create pull request

@@ -39,7 +39,7 @@ file.lua
 		IsTest: false,
 	}
 
-	err = toc.UpdateInterfaceVersions(flavorInfo)
+	_, err = toc.UpdateInterfaceVersions(flavorInfo)
 	if err != nil {
 		t.Fatalf("Failed to update: %v", err)
 	}
@@ -110,7 +110,7 @@ file.lua
 		IsTest: false,
 	}
 
-	err = toc.UpdateInterfaceVersions(flavorInfo)
+	_, err = toc.UpdateInterfaceVersions(flavorInfo)
 	if err != nil {
 		t.Fatalf("Failed to update: %v", err)
 	}

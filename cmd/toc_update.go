@@ -34,20 +34,15 @@ var tocUpdateCmd = &cobra.Command{
 	Long: `Parses the addon toc file and updates the interface versions to the latest available
 versions based on the selected release channel(s) (normal, beta, and/or PTR).`,
 	RunE: func(cmd *cobra.Command, args []string) error {
-		return toc.RunTocUpdate()
+		return toc.RunTocUpdate(tocUpdateJsonFlag)
 	},
 }
+
+var tocUpdateJsonFlag bool
 
 func init() {
 	tocCmd.AddCommand(tocUpdateCmd)
 
-	// Here you will define your flags and configuration settings.
-
-	// Cobra supports Persistent Flags which will work for this command
-	// and all subcommands, e.g.:
-	// tocUpdateCmd.PersistentFlags().String("foo", "", "A help for foo")
-
-	// Cobra supports local flags which will only run when this command
-	// is called directly, e.g.:
-	// tocUpdateCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
+	// JSON output flag
+	tocUpdateCmd.Flags().BoolVar(&tocUpdateJsonFlag, "json", false, "Output update results as JSON")
 }

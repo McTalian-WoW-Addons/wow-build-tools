@@ -117,12 +117,12 @@ func TestUpdateTocFiles_DefaultBehavior(t *testing.T) {
 		originalInterfaces := make([]int, len(toc.Interface))
 		copy(originalInterfaces, toc.Interface)
 
-		err = toc.UpdateInterfaceVersions(flavorInfo)
+		_, err = toc.UpdateInterfaceVersions(flavorInfo)
 		if err != nil {
-			t.Fatalf("UpdateInterfaceVersions failed for %s: %v", filepath.Base(tocPath), err)
+			t.Fatalf("UpdateInterfaceVersions failed: %v", err)
 		}
 
-		// Read back the updated file and verify it was actually modified
+		// Read back the updated file
 		updatedToc, err := NewToc(tocPath)
 		if err != nil {
 			t.Fatalf("Failed to read updated Toc for %s: %v", tocPath, err)
@@ -170,7 +170,7 @@ func TestUpdateTocFiles_WithPtrFlag(t *testing.T) {
 			originalInterfaces := make([]int, len(toc.Interface))
 			copy(originalInterfaces, toc.Interface)
 
-			err = toc.UpdateInterfaceVersions(flavorInfo)
+			_, err = toc.UpdateInterfaceVersions(flavorInfo)
 			if err != nil {
 				t.Fatalf("UpdateInterfaceVersions failed: %v", err)
 			}
@@ -225,7 +225,7 @@ func TestUpdateTocFiles_WithBetaFlag(t *testing.T) {
 			originalInterfaces := make([]int, len(toc.Interface))
 			copy(originalInterfaces, toc.Interface)
 
-			err = toc.UpdateInterfaceVersions(flavorInfo)
+			_, err = toc.UpdateInterfaceVersions(flavorInfo)
 			if err != nil {
 				t.Fatalf("UpdateInterfaceVersions failed: %v", err)
 			}
