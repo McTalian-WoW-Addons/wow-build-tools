@@ -39,6 +39,13 @@
       "matchDatasources": ["github-actions"],
       "groupName": "github-actions",
       "groupSlug": "github-actions"
+    },
+    {
+      "description": "Ignore specific GitHub Action",
+      "matchDatasources": ["github-actions"],
+      "matchUpdateTypes": ["pin"],
+      "matchPackageNames": ["McTalian-WoW-Addons/wow-build-tools"],
+      "enabled": false
     }
   ],
   "vulnerabilityAlerts": {
