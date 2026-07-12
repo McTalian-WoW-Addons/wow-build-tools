@@ -8,7 +8,7 @@ inputs:
   addon-dir:
     description: Path to the addon directory (defaults to current working directory)
     required: false
-    default: "."
+    default: .
   beta:
     description: Include beta versions in the TOC update
     required: false
@@ -97,42 +97,44 @@ runs:
         fi
 
         echo "INPUT_ARGS=${INPUT_ARGS}" >> $GITHUB_OUTPUT
-     - name: Run wow-build-tools
-       id: run-update
-       shell: bash
-       run: |
-         set -euo pipefail
 
-         # Capture JSON output from stdout; log messages go to stderr
-         if ! OUTPUT=$(${GITHUB_ACTION_PATH}/../../dist/wow-build-tools toc update ${{ steps.handle-inputs.outputs.INPUT_ARGS }} --json 2>&1); then
-           echo "::error::Failed to update TOC versions. Command output:"
-           echo "$OUTPUT"
-           exit 1
-         fi
+    - name: Run wow-build-tools
+      id: run-update
+      shell: bash
+      run: |
+        set -euo pipefail
 
-         echo "JSON_OUTPUT<<EOF" >> $GITHUB_OUTPUT
-         echo "$OUTPUT" >> $GITHUB_OUTPUT
-         echo "EOF" >> $GITHUB_OUTPUT
-     - name: Parse result
-       id: parse-result
-       shell: bash
-       run: |
-         set -euo pipefail
+        # Capture JSON output from stdout; log messages go to stderr
+        if ! OUTPUT=$(${GITHUB_ACTION_PATH}/../../dist/wow-build-tools toc update ${{ steps.handle-inputs.outputs.INPUT_ARGS }} --json 2>&1); then
+          echo "::error::Failed to update TOC versions. Command output:"
+          echo "$OUTPUT"
+          exit 1
+        fi
 
-         JSON='${{ steps.run-update.outputs.JSON_OUTPUT }}'
-         
-         # Validate JSON before trying to parse it
-         if ! echo "$JSON" | jq empty 2>/dev/null; then
-           echo "::error::Invalid JSON output from wow-build-tools. This may indicate a command failure."
-           echo "Output was:"
-           echo "$JSON"
-           exit 1
-         fi
-         
-         # Extract values using jq
-         ADDED=$(echo "$JSON" | jq -r '.total_added // 0')
-         REMOVED=$(echo "$JSON" | jq -r '.total_removed // 0')
-         
-         echo "versions-added=$ADDED" >> $GITHUB_OUTPUT
-         echo "versions-removed=$REMOVED" >> $GITHUB_OUTPUT
-         echo "result-json=$JSON" >> $GITHUB_OUTPUT
+        echo "JSON_OUTPUT<<EOF" >> $GITHUB_OUTPUT
+        echo "$OUTPUT" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
+
+    - name: Parse result
+      id: parse-result
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        JSON='${{ steps.run-update.outputs.JSON_OUTPUT }}'
+
+        # Validate JSON before trying to parse it
+        if ! echo "$JSON" | jq empty 2>/dev/null; then
+          echo "::error::Invalid JSON output from wow-build-tools. This may indicate a command failure."
+          echo "Output was:"
+          echo "$JSON"
+          exit 1
+        fi
+
+        # Extract values using jq
+        ADDED=$(echo "$JSON" | jq -r '.total_added // 0')
+        REMOVED=$(echo "$JSON" | jq -r '.total_removed // 0')
+
+        echo "versions-added=$ADDED" >> $GITHUB_OUTPUT
+        echo "versions-removed=$REMOVED" >> $GITHUB_OUTPUT
+        echo "result-json=$JSON" >> $GITHUB_OUTPUT
