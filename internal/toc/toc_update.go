@@ -1,11 +1,19 @@
 package toc
 
 import (
+	"encoding/json"
+	"fmt"
+
 	"github.com/McTalian/wow-build-tools/internal/logger"
 )
 
-func RunTocUpdate() (err error) {
+func RunTocUpdate(outputJson bool) (err error) {
 	l := logger.GetSubLog("TOC_UPDATE")
+
+	// When outputting JSON, suppress all non-error logging to keep stdout clean
+	if outputJson {
+		l.SetLogLevel(logger.ERROR)
+	}
 
 	defer func() {
 		if err != nil {
@@ -18,6 +26,11 @@ func RunTocUpdate() (err error) {
 		return
 	}
 
+	// Aggregate results from all TOC files
+	aggregatedResult := &UpdateResult{
+		ByFlavor: make(map[string]FlavorVersionChange),
+	}
+
 	for _, tocFilePath := range tocFiles {
 		var tocFile *Toc
 		tocFile, err = NewToc(tocFilePath)
@@ -25,15 +38,35 @@ func RunTocUpdate() (err error) {
 			return
 		}
 
-		err = tocFile.UpdateInterfaceVersions(FlavorReleaseInfo{
+		result, err := tocFile.UpdateInterfaceVersions(FlavorReleaseInfo{
 			IsBeta: TocParams.Beta,
 			IsTest: TocParams.Ptr,
 		})
 		if err != nil {
-			return
+			return err
+		}
+
+		// Aggregate results
+		if result != nil {
+			aggregatedResult.TotalAdded += result.TotalAdded
+			aggregatedResult.TotalRemoved += result.TotalRemoved
+			for flavor, change := range result.ByFlavor {
+				aggregatedResult.ByFlavor[flavor] = change
+			}
 		}
 	}
 
-	l.Success("TOC file(s) updated successfully")
+	// Output JSON if flag set
+	if outputJson {
+		jsonBytes, err := json.MarshalIndent(aggregatedResult, "", "  ")
+		if err != nil {
+			return fmt.Errorf("error marshaling JSON: %v", err)
+		}
+		fmt.Println(string(jsonBytes))
+	} else {
+		// Only print success message when not outputting JSON
+		l.Success("TOC file(s) updated successfully")
+	}
+
 	return nil
 }
