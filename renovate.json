@@ -1,29 +1,26 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:base", ":dependencyDashboard", ":semanticCommits"],
-  "schedule": ["after 10pm on sunday"],
+  "extends": [
+    "config:best-practices",
+    ":dependencyDashboard",
+    ":semanticCommits"
+  ],
+  "schedule": ["* 0-6 * * 1"],
+  "timezone": "America/Denver",
+  "lockFileMaintenance": {
+    "enabled": true,
+    "automerge": true
+  },
   "packageRules": [
     {
-      "description": "Disable Renovate for eslint-config (it's a workspace dependency)",
-      "matchPackageNames": ["eslint-config"],
-      "enabled": false
-    },
-    {
-      "description": "Auto-merge patch updates for all packages",
-      "matchDatasources": ["npm", "go"],
-      "matchUpdateTypes": ["patch", "digest"],
-      "automerge": true,
-      "automergeType": "pr",
-      "automergeStrategy": "squash"
-    },
-    {
-      "description": "Auto-merge minor updates for npm/node",
-      "matchDatasources": ["npm"],
-      "matchUpdateTypes": ["minor"],
+      "description": "Auto-merge minor, patch, and digest updates for all packages",
+      "matchDatasources": ["npm", "go", "github-actions"],
+      "matchUpdateTypes": ["minor", "patch", "digest"],
       "automerge": true,
       "automergeType": "pr",
       "automergeStrategy": "squash",
-      "requiredStatusChecks": ["build"]
+      "minimumReleaseAge": "14 days",
+      "postUpdateOptions": ["goModTidy", "npmDedupe", "npmInstallTwice"]
     },
     {
       "description": "Group Go module updates",
@@ -42,17 +39,6 @@
       "matchDatasources": ["github-actions"],
       "groupName": "github-actions",
       "groupSlug": "github-actions"
-    },
-    {
-      "description": "Require status checks for major/minor updates",
-      "matchDatasources": ["npm", "go"],
-      "matchUpdateTypes": ["major", "minor"],
-      "requiredStatusChecks": ["build"]
-    },
-    {
-      "description": "Disable auto-merge for trunk-io/trunk-action (critical tooling)",
-      "matchPackageNames": ["trunk-io/trunk-action"],
-      "automerge": false
     }
   ],
   "vulnerabilityAlerts": {
