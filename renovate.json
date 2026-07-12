@@ -10,6 +10,7 @@
     },
     {
       "description": "Auto-merge patch updates for all packages",
+      "matchDatasources": ["npm", "go"],
       "matchUpdateType": ["patch", "digest"],
       "automerge": true,
       "automergeType": "pr",
@@ -44,6 +45,7 @@
     },
     {
       "description": "Require status checks for major/minor updates",
+      "matchDatasources": ["npm", "go"],
       "matchUpdateType": ["major", "minor"],
       "requiredStatusChecks": ["build"]
     },
@@ -59,5 +61,5 @@
     "automergeStrategy": "squash"
   },
   "prConcurrentLimit": 3,
-  "prCreationLimit": 2
+  "prCreationLimitPerHour": 2
 }
