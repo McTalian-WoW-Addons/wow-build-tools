@@ -1,0 +1,13 @@
+relNotes:
+  - package-lock.json
+  - tests/test-release-notes.mjs
+  - .github/workflows/wbt-pr.yml
+relValidate:
+  - .github/scripts/release-validate.mjs
+  - .github/workflows/release-checks.yml
+  - .github/workflows/wbt-pr.yml
+go:
+  - go.mod
+  - go.sum
+  - "**/*.go"
+  - .github/workflows/wbt-pr.yml
