@@ -41,9 +41,8 @@
       "groupSlug": "github-actions"
     },
     {
-      "description": "Ignore specific GitHub Action",
+      "description": "Ignore own action (self) updates",
       "matchDatasources": ["github-actions"],
-      "matchUpdateTypes": ["pin"],
       "matchPackageNames": ["McTalian-WoW-Addons/wow-build-tools"],
       "enabled": false
     }
