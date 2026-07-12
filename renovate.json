@@ -1,0 +1,63 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:base", ":dependencyDashboard", ":semanticCommits"],
+  "schedule": ["after 10pm on sunday"],
+  "packageRules": [
+    {
+      "description": "Disable Renovate for eslint-config (it's a workspace dependency)",
+      "matchPackageNames": ["eslint-config"],
+      "enabled": false
+    },
+    {
+      "description": "Auto-merge patch updates for all packages",
+      "matchUpdateType": ["patch", "digest"],
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "squash"
+    },
+    {
+      "description": "Auto-merge minor updates for npm/node",
+      "matchDatasources": ["npm"],
+      "matchUpdateType": ["minor"],
+      "automerge": true,
+      "automergeType": "pr",
+      "automergeStrategy": "squash",
+      "requiredStatusChecks": ["build"]
+    },
+    {
+      "description": "Group Go module updates",
+      "matchDatasources": ["go"],
+      "groupName": "go dependencies",
+      "groupSlug": "go-deps"
+    },
+    {
+      "description": "Group npm updates",
+      "matchDatasources": ["npm"],
+      "groupName": "npm dependencies",
+      "groupSlug": "npm-deps"
+    },
+    {
+      "description": "Group GitHub Actions",
+      "matchDatasources": ["github-actions"],
+      "groupName": "github-actions",
+      "groupSlug": "github-actions"
+    },
+    {
+      "description": "Require status checks for major/minor updates",
+      "matchUpdateType": ["major", "minor"],
+      "requiredStatusChecks": ["build"]
+    },
+    {
+      "description": "Disable auto-merge for trunk-io/trunk-action (critical tooling)",
+      "matchPackageNames": ["trunk-io/trunk-action"],
+      "automerge": false
+    }
+  ],
+  "vulnerabilityAlerts": {
+    "automerge": true,
+    "automergeType": "pr",
+    "automergeStrategy": "squash"
+  },
+  "prConcurrentLimit": 3,
+  "prCreationLimit": 2
+}
