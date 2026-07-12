@@ -23,8 +23,31 @@ jobs:
       - name: Trunk Code Quality
         uses: trunk-io/trunk-action@04ba50e7658c81db7356da96657e6e77f220bfa3 # v1.3.1
 
+  changed-files:
+    name: Determine Changed Files
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      relNotes_any_changed: ${{ steps.changed-files.outputs.relNotes_any_changed }}
+      relValidate_any_changed: ${{ steps.changed-files.outputs.relValidate_any_changed }}
+      go_any_changed: ${{ steps.changed-files.outputs.go_any_changed }}
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Changed Files
+        id: changed-files
+        uses: tj-actions/changed-files@24d32ffd492484c1d75e0c0b894501ddb9d30d62 # v47.0.0        uses: tj-actions/changed-files@v47
+        with:
+          files_yaml_from_source_file: .github/changed-files.yml
+
   test-release-notes:
     name: Test Release Notes
+    needs: changed-files
+    if: needs.changed-files.outputs.relNotes_any_changed == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -45,6 +68,8 @@ jobs:
 
   test-release-validate:
     name: Test Release Validate
+    needs: changed-files
+    if: needs.changed-files.outputs.relValidate_any_changed == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -89,6 +114,9 @@ jobs:
           node .github/scripts/release-validate.mjs validate-pr v1.1.1 v1.2.0 "feat: test" false false || true
 
   test:
+    name: Test Go Code
+    needs: changed-files
+    if: needs.changed-files.outputs.go_any_changed == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read
