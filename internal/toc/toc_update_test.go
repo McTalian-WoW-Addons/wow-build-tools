@@ -747,3 +747,135 @@ func TestUpdateResult_JSONStructure(t *testing.T) {
 		t.Error("JSON total_removed value incorrect")
 	}
 }
+
+// TestUpdateResult_FlavorBreakdown tests that flavor breakdown is properly tracked
+func TestUpdateResult_FlavorBreakdown(t *testing.T) {
+	result := &UpdateResult{
+		TotalAdded:   2,
+		TotalRemoved: 1,
+		ByFlavor: map[string]FlavorChange{
+			"retail": {
+				Added:       1,
+				Removed:     0,
+				OldVersions: []int{120000},
+				NewVersions: []int{120000, 120100},
+				Products:    []string{"wow", "wow_beta"},
+			},
+			"mists": {
+				Added:       1,
+				Removed:     1,
+				OldVersions: []int{40400},
+				NewVersions: []int{40401},
+				Products:    []string{"wow_classic"},
+			},
+		},
+	}
+
+	// Verify structure
+	if len(result.ByFlavor) != 2 {
+		t.Errorf("Expected 2 flavors, got %d", len(result.ByFlavor))
+	}
+
+	// Check retail flavor
+	retail := result.ByFlavor["retail"]
+	if retail.Added != 1 {
+		t.Errorf("Expected retail added=1, got %d", retail.Added)
+	}
+	if len(retail.NewVersions) != 2 {
+		t.Errorf("Expected 2 retail new versions, got %d", len(retail.NewVersions))
+	}
+	if len(retail.Products) != 2 {
+		t.Errorf("Expected 2 retail products, got %d", len(retail.Products))
+	}
+
+	// Check mists flavor
+	mists := result.ByFlavor["mists"]
+	if mists.Added != 1 {
+		t.Errorf("Expected mists added=1, got %d", mists.Added)
+	}
+	if mists.Removed != 1 {
+		t.Errorf("Expected mists removed=1, got %d", mists.Removed)
+	}
+
+	// Marshal to JSON and verify structure
+	jsonBytes, err := json.MarshalIndent(result, "", "  ")
+	if err != nil {
+		t.Fatalf("Failed to marshal: %v", err)
+	}
+
+	jsonStr := string(jsonBytes)
+
+	// Verify flavor fields exist
+	if !strings.Contains(jsonStr, "by_flavor") {
+		t.Error("JSON missing by_flavor field")
+	}
+	if !strings.Contains(jsonStr, "\"retail\"") {
+		t.Error("JSON missing retail flavor")
+	}
+	if !strings.Contains(jsonStr, "\"mists\"") {
+		t.Error("JSON missing mists flavor")
+	}
+	if !strings.Contains(jsonStr, "products") {
+		t.Error("JSON missing products field")
+	}
+}
+
+// TestFlavorChangeAddedRemovedCalculation documents the current calculation behavior
+// when old and new versions have overlapping values
+func TestFlavorChangeAddedRemovedCalculation(t *testing.T) {
+	tests := []struct {
+		name            string
+		oldVersions     []int
+		newVersions     []int
+		expectedAdded   int
+		expectedRemoved int
+		description     string
+	}{
+		{
+			name:            "Version retained and new added",
+			oldVersions:     []int{120000},
+			newVersions:     []int{120000, 120100},
+			expectedAdded:   1,
+			expectedRemoved: 0,
+			description:     "120000 stays, 120100 is new. Only counts 120100 as added.",
+		},
+		{
+			name:            "Version replaced",
+			oldVersions:     []int{40400},
+			newVersions:     []int{40401},
+			expectedAdded:   1,
+			expectedRemoved: 1,
+			description:     "40400 removed, 40401 added. Counts as 1 add + 1 remove.",
+		},
+		{
+			name:            "Multiple new versions",
+			oldVersions:     []int{120000},
+			newVersions:     []int{120000, 120100, 120200},
+			expectedAdded:   2,
+			expectedRemoved: 0,
+			description:     "120000 stays, 120100 and 120200 are new.",
+		},
+		{
+			name:            "Multiple old versions, some removed",
+			oldVersions:     []int{120000, 120001, 120002},
+			newVersions:     []int{120000, 120100},
+			expectedAdded:   1,
+			expectedRemoved: 2,
+			description:     "120000 stays, 120001/120002 removed, 120100 added.",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			added := countAdditions(tt.oldVersions, tt.newVersions)
+			removed := countRemovals(tt.oldVersions, tt.newVersions)
+
+			if added != tt.expectedAdded {
+				t.Errorf("Expected %d added, got %d. %s", tt.expectedAdded, added, tt.description)
+			}
+			if removed != tt.expectedRemoved {
+				t.Errorf("Expected %d removed, got %d. %s", tt.expectedRemoved, removed, tt.description)
+			}
+		})
+	}
+}

@@ -3,6 +3,7 @@ package toc
 import (
 	"encoding/json"
 	"fmt"
+	"slices"
 
 	"github.com/McTalian/wow-build-tools/internal/logger"
 )
@@ -27,7 +28,9 @@ func RunTocUpdate(outputJson bool) (err error) {
 	}
 
 	// Aggregate results from all TOC files
-	aggregatedResult := &UpdateResult{}
+	aggregatedResult := &UpdateResult{
+		ByFlavor: make(map[string]FlavorChange),
+	}
 
 	for _, tocFilePath := range tocFiles {
 		var tocFile *Toc
@@ -48,6 +51,35 @@ func RunTocUpdate(outputJson bool) (err error) {
 		if result != nil {
 			aggregatedResult.TotalAdded += result.TotalAdded
 			aggregatedResult.TotalRemoved += result.TotalRemoved
+			for flavor, change := range result.ByFlavor {
+				// Merge flavor changes
+				existingChange := aggregatedResult.ByFlavor[flavor]
+				existingChange.Added += change.Added
+				existingChange.Removed += change.Removed
+				existingChange.OldVersions = append(existingChange.OldVersions, change.OldVersions...)
+				existingChange.NewVersions = append(existingChange.NewVersions, change.NewVersions...)
+
+				// Merge products
+				productMap := make(map[string]bool)
+				for _, p := range existingChange.Products {
+					productMap[p] = true
+				}
+				for _, p := range change.Products {
+					productMap[p] = true
+				}
+				var products []string
+				for p := range productMap {
+					products = append(products, p)
+				}
+				slices.Sort(products)
+				existingChange.Products = products
+
+				// Deduplicate and sort versions
+				existingChange.OldVersions = deduplicateAndSort(existingChange.OldVersions)
+				existingChange.NewVersions = deduplicateAndSort(existingChange.NewVersions)
+
+				aggregatedResult.ByFlavor[flavor] = existingChange
+			}
 		}
 	}
 
