@@ -137,4 +137,8 @@ runs:
 
         echo "versions-added=$ADDED" >> $GITHUB_OUTPUT
         echo "versions-removed=$REMOVED" >> $GITHUB_OUTPUT
-        echo "result-json=$JSON" >> $GITHUB_OUTPUT
+
+        # For multiline JSON, use heredoc syntax with proper escaping
+        echo "result-json<<EOF" >> $GITHUB_OUTPUT
+        echo "$JSON" >> $GITHUB_OUTPUT
+        echo "EOF" >> $GITHUB_OUTPUT
