@@ -76,32 +76,6 @@ jobs:
       - name: Install dependencies (wbt)
         run: npm ci --prefix .wbt
 
-      - name: Remove workflow labels
-        if: github.event_name == 'pull_request'
-        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
-        with:
-          script: |
-            const prNumber = context.payload.pull_request.number;
-            const workflowLabels = ['squash-valid', 'rebase-valid', 'release:major', 'release:minor', 'release:patch', 'release:no-release', 'major', 'minor', 'patch', 'no-release'];
-            const existingLabels = await github.rest.issues.listLabelsOnIssue({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: prNumber
-            });
-            const removeLabels = existingLabels.data
-              .filter(l => workflowLabels.includes(l.name))
-              .map(l => l.name);
-
-            // Remove old labels
-            for (const label of removeLabels) {
-              await github.rest.issues.removeLabel({
-                owner: context.repo.owner,
-                repo: context.repo.repo,
-                issue_number: prNumber,
-                name: label
-              });
-            }
-
       - name: Run release validation
         id: validate
         env:
@@ -175,12 +149,64 @@ jobs:
         uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         with:
           script: |
-            const newLabels = ('${{ steps.validate.outputs.labels }}' || '').split(' ').filter(Boolean);
-            if (newLabels.length > 0) {
+            const prNumber = context.payload.pull_request.number;
+            const workflowLabels = ['squash-valid', 'rebase-valid', 'release:major', 'release:minor', 'release:patch', 'release:no-release', 'major', 'minor', 'patch', 'no-release'];
+            const desiredLabels = ('${{ steps.validate.outputs.labels }}' || '').split(' ').filter(Boolean);
+
+            // Get existing workflow-managed labels
+            const existingLabels = await github.rest.issues.listLabelsOnIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+            const existingWorkflowLabels = existingLabels.data
+              .filter(l => workflowLabels.includes(l.name))
+              .map(l => l.name);
+
+            // Remove labels no longer needed
+            const labelsToRemove = existingWorkflowLabels.filter(l => !desiredLabels.includes(l));
+            for (const label of labelsToRemove) {
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                name: label
+              });
+            }
+
+            // Add missing labels
+            const labelsToAdd = desiredLabels.filter(l => !existingWorkflowLabels.includes(l));
+            if (labelsToAdd.length > 0) {
               await github.rest.issues.addLabels({
                 owner: context.repo.owner,
                 repo: context.repo.repo,
-                issue_number: context.payload.pull_request.number,
-                labels: newLabels
+                issue_number: prNumber,
+                labels: labelsToAdd
+              });
+            }
+
+      - name: Remove labels on validation failure
+        if: github.event_name == 'pull_request' && failure()
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        with:
+          script: |
+            const prNumber = context.payload.pull_request.number;
+            const workflowLabels = ['squash-valid', 'rebase-valid', 'release:major', 'release:minor', 'release:patch', 'release:no-release', 'major', 'minor', 'patch', 'no-release'];
+            const existingLabels = await github.rest.issues.listLabelsOnIssue({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: prNumber
+            });
+            const removeLabels = existingLabels.data
+              .filter(l => workflowLabels.includes(l.name))
+              .map(l => l.name);
+
+            // Remove all workflow-managed labels on failure
+            for (const label of removeLabels) {
+              await github.rest.issues.removeLabel({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: prNumber,
+                name: label
               });
             }
