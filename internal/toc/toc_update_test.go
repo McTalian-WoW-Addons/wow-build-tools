@@ -748,81 +748,9 @@ func TestUpdateResult_JSONStructure(t *testing.T) {
 	}
 }
 
-// TestUpdateResult_FlavorBreakdown tests that flavor breakdown is properly tracked
-func TestUpdateResult_FlavorBreakdown(t *testing.T) {
-	result := &UpdateResult{
-		TotalAdded:   2,
-		TotalRemoved: 1,
-		ByFlavor: map[string]FlavorChange{
-			"retail": {
-				Added:       1,
-				Removed:     0,
-				OldVersions: []int{120000},
-				NewVersions: []int{120000, 120100},
-				Products:    []string{"wow", "wow_beta"},
-			},
-			"mists": {
-				Added:       1,
-				Removed:     1,
-				OldVersions: []int{40400},
-				NewVersions: []int{40401},
-				Products:    []string{"wow_classic"},
-			},
-		},
-	}
-
-	// Verify structure
-	if len(result.ByFlavor) != 2 {
-		t.Errorf("Expected 2 flavors, got %d", len(result.ByFlavor))
-	}
-
-	// Check retail flavor
-	retail := result.ByFlavor["retail"]
-	if retail.Added != 1 {
-		t.Errorf("Expected retail added=1, got %d", retail.Added)
-	}
-	if len(retail.NewVersions) != 2 {
-		t.Errorf("Expected 2 retail new versions, got %d", len(retail.NewVersions))
-	}
-	if len(retail.Products) != 2 {
-		t.Errorf("Expected 2 retail products, got %d", len(retail.Products))
-	}
-
-	// Check mists flavor
-	mists := result.ByFlavor["mists"]
-	if mists.Added != 1 {
-		t.Errorf("Expected mists added=1, got %d", mists.Added)
-	}
-	if mists.Removed != 1 {
-		t.Errorf("Expected mists removed=1, got %d", mists.Removed)
-	}
-
-	// Marshal to JSON and verify structure
-	jsonBytes, err := json.MarshalIndent(result, "", "  ")
-	if err != nil {
-		t.Fatalf("Failed to marshal: %v", err)
-	}
-
-	jsonStr := string(jsonBytes)
-
-	// Verify flavor fields exist
-	if !strings.Contains(jsonStr, "by_flavor") {
-		t.Error("JSON missing by_flavor field")
-	}
-	if !strings.Contains(jsonStr, "\"retail\"") {
-		t.Error("JSON missing retail flavor")
-	}
-	if !strings.Contains(jsonStr, "\"mists\"") {
-		t.Error("JSON missing mists flavor")
-	}
-	if !strings.Contains(jsonStr, "products") {
-		t.Error("JSON missing products field")
-	}
-}
-
-// TestFlavorChangeAddedRemovedCalculation documents the current calculation behavior
+// TestUpdateResult_AddedRemovedCalculation documents the current calculation behavior
 // when old and new versions have overlapping values
-func TestFlavorChangeAddedRemovedCalculation(t *testing.T) {
+func TestUpdateResult_AddedRemovedCalculation(t *testing.T) {
 	tests := []struct {
 		name            string
 		oldVersions     []int
@@ -869,6 +797,102 @@ func TestFlavorChangeAddedRemovedCalculation(t *testing.T) {
 		t.Run(tt.name, func(t *testing.T) {
 			added := countAdditions(tt.oldVersions, tt.newVersions)
 			removed := countRemovals(tt.oldVersions, tt.newVersions)
+
+			if added != tt.expectedAdded {
+				t.Errorf("Expected %d added, got %d. %s", tt.expectedAdded, added, tt.description)
+			}
+			if removed != tt.expectedRemoved {
+				t.Errorf("Expected %d removed, got %d. %s", tt.expectedRemoved, removed, tt.description)
+			}
+		})
+	}
+}
+
+// TestUpdateInterfaceVersions_CalculatedResult tests the calculated result from UpdateInterfaceVersions
+// This captures expectations for real scenarios with actual interface lists
+func TestUpdateInterfaceVersions_CalculatedResult(t *testing.T) {
+	tests := []struct {
+		name            string
+		oldInterfaces   []int
+		newInterfaces   map[Product]int
+		expectedAdded   int
+		expectedRemoved int
+		description     string
+	}{
+		{
+			name:            "Single version added",
+			oldInterfaces:   []int{120000},
+			newInterfaces:   map[Product]int{ProductWow: 120100},
+			expectedAdded:   1,
+			expectedRemoved: 1,
+			description:     "120000 replaced with 120100. 1 add + 1 remove.",
+		},
+		{
+			name:            "Version retained and new added",
+			oldInterfaces:   []int{120000, 120007},
+			newInterfaces:   map[Product]int{ProductWow: 120100},
+			expectedAdded:   1,
+			expectedRemoved: 2,
+			description:     "Multiple old versions, one new. Both old versions removed, one new added.",
+		},
+		{
+			name:          "Multiple products, mixed changes",
+			oldInterfaces: []int{11508, 20505, 50504, 120007},
+			newInterfaces: map[Product]int{
+				ProductWowClassicEra:         11508,
+				ProductWowClassicAnniversary: 20506,
+				ProductWowClassic:            50504,
+				ProductWow:                   120100,
+			},
+			expectedAdded:   2,
+			expectedRemoved: 2,
+			description:     "Real scenario: Anniversary 20505→20506 (1add+1remove), Retail 120007→120100 (1add+1remove), others stay. Total: 2 add + 2 remove.",
+		},
+		{
+			name:          "Multiple products, mixed changes",
+			oldInterfaces: []int{11508, 20505, 20506, 50504, 120007, 120100},
+			newInterfaces: map[Product]int{
+				ProductWowClassicEra:         11508,
+				ProductWowClassicAnniversary: 20506,
+				ProductWowClassic:            50504,
+				ProductWow:                   120007,
+				ProductWowTest:               120100,
+			},
+			expectedAdded:   0,
+			expectedRemoved: 1,
+			description:     "Real scenario: drop old bcc version, others stay. Total: 0 add + 1 remove.",
+		},
+		{
+			name:            "All versions removed",
+			oldInterfaces:   []int{120000, 120001},
+			newInterfaces:   map[Product]int{},
+			expectedAdded:   0,
+			expectedRemoved: 2,
+			description:     "No new versions. Both old versions removed.",
+		},
+		{
+			name:            "All new versions",
+			oldInterfaces:   []int{},
+			newInterfaces:   map[Product]int{ProductWow: 120100, ProductWowBeta: 120100},
+			expectedAdded:   1,
+			expectedRemoved: 0,
+			description:     "No old versions. One new version (deduplicated). 1 addition.",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			// Simulate the calculation logic
+			oldVersions := deduplicateAndSort(tt.oldInterfaces)
+
+			newVersionsList := []int{}
+			for _, iface := range tt.newInterfaces {
+				newVersionsList = append(newVersionsList, iface)
+			}
+			newVersions := deduplicateAndSort(newVersionsList)
+
+			added := countAdditions(oldVersions, newVersions)
+			removed := countRemovals(oldVersions, newVersions)
 
 			if added != tt.expectedAdded {
 				t.Errorf("Expected %d added, got %d. %s", tt.expectedAdded, added, tt.description)

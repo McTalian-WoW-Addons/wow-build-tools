@@ -25,20 +25,10 @@ type Toc struct {
 	tocSpecificInterfaces map[GameFlavor][]int
 }
 
-// FlavorChange tracks version changes for a specific flavor
-type FlavorChange struct {
-	Added       int      `json:"added"`
-	Removed     int      `json:"removed"`
-	OldVersions []int    `json:"old_versions"`
-	NewVersions []int    `json:"new_versions"`
-	Products    []string `json:"products"`
-}
-
 // UpdateResult contains metadata about version changes
 type UpdateResult struct {
-	TotalAdded   int                     `json:"total_added"`
-	TotalRemoved int                     `json:"total_removed"`
-	ByFlavor     map[string]FlavorChange `json:"by_flavor"`
+	TotalAdded   int `json:"total_added"`
+	TotalRemoved int `json:"total_removed"`
 }
 
 var l = logger.DefaultLogger
@@ -155,31 +145,15 @@ func (t *Toc) CheckForInterfaceBumps(flavorReleaseInfo FlavorReleaseInfo) (avail
 }
 
 func (t *Toc) UpdateInterfaceVersions(flavorReleaseInfo FlavorReleaseInfo) (*UpdateResult, error) {
-	result := &UpdateResult{
-		ByFlavor: make(map[string]FlavorChange),
-	}
+	result := &UpdateResult{}
 
 	availableInterfaces, err := t.CheckForInterfaceBumps(flavorReleaseInfo)
 	if err != nil {
 		return nil, fmt.Errorf("error checking for interface bumps: %v", err)
 	}
 
-	// Track old versions by Product for comparison
-	oldVersionsByProduct := make(map[Product]int)
-	for product := range availableInterfaces {
-		// Try to get old version from current interface list
-		// We'll extract this from t.Interface based on flavor
-		flavor := ProductToFlavorMap[product]
-
-		// Find an existing version for this flavor in current interfaces
-		for _, iface := range t.Interface {
-			ifaceFlavor := getFlavorFromMajorVersion(iface / 10000)
-			if ifaceFlavor == flavor || (flavor == MistsClassic && ifaceFlavor == CurrentClassic) {
-				oldVersionsByProduct[product] = iface
-				break
-			}
-		}
-	}
+	// Store old versions before update
+	oldVersions := append([]int{}, t.Interface...)
 
 	// Update the toc file with the new interface versions
 	contents, err := os.ReadFile(t.Filepath)
@@ -354,8 +328,16 @@ func (t *Toc) UpdateInterfaceVersions(flavorReleaseInfo FlavorReleaseInfo) (*Upd
 		return nil, fmt.Errorf("error writing updated TOC file: %v", err)
 	}
 
-	// Aggregate changes by flavor
-	aggregateChangesByFlavor(result, availableInterfaces, oldVersionsByProduct)
+	// Calculate changes by comparing old vs new versions
+	newVersions := []int{}
+	for _, iface := range availableInterfaces {
+		newVersions = append(newVersions, iface)
+	}
+	newVersions = deduplicateAndSort(newVersions)
+	oldVersions = deduplicateAndSort(oldVersions)
+
+	result.TotalAdded = countAdditions(oldVersions, newVersions)
+	result.TotalRemoved = countRemovals(oldVersions, newVersions)
 
 	return result, nil
 }
@@ -390,62 +372,6 @@ func countRemovals(oldVersions, newVersions []int) int {
 		}
 	}
 	return removed
-}
-
-// aggregateChangesByFlavor groups product changes by flavor and updates the result
-func aggregateChangesByFlavor(result *UpdateResult, newInterfaces map[Product]int, oldInterfaces map[Product]int) {
-	// Group products by flavor
-	flavorMap := make(map[GameFlavor][]Product)
-	for product := range newInterfaces {
-		flavor := ProductToFlavorMap[product]
-		flavorMap[flavor] = append(flavorMap[flavor], product)
-	}
-	for product := range oldInterfaces {
-		flavor := ProductToFlavorMap[product]
-		if _, exists := flavorMap[flavor]; !exists {
-			flavorMap[flavor] = []Product{product}
-		}
-	}
-
-	// Process each flavor
-	for flavor, products := range flavorMap {
-		flavorStr := flavor.ToString()
-		var oldVersions, newVersions []int
-		var productStrs []string
-
-		// Collect versions for this flavor from all its products
-		for _, product := range products {
-			productStrs = append(productStrs, string(product))
-
-			if oldVer, exists := oldInterfaces[product]; exists {
-				oldVersions = append(oldVersions, oldVer)
-			}
-			if newVer, exists := newInterfaces[product]; exists {
-				newVersions = append(newVersions, newVer)
-			}
-		}
-
-		// Remove duplicates and sort
-		oldVersions = deduplicateAndSort(oldVersions)
-		newVersions = deduplicateAndSort(newVersions)
-
-		// Count additions and removals
-		added := countAdditions(oldVersions, newVersions)
-		removed := countRemovals(oldVersions, newVersions)
-
-		// Store in result
-		slices.Sort(productStrs)
-		result.ByFlavor[flavorStr] = FlavorChange{
-			Added:       added,
-			Removed:     removed,
-			OldVersions: oldVersions,
-			NewVersions: newVersions,
-			Products:    productStrs,
-		}
-
-		result.TotalAdded += added
-		result.TotalRemoved += removed
-	}
 }
 
 // deduplicateAndSort removes duplicates from a slice and sorts it
