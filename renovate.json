@@ -11,7 +11,7 @@
     {
       "description": "Auto-merge patch updates for all packages",
       "matchDatasources": ["npm", "go"],
-      "matchUpdateType": ["patch", "digest"],
+      "matchUpdateTypes": ["patch", "digest"],
       "automerge": true,
       "automergeType": "pr",
       "automergeStrategy": "squash"
@@ -19,7 +19,7 @@
     {
       "description": "Auto-merge minor updates for npm/node",
       "matchDatasources": ["npm"],
-      "matchUpdateType": ["minor"],
+      "matchUpdateTypes": ["minor"],
       "automerge": true,
       "automergeType": "pr",
       "automergeStrategy": "squash",
@@ -46,7 +46,7 @@
     {
       "description": "Require status checks for major/minor updates",
       "matchDatasources": ["npm", "go"],
-      "matchUpdateType": ["major", "minor"],
+      "matchUpdateTypes": ["major", "minor"],
       "requiredStatusChecks": ["build"]
     },
     {
@@ -60,6 +60,5 @@
     "automergeType": "pr",
     "automergeStrategy": "squash"
   },
-  "prConcurrentLimit": 3,
-  "prCreationLimitPerHour": 2
+  "prConcurrentLimit": 3
 }
