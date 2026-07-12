@@ -25,19 +25,10 @@ type Toc struct {
 	tocSpecificInterfaces map[GameFlavor][]int
 }
 
-// FlavorVersionChange tracks version changes for a specific flavor
-type FlavorVersionChange struct {
-	Added       int   `json:"added"`
-	Removed     int   `json:"removed"`
-	OldVersions []int `json:"old_versions"`
-	NewVersions []int `json:"new_versions"`
-}
-
 // UpdateResult contains metadata about version changes
 type UpdateResult struct {
-	TotalAdded   int                            `json:"total_added"`
-	TotalRemoved int                            `json:"total_removed"`
-	ByFlavor     map[string]FlavorVersionChange `json:"by_flavor"`
+	TotalAdded   int `json:"total_added"`
+	TotalRemoved int `json:"total_removed"`
 }
 
 var l = logger.DefaultLogger
@@ -154,9 +145,7 @@ func (t *Toc) CheckForInterfaceBumps(flavorReleaseInfo FlavorReleaseInfo) (avail
 }
 
 func (t *Toc) UpdateInterfaceVersions(flavorReleaseInfo FlavorReleaseInfo) (*UpdateResult, error) {
-	result := &UpdateResult{
-		ByFlavor: make(map[string]FlavorVersionChange),
-	}
+	result := &UpdateResult{}
 
 	availableInterfaces, err := t.CheckForInterfaceBumps(flavorReleaseInfo)
 	if err != nil {
@@ -276,7 +265,7 @@ func (t *Toc) UpdateInterfaceVersions(flavorReleaseInfo FlavorReleaseInfo) (*Upd
 						newIface := strings.Join(uniqueIfaces, ", ")
 						lines[i] = fmt.Sprintf("## Interface-%s: %s", suffix, newIface)
 
-						// Track changes for this flavor
+						// Track changes
 						flavorStr := flavor.ToString()
 						oldVer := oldInterfaces[flavorStr]
 						newVer := []int{}
@@ -284,7 +273,8 @@ func (t *Toc) UpdateInterfaceVersions(flavorReleaseInfo FlavorReleaseInfo) (*Upd
 							val, _ := strconv.Atoi(v)
 							newVer = append(newVer, val)
 						}
-						trackFlavorChange(result, flavorStr, oldVer, newVer)
+						result.TotalAdded += countAdditions(oldVer, newVer)
+						result.TotalRemoved += countRemovals(oldVer, newVer)
 					}
 					// If no new interfaces were found for this flavor, leave the line unchanged
 				}
@@ -319,9 +309,10 @@ func (t *Toc) UpdateInterfaceVersions(flavorReleaseInfo FlavorReleaseInfo) (*Upd
 				newInterfaceLine := "## Interface: " + strings.Join(interfaceStrings, ", ")
 				lines[i] = newInterfaceLine
 
-				// For single-line format, track all flavors combined
+				// Track changes
 				oldVer := t.Interface
-				trackFlavorChange(result, "combined", oldVer, interfaces)
+				result.TotalAdded += countAdditions(oldVer, interfaces)
+				result.TotalRemoved += countRemovals(oldVer, interfaces)
 
 				break
 			}
@@ -337,43 +328,36 @@ func (t *Toc) UpdateInterfaceVersions(flavorReleaseInfo FlavorReleaseInfo) (*Upd
 	return result, nil
 }
 
-// trackFlavorChange tracks version additions and removals for a flavor
-func trackFlavorChange(result *UpdateResult, flavorStr string, oldVersions, newVersions []int) {
+// countAdditions counts how many versions were added
+func countAdditions(oldVersions, newVersions []int) int {
 	oldSet := make(map[int]bool)
-	newSet := make(map[int]bool)
-
 	for _, v := range oldVersions {
 		oldSet[v] = true
 	}
+
+	added := 0
+	for _, v := range newVersions {
+		if !oldSet[v] {
+			added++
+		}
+	}
+	return added
+}
+
+// countRemovals counts how many versions were removed
+func countRemovals(oldVersions, newVersions []int) int {
+	newSet := make(map[int]bool)
 	for _, v := range newVersions {
 		newSet[v] = true
 	}
 
-	var added, removed []int
-	for v := range newSet {
-		if !oldSet[v] {
-			added = append(added, v)
-		}
-	}
-	for v := range oldSet {
+	removed := 0
+	for _, v := range oldVersions {
 		if !newSet[v] {
-			removed = append(removed, v)
+			removed++
 		}
 	}
-
-	slices.Sort(added)
-	slices.Sort(removed)
-
-	change := FlavorVersionChange{
-		Added:       len(added),
-		Removed:     len(removed),
-		OldVersions: oldVersions,
-		NewVersions: newVersions,
-	}
-
-	result.ByFlavor[flavorStr] = change
-	result.TotalAdded += change.Added
-	result.TotalRemoved += change.Removed
+	return removed
 }
 
 func (t *Toc) GetFlavorsFromInterfaces() []GameFlavor {

@@ -105,7 +105,7 @@ runs:
         set -euo pipefail
 
         # Capture JSON output from stdout; log messages go to stderr
-        if ! OUTPUT=$(${GITHUB_ACTION_PATH}/../../dist/wow-build-tools toc update ${{ steps.handle-inputs.outputs.INPUT_ARGS }} --json 2>&1); then
+        if ! OUTPUT=$(${GITHUB_ACTION_PATH}/../../dist/wow-build-tools toc update ${{ steps.handle-inputs.outputs.INPUT_ARGS }} --json --no-splash 2>&1); then
           echo "::error::Failed to update TOC versions. Command output:"
           echo "$OUTPUT"
           exit 1

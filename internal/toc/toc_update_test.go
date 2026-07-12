@@ -594,115 +594,97 @@ func TestGameFlavorToString(t *testing.T) {
 	}
 }
 
-// TestTrackFlavorChange_VersionAdditions tests tracking when versions are added
-func TestTrackFlavorChange_VersionAdditions(t *testing.T) {
-	result := &UpdateResult{
-		ByFlavor: make(map[string]FlavorVersionChange),
+// TestCountAdditions tests counting version additions
+func TestCountAdditions(t *testing.T) {
+	tests := []struct {
+		name        string
+		oldVersions []int
+		newVersions []int
+		expected    int
+	}{
+		{
+			name:        "Single addition",
+			oldVersions: []int{110000},
+			newVersions: []int{110000, 110007},
+			expected:    1,
+		},
+		{
+			name:        "Multiple additions",
+			oldVersions: []int{110000},
+			newVersions: []int{110000, 110007, 110008},
+			expected:    2,
+		},
+		{
+			name:        "No additions",
+			oldVersions: []int{110000},
+			newVersions: []int{110000},
+			expected:    0,
+		},
+		{
+			name:        "All new",
+			oldVersions: []int{},
+			newVersions: []int{110000, 110007},
+			expected:    2,
+		},
 	}
 
-	oldVersions := []int{110000}
-	newVersions := []int{110000, 110007}
-
-	trackFlavorChange(result, "retail", oldVersions, newVersions)
-
-	if result.TotalAdded != 1 {
-		t.Errorf("Expected 1 version added, got %d", result.TotalAdded)
-	}
-	if result.TotalRemoved != 0 {
-		t.Errorf("Expected 0 versions removed, got %d", result.TotalRemoved)
-	}
-
-	change := result.ByFlavor["retail"]
-	if change.Added != 1 {
-		t.Errorf("Expected 1 flavor addition, got %d", change.Added)
-	}
-	if change.Removed != 0 {
-		t.Errorf("Expected 0 flavor removals, got %d", change.Removed)
-	}
-	if !reflect.DeepEqual(change.NewVersions, newVersions) {
-		t.Errorf("Expected new versions %v, got %v", newVersions, change.NewVersions)
-	}
-}
-
-// TestTrackFlavorChange_VersionRemovals tests tracking when versions are removed
-func TestTrackFlavorChange_VersionRemovals(t *testing.T) {
-	result := &UpdateResult{
-		ByFlavor: make(map[string]FlavorVersionChange),
-	}
-
-	oldVersions := []int{110000, 110001}
-	newVersions := []int{110000}
-
-	trackFlavorChange(result, "retail", oldVersions, newVersions)
-
-	if result.TotalAdded != 0 {
-		t.Errorf("Expected 0 versions added, got %d", result.TotalAdded)
-	}
-	if result.TotalRemoved != 1 {
-		t.Errorf("Expected 1 version removed, got %d", result.TotalRemoved)
-	}
-
-	change := result.ByFlavor["retail"]
-	if change.Added != 0 {
-		t.Errorf("Expected 0 flavor additions, got %d", change.Added)
-	}
-	if change.Removed != 1 {
-		t.Errorf("Expected 1 flavor removal, got %d", change.Removed)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := countAdditions(tt.oldVersions, tt.newVersions)
+			if result != tt.expected {
+				t.Errorf("Expected %d additions, got %d", tt.expected, result)
+			}
+		})
 	}
 }
 
-// TestTrackFlavorChange_CombinedAddAndRemove tests the fixed case: both add and remove in same flavor
-func TestTrackFlavorChange_CombinedAddAndRemove(t *testing.T) {
-	result := &UpdateResult{
-		ByFlavor: make(map[string]FlavorVersionChange),
+// TestCountRemovals tests counting version removals
+func TestCountRemovals(t *testing.T) {
+	tests := []struct {
+		name        string
+		oldVersions []int
+		newVersions []int
+		expected    int
+	}{
+		{
+			name:        "Single removal",
+			oldVersions: []int{110000, 110001},
+			newVersions: []int{110000},
+			expected:    1,
+		},
+		{
+			name:        "Multiple removals",
+			oldVersions: []int{110000, 110001, 110002},
+			newVersions: []int{110000},
+			expected:    2,
+		},
+		{
+			name:        "No removals",
+			oldVersions: []int{110000},
+			newVersions: []int{110000},
+			expected:    0,
+		},
+		{
+			name:        "All removed",
+			oldVersions: []int{110000, 110001},
+			newVersions: []int{},
+			expected:    2,
+		},
+		{
+			name:        "Combined add and remove",
+			oldVersions: []int{40400},
+			newVersions: []int{40401},
+			expected:    1,
+		},
 	}
 
-	// Classic added 40401, removed 40400
-	oldVersions := []int{40400}
-	newVersions := []int{40401}
-
-	trackFlavorChange(result, "classic", oldVersions, newVersions)
-
-	if result.TotalAdded != 1 {
-		t.Errorf("Expected 1 version added, got %d", result.TotalAdded)
-	}
-	if result.TotalRemoved != 1 {
-		t.Errorf("Expected 1 version removed, got %d", result.TotalRemoved)
-	}
-
-	change := result.ByFlavor["classic"]
-	if change.Added != 1 {
-		t.Errorf("Expected 1 flavor addition, got %d", change.Added)
-	}
-	if change.Removed != 1 {
-		t.Errorf("Expected 1 flavor removal, got %d", change.Removed)
-	}
-}
-
-// TestTrackFlavorChange_MultipleFlavors tests aggregating changes across multiple flavors
-func TestTrackFlavorChange_MultipleFlavors(t *testing.T) {
-	result := &UpdateResult{
-		ByFlavor: make(map[string]FlavorVersionChange),
-	}
-
-	// Retail: 1 addition
-	trackFlavorChange(result, "retail", []int{110000}, []int{110000, 110007})
-
-	// Classic: 1 addition + 1 removal
-	trackFlavorChange(result, "classic", []int{40400}, []int{40401})
-
-	// Vanilla: 1 removal
-	trackFlavorChange(result, "classic", []int{11502, 11503}, []int{11502})
-
-	if result.TotalAdded != 2 {
-		t.Errorf("Expected 2 total versions added, got %d", result.TotalAdded)
-	}
-	if result.TotalRemoved != 2 {
-		t.Errorf("Expected 2 total versions removed, got %d", result.TotalRemoved)
-	}
-
-	if len(result.ByFlavor) != 2 {
-		t.Errorf("Expected 2 flavors in result, got %d", len(result.ByFlavor))
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := countRemovals(tt.oldVersions, tt.newVersions)
+			if result != tt.expected {
+				t.Errorf("Expected %d removals, got %d", tt.expected, result)
+			}
+		})
 	}
 }
 
@@ -711,20 +693,6 @@ func TestUpdateResult_JSONMarshaling(t *testing.T) {
 	result := &UpdateResult{
 		TotalAdded:   2,
 		TotalRemoved: 1,
-		ByFlavor: map[string]FlavorVersionChange{
-			"retail": {
-				Added:       2,
-				Removed:     0,
-				OldVersions: []int{110000},
-				NewVersions: []int{110000, 110007},
-			},
-			"classic": {
-				Added:       1,
-				Removed:     1,
-				OldVersions: []int{40400},
-				NewVersions: []int{40401},
-			},
-		},
 	}
 
 	// Marshal to JSON
@@ -747,30 +715,13 @@ func TestUpdateResult_JSONMarshaling(t *testing.T) {
 	if unmarshaled.TotalRemoved != result.TotalRemoved {
 		t.Errorf("Expected TotalRemoved %d, got %d", result.TotalRemoved, unmarshaled.TotalRemoved)
 	}
-
-	// Verify flavor data
-	retailChange := unmarshaled.ByFlavor["retail"]
-	if retailChange.Added != 2 {
-		t.Errorf("Expected retail Added 2, got %d", retailChange.Added)
-	}
-	if len(retailChange.NewVersions) != 2 {
-		t.Errorf("Expected 2 retail new versions, got %d", len(retailChange.NewVersions))
-	}
 }
 
-// TestUpdateResult_JSONContainsFlavorBreakdown tests that JSON output includes flavor-specific data
-func TestUpdateResult_JSONContainsFlavorBreakdown(t *testing.T) {
+// TestUpdateResult_JSONStructure tests that JSON output has expected structure
+func TestUpdateResult_JSONStructure(t *testing.T) {
 	result := &UpdateResult{
-		TotalAdded:   1,
-		TotalRemoved: 0,
-		ByFlavor: map[string]FlavorVersionChange{
-			"retail": {
-				Added:       1,
-				Removed:     0,
-				OldVersions: []int{110000},
-				NewVersions: []int{110007},
-			},
-		},
+		TotalAdded:   2,
+		TotalRemoved: 1,
 	}
 
 	jsonBytes, err := json.MarshalIndent(result, "", "  ")
@@ -787,16 +738,12 @@ func TestUpdateResult_JSONContainsFlavorBreakdown(t *testing.T) {
 	if !strings.Contains(jsonStr, "total_removed") {
 		t.Error("JSON missing total_removed field")
 	}
-	if !strings.Contains(jsonStr, "by_flavor") {
-		t.Error("JSON missing by_flavor field")
+
+	// Verify values are correct
+	if !strings.Contains(jsonStr, "\"total_added\": 2") {
+		t.Error("JSON total_added value incorrect")
 	}
-	if !strings.Contains(jsonStr, "retail") {
-		t.Error("JSON missing retail flavor breakdown")
-	}
-	if !strings.Contains(jsonStr, "old_versions") {
-		t.Error("JSON missing old_versions field")
-	}
-	if !strings.Contains(jsonStr, "new_versions") {
-		t.Error("JSON missing new_versions field")
+	if !strings.Contains(jsonStr, "\"total_removed\": 1") {
+		t.Error("JSON total_removed value incorrect")
 	}
 }

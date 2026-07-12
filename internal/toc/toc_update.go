@@ -27,9 +27,7 @@ func RunTocUpdate(outputJson bool) (err error) {
 	}
 
 	// Aggregate results from all TOC files
-	aggregatedResult := &UpdateResult{
-		ByFlavor: make(map[string]FlavorVersionChange),
-	}
+	aggregatedResult := &UpdateResult{}
 
 	for _, tocFilePath := range tocFiles {
 		var tocFile *Toc
@@ -50,9 +48,6 @@ func RunTocUpdate(outputJson bool) (err error) {
 		if result != nil {
 			aggregatedResult.TotalAdded += result.TotalAdded
 			aggregatedResult.TotalRemoved += result.TotalRemoved
-			for flavor, change := range result.ByFlavor {
-				aggregatedResult.ByFlavor[flavor] = change
-			}
 		}
 	}
 
