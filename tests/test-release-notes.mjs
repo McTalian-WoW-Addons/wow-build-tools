@@ -36,7 +36,11 @@ console.log("\n--- Validation ---");
 
 const errors = [];
 if (!notes.trim()) errors.push("Notes are empty");
-if (!notes.includes("https://github.com/")) errors.push("Missing compare URL");
+
+const compareUrlMatch = notes.match(
+  /\(https:\/\/github\.com\/[^)]+\/compare\/[^)]+\)/,
+);
+if (!compareUrlMatch) errors.push("Missing compare URL");
 
 const expectedSections = [
   "Features",
