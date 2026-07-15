@@ -43,6 +43,12 @@
       "groupSlug": "npm-deps"
     },
     {
+      "description": "Group python updates",
+      "matchDatasources": ["pypi"],
+      "groupName": "python dependencies",
+      "groupSlug": "python-deps"
+    },
+    {
       "description": "Group GitHub Actions",
       "matchDatasources": ["github-releases"],
       "groupName": "github-actions",
