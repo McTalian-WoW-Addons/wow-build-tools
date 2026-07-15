@@ -42,7 +42,7 @@
     },
     {
       "description": "Ignore own action (self) updates",
-      "matchDatasources": ["github-actions"],
+      "matchDatasources": ["github-actions", "github-tags"],
       "matchPackageNames": ["McTalian-WoW-Addons/wow-build-tools"],
       "enabled": false
     }
