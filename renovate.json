@@ -14,8 +14,16 @@
   "packageRules": [
     {
       "description": "Auto-merge minor, patch, and digest updates for all packages",
-      "matchDatasources": ["npm", "go", "github-actions"],
-      "matchUpdateTypes": ["minor", "patch", "digest"],
+      "matchDatasources": [
+        "npm",
+        "node-version",
+        "go",
+        "golang-version",
+        "github-releases",
+        "pypi",
+        "python-version"
+      ],
+      "matchUpdateTypes": ["minor", "patch"],
       "automerge": true,
       "automergeType": "pr",
       "automergeStrategy": "squash",
@@ -35,14 +43,20 @@
       "groupSlug": "npm-deps"
     },
     {
+      "description": "Group python updates",
+      "matchDatasources": ["pypi"],
+      "groupName": "python dependencies",
+      "groupSlug": "python-deps"
+    },
+    {
       "description": "Group GitHub Actions",
-      "matchDatasources": ["github-actions"],
+      "matchDatasources": ["github-releases"],
       "groupName": "github-actions",
       "groupSlug": "github-actions"
     },
     {
       "description": "Ignore own action (self) updates",
-      "matchDatasources": ["github-actions"],
+      "matchDatasources": ["github-releases", "github-tags", "github-digest"],
       "matchPackageNames": ["McTalian-WoW-Addons/wow-build-tools"],
       "enabled": false
     }
