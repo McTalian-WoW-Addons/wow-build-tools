@@ -2,6 +2,7 @@
 .test-results/
 .release/
 dist/*
+.local-dist/
 node_modules/
 
 .env
