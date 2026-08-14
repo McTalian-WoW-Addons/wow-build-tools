@@ -19,7 +19,7 @@
         "node-version",
         "go",
         "golang-version",
-        "github-releases",
+        "github-tags",
         "pypi",
         "python-version"
       ],
@@ -50,13 +50,13 @@
     },
     {
       "description": "Group GitHub Actions",
-      "matchDatasources": ["github-releases"],
+      "matchDatasources": ["github-tags"],
       "groupName": "github-actions",
       "groupSlug": "github-actions"
     },
     {
       "description": "Ignore own action (self) updates",
-      "matchDatasources": ["github-releases", "github-tags", "github-digest"],
+      "matchDatasources": ["github-tags", "github-digest"],
       "matchPackageNames": ["McTalian-WoW-Addons/wow-build-tools"],
       "enabled": false
     }
