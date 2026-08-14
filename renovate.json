@@ -13,7 +13,7 @@
   },
   "packageRules": [
     {
-      "description": "Auto-merge minor, patch, and digest updates for all packages",
+      "description": "Auto-merge minor and patch updates for all packages (actions are already digest-pinned via config:best-practices)",
       "matchDatasources": [
         "npm",
         "node-version",
