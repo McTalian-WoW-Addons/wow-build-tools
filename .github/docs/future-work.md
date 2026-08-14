@@ -27,7 +27,6 @@ The following addons still live under the personal `McTalian` account and need t
 - [ ] Update all `McTalian/` references to `McTalian-WoW-Addons/` in workflows, TOC, README, package.json, etc.
 - [ ] Replace inline workflows with thin callers to WBT reusable workflows
 - [ ] Delete `package.json` and `package-lock.json` (semantic-release now handled by reusable CI workflow)
-- [ ] Add `dependabot.yml` with `github-actions` ecosystem (and `uv` if Python tooling present)
 - [ ] Verify CI passes with org-level secrets
 
 **After all addons are migrated:**
@@ -47,7 +46,7 @@ wow-build-tools init --name MyAddon --flavors retail,classic --platforms cursefo
 **Would generate:**
 
 - Thin caller workflows (`.github/workflows/`) pointing to WBT reusable workflows
-- `dependabot.yml` with `github-actions` ecosystem
+- `renovate.json` (see `wow-build-tools/renovate.json` for the current template)
 - `Makefile` (parameterized)
 - Rockspec
 - `.luacov`
@@ -98,7 +97,7 @@ Comprehensive pre-release validation to run before tagging a version or releasin
 
 ## Tooling: Pin GitHub Actions to Commit SHAs (`pinact`)
 
-Run `pinact` as a one-shot local operation to replace mutable tag refs (e.g. `@v4`, `@v1`) with pinned commit SHAs in all workflow files. Dependabot (`github-actions` ecosystem, now configured on all repos) will keep them updated from there.
+Run `pinact` as a one-shot local operation to replace mutable tag refs (e.g. `@v4`, `@v1`) with pinned commit SHAs in all workflow files. Renovate (`github-actions` datasource, grouped under the `github-actions` packageRule) will keep them updated from there.
 
 **Repos to run against:** `Endeavoring`, `RPGLootFeed`, `wow-build-tools`, `DeviceLayoutPreset`
 
