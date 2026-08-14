@@ -1,5 +1,6 @@
 # Define the output directory and binary name
-OUTPUT_DIR := dist
+# Local builds land outside dist/ so they don't drift the binary CI commits there on release.
+OUTPUT_DIR := .local-dist
 BINARY_NAME := wow-build-tools
 
 # Define the build command
