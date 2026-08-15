@@ -243,11 +243,20 @@ jobs:
           bin=./smoke-test/${CMD}_linux_amd64
           expected="${{ github.ref_name }}"
 
-          before="$("$bin" --version | awk '{print $NF}')"
-          echo "Before: ${before}"
-          if [ "${before}" != "${{ steps.previous.outputs.previous_tag }}" ]; then
+          # Releases published before the --version flag existed (see #216)
+          # don't support it at all, so the downloaded previous-release binary
+          # can legitimately fail this check once, right after --version was
+          # added -- don't hard-fail the job for that, since it's expected and
+          # self-resolving (every release from here on supports --version).
+          # The assertion that actually matters is the post-update one below.
+          before="$("$bin" --version 2>/dev/null | awk '{print $NF}')"
+          if [ -z "${before}" ]; then
+            echo "Previous release (${{ steps.previous.outputs.previous_tag }}) does not support --version, skipping before-check."
+          elif [ "${before}" != "${{ steps.previous.outputs.previous_tag }}" ]; then
             echo "::error::downloaded binary reports version ${before}, expected ${{ steps.previous.outputs.previous_tag }}"
             exit 1
+          else
+            echo "Before: ${before}"
           fi
 
           # `update`'s Cobra Run func never returns an error (see cmd/update.go),
