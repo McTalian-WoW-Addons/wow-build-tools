@@ -5,7 +5,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/rhysd/go-github-selfupdate/selfupdate"
+	"github.com/creativeprojects/go-selfupdate"
 )
 
 // release is a self-update-backend-agnostic view of a detected GitHub
@@ -15,6 +15,7 @@ import (
 type release struct {
 	Version      string
 	AssetURL     string
+	AssetName    string
 	ReleaseNotes string
 }
 
@@ -26,15 +27,18 @@ type selfUpdater interface {
 	UpdateTo(ctx context.Context, rel *release, cmdPath string) error
 }
 
-// rhysdUpdater adapts github.com/rhysd/go-github-selfupdate to selfUpdater.
-// rhysd/go-github-selfupdate depends on blang/semver internally (its
-// Release.Version is a semver.Version) — we only call .String() on it here,
-// never import blang/semver ourselves. Every other file in this package works
-// with plain version strings via hashicorp/go-version.
-type rhysdUpdater struct{}
+// creativeprojectsUpdater adapts github.com/creativeprojects/go-selfupdate to
+// selfUpdater. It uses the package-level DetectLatest/UpdateTo, the same
+// granularity github.com/rhysd/go-github-selfupdate offered: a plain HTTP GET
+// of the release asset by URL, no GitHub API auth required for update itself
+// (DetectLatest still hits the API, honoring $GITHUB_TOKEN if set). Internally
+// this library parses tags with Masterminds/semver/v3, whose Version.String()
+// strips any leading "v" the same way blang/semver did — confirmed via probe,
+// see internal/update probes in git history.
+type creativeprojectsUpdater struct{}
 
-func (rhysdUpdater) DetectLatest(_ context.Context, repo string) (*release, bool, error) {
-	latest, found, err := selfupdate.DetectLatest(repo)
+func (creativeprojectsUpdater) DetectLatest(ctx context.Context, repo string) (*release, bool, error) {
+	latest, found, err := selfupdate.DetectLatest(ctx, selfupdate.ParseSlug(repo))
 	if err != nil || !found || latest == nil {
 		// Normalize to false whenever release is nil, even if the
 		// underlying library claims found=true, so callers can trust
@@ -42,8 +46,9 @@ func (rhysdUpdater) DetectLatest(_ context.Context, repo string) (*release, bool
 		return nil, false, err
 	}
 	return &release{
-		Version:      latest.Version.String(),
+		Version:      latest.Version(),
 		AssetURL:     latest.AssetURL,
+		AssetName:    latest.AssetName,
 		ReleaseNotes: latest.ReleaseNotes,
 	}, true, nil
 }
@@ -51,11 +56,11 @@ func (rhysdUpdater) DetectLatest(_ context.Context, repo string) (*release, bool
 // UpdateTo mirrors go-github-selfupdate's Updater.UpdateCommand preflight:
 // if cmdPath is a symlink, resolve it first so the update overwrites the
 // real binary rather than replacing the symlink itself.
-func (rhysdUpdater) UpdateTo(_ context.Context, rel *release, cmdPath string) error {
+func (creativeprojectsUpdater) UpdateTo(ctx context.Context, rel *release, cmdPath string) error {
 	if stat, err := os.Lstat(cmdPath); err == nil && stat.Mode()&os.ModeSymlink != 0 {
 		if resolved, err := filepath.EvalSymlinks(cmdPath); err == nil {
 			cmdPath = resolved
 		}
 	}
-	return selfupdate.UpdateTo(rel.AssetURL, cmdPath)
+	return selfupdate.UpdateTo(ctx, rel.AssetURL, rel.AssetName, cmdPath)
 }

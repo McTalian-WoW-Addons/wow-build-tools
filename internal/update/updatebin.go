@@ -18,11 +18,11 @@ const version = "LOCAL"
 const repo = "McTalian-WoW-Addons/wow-build-tools"
 
 func ConfirmAndSelfUpdate() {
-	confirmAndSelfUpdate(rhysdUpdater{}, version, os.Stdin, os.Exit, os.Executable)
+	confirmAndSelfUpdate(creativeprojectsUpdater{}, version, os.Stdin, os.Exit, os.Executable)
 }
 
 func DoSelfUpdate() {
-	doSelfUpdate(rhysdUpdater{}, version, os.Executable)
+	doSelfUpdate(creativeprojectsUpdater{}, version, os.Executable)
 }
 
 func parseVersion(currentVersion string) (*goversion.Version, error) {
