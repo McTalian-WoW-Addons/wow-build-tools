@@ -197,6 +197,86 @@ jobs:
           fi
           echo "release-type=${release_type}" >> $GITHUB_OUTPUT
 
+  selfupdate-smoke-test:
+    # Downloads the previous release's binary and runs its `update` subcommand
+    # against this release, to catch self-update regressions no unit test can
+    # (mocked interface tests only re-run assertions already written; this
+    # exercises the real download/decompress/replace path against the real
+    # GitHub API). Runs in parallel with `distribute` -- neither depends on
+    # the other -- so a failure here never blocks or delays actually shipping
+    # this release to players.
+    runs-on: ubuntu-latest
+    needs: upload-assets
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    env:
+      GH_TOKEN: ${{ github.token }}
+      REPO: McTalian-WoW-Addons/wow-build-tools
+    steps:
+      - name: Determine previous release
+        id: previous
+        run: |
+          # The release that triggered this workflow is the newest one, so
+          # take the next-newest published, non-prerelease tag.
+          mapfile -t tags < <(gh release list --repo "$REPO" --exclude-drafts --exclude-pre-releases --limit 2 --json tagName --jq '.[].tagName')
+          if [ "${#tags[@]}" -lt 2 ]; then
+            echo "Fewer than two releases exist -- nothing to self-update from. Skipping."
+            echo "skip=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "skip=false" >> "$GITHUB_OUTPUT"
+          echo "previous_tag=${tags[1]}" >> "$GITHUB_OUTPUT"
+
+      - name: Download previous release binary
+        if: steps.previous.outputs.skip == 'false'
+        run: |
+          mkdir -p ./smoke-test
+          gh release download "${{ steps.previous.outputs.previous_tag }}" --repo "$REPO" \
+            --pattern "${CMD}_linux_amd64.zip" --dir ./smoke-test
+          unzip -j ./smoke-test/${CMD}_linux_amd64.zip -d ./smoke-test
+          chmod +x ./smoke-test/${CMD}_linux_amd64
+
+      - name: Verify self-update
+        if: steps.previous.outputs.skip == 'false'
+        run: |
+          bin=./smoke-test/${CMD}_linux_amd64
+          expected="${{ github.ref_name }}"
+
+          before="$("$bin" --version | awk '{print $NF}')"
+          echo "Before: ${before}"
+          if [ "${before}" != "${{ steps.previous.outputs.previous_tag }}" ]; then
+            echo "::error::downloaded binary reports version ${before}, expected ${{ steps.previous.outputs.previous_tag }}"
+            exit 1
+          fi
+
+          # `update`'s Cobra Run func never returns an error (see cmd/update.go),
+          # so it always exits 0 regardless of whether the self-update actually
+          # succeeded -- verify by re-checking --version instead of trusting the
+          # exit code. Release assets can also take a moment to become fully
+          # queryable right after publish, so poll a few times before giving up
+          # (same idea as the probe methodology used to validate the self-update
+          # library swap in internal/update).
+          after="${before}"
+          attempt=0
+          max_attempts=6
+          while [ "${after}" != "${expected}" ] && [ "${attempt}" -lt "${max_attempts}" ]; do
+            attempt=$((attempt + 1))
+            echo "Running self-update (attempt ${attempt}/${max_attempts})..."
+            "$bin" update || true
+            after="$("$bin" --version | awk '{print $NF}')"
+            if [ "${after}" != "${expected}" ]; then
+              echo "Not yet updated (still ${after}), retrying in 20s..."
+              sleep 20
+            fi
+          done
+
+          if [ "${after}" != "${expected}" ]; then
+            echo "::error::expected version ${expected} after self-update, got ${after} (gave up after ${max_attempts} attempts)"
+            exit 1
+          fi
+          echo "Self-update verified: ${before} -> ${after}"
+
   distribute:
     runs-on: ubuntu-latest
     needs: upload-assets
