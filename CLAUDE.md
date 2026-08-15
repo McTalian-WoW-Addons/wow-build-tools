@@ -17,6 +17,10 @@ make tools    # install Go tools from go.tools; requires jq
 make release  # copy built binaries onto PATH (~/bin and the Windows-side bin)
 ```
 
+## Before committing
+
+Run `make test` and `./trunk check` before every commit — don't rely on git hooks alone. `trunk git-hooks sync` installs a local pre-commit hook (points `core.hooksPath` at `~/.cache/trunk/...`, scoped to this repo only — a fresh clone needs it re-run), but it only runs `trunk fmt` (autofixers). Non-autofixable issues — e.g. a markdownlint content rule like `MD041` — pass silently through commit and only surface at `trunk-check-pre-push` or CI. Nothing runs the Go test suite on commit or push at all.
+
 ## Dependency swaps
 
 Renovate flags abandoned/dormant dependencies on the [Dependency Dashboard issue](https://github.com/McTalian-WoW-Addons/wow-build-tools/issues). `renovate.json`'s `abandonmentThreshold` (inherited from `config:best-practices`) drives that; suppress a false positive per-package with a `packageRules` entry setting `"abandonmentThreshold": null` rather than editing the threshold globally.
