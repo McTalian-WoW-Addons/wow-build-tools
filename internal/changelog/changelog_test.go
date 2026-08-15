@@ -201,3 +201,45 @@ func TestGetChangelog(t *testing.T) {
 		})
 	}
 }
+
+// TestGetChangelog_ReusedPkgDirTruncatesStaleContent locks in a fix for a bug
+// where the generated CHANGELOG.md was opened with O_CREATE|O_WRONLY but no
+// O_TRUNC. --keepPackageDir (which `make watch` always sets, see
+// internal/build/watch.go) reuses pkgDir across builds without wiping it
+// first, so if a regenerated changelog is shorter than what was written on a
+// previous run, stale trailing bytes from that previous run survived into
+// the new CHANGELOG.md instead of being overwritten.
+func TestGetChangelog_ReusedPkgDirTruncatesStaleContent(t *testing.T) {
+	topDir := t.TempDir()
+	pkgDir := t.TempDir()
+
+	first := &Changelog{
+		topDir:            topDir,
+		pkgDir:            pkgDir,
+		MarkupType:        MarkdownMT,
+		generateChangelog: true,
+		repo: &repo.MockVcsRepo{
+			GetChangelogFunc: func(title string) (string, error) {
+				return "a much longer changelog entry from the first build", nil
+			},
+		},
+	}
+	require.NoError(t, first.GetChangelog())
+
+	second := &Changelog{
+		topDir:            topDir,
+		pkgDir:            pkgDir,
+		MarkupType:        MarkdownMT,
+		generateChangelog: true,
+		repo: &repo.MockVcsRepo{
+			GetChangelogFunc: func(title string) (string, error) {
+				return "short", nil
+			},
+		},
+	}
+	require.NoError(t, second.GetChangelog())
+
+	contents, err := os.ReadFile(filepath.Join(pkgDir, "CHANGELOG.md"))
+	require.NoError(t, err)
+	require.Equal(t, "short", string(contents), "stale bytes from the previous, longer changelog should not survive")
+}
