@@ -30,7 +30,8 @@ import (
 var linkCmd = &cobra.Command{
 	Use:   "link",
 	Short: "Create symlinks in World of Warcraft AddOns directory to the addon(s) in the build output directory",
-	Long: `Create symlinks in the World of Warcraft AddOns directory to the addon(s) in the build output directory.
+	Long: `
+Create symlinks in the World of Warcraft AddOns directory to the addon(s) in the build output directory.
 
 By default, link targets are filtered to client installs that are compatible with your addon's TOC Interface version(s).
 Compatibility is resolved from TOC files in the project top directory first.

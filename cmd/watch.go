@@ -36,7 +36,8 @@ import (
 var watchCmd = &cobra.Command{
 	Use:   "watch",
 	Short: "Run build when files change",
-	Long: `Watches the current directory for changes and runs the build command when a change is detected.
+	Long: `
+Watches the current directory for changes and runs the build command when a change is detected.
 
 Build command flags can also be passed to this subcommand, including --force-alpha, --force-beta, and --force-dev.
 
