@@ -44,7 +44,47 @@ func failingExecutablePath() (string, error) {
 	return "", errors.New("no exe")
 }
 
+// TestParseVersion locks in "v" prefix handling. Production always calls
+// parseVersion with a git-tag-shaped string (release workflow sed-replaces
+// the version const with github.ref_name, e.g. "v1.5.3") -- every other test
+// in this file uses a bare "1.0.0" style string instead, which never
+// exercises that prefix.
+func TestParseVersion(t *testing.T) {
+	t.Run("v-prefixed version parses same as unprefixed", func(t *testing.T) {
+		withV, err := parseVersion("v1.5.3")
+		require.NoError(t, err)
+		withoutV, err := parseVersion("1.5.3")
+		require.NoError(t, err)
+
+		assert.True(t, withV.Equal(withoutV))
+	})
+
+	t.Run("v-prefixed prerelease parses and orders correctly", func(t *testing.T) {
+		older, err := parseVersion("v1.0.0-beta.5")
+		require.NoError(t, err)
+		newer, err := parseVersion("v1.0.0-beta.44")
+		require.NoError(t, err)
+
+		assert.True(t, older.LessThan(newer))
+	})
+
+	t.Run("LOCAL is not a version", func(t *testing.T) {
+		_, err := parseVersion("LOCAL")
+		assert.Error(t, err)
+	})
+}
+
 func TestConfirmAndSelfUpdate(t *testing.T) {
+	t.Run("v-prefixed current version (production shape), newer release updates", func(t *testing.T) {
+		fu := &fakeUpdater{detectLatestFound: true, detectLatestRelease: &release{Version: "2.0.0", AssetURL: "https://example.com/asset"}}
+		exited := false
+
+		confirmAndSelfUpdate(fu, "v1.0.0", strings.NewReader("y\n"), func(int) { exited = true }, fakeExecutablePath)
+
+		require.Equal(t, 1, fu.updateToCalls)
+		assert.True(t, exited)
+	})
+
 	t.Run("invalid current version skips without calling updater", func(t *testing.T) {
 		fu := &fakeUpdater{}
 		exited := false
@@ -192,6 +232,14 @@ func TestConfirmAndSelfUpdate(t *testing.T) {
 }
 
 func TestDoSelfUpdate(t *testing.T) {
+	t.Run("v-prefixed current version (production shape), newer release updates", func(t *testing.T) {
+		fu := &fakeUpdater{detectLatestFound: true, detectLatestRelease: &release{Version: "2.0.0"}}
+
+		doSelfUpdate(fu, "v1.0.0", fakeExecutablePath)
+
+		assert.Equal(t, 1, fu.updateToCalls)
+	})
+
 	t.Run("invalid current version skips without calling updater", func(t *testing.T) {
 		fu := &fakeUpdater{}
 
