@@ -111,7 +111,6 @@ func (p *PkgMeta) FetchExternals(packageDir string, forceExternals bool) error {
 				continue
 			}
 		case external.Svn:
-			checkoutWg.Add(1)
 			currentEntry.LogGroup.Info("%sProcessing external for %s", logger.Processing, currentPath)
 			ext, err = external.NewSvnExternal(currentEntry, forceExternals)
 			if err != nil {
@@ -120,6 +119,7 @@ func (p *PkgMeta) FetchExternals(packageDir string, forceExternals bool) error {
 				checkoutErrChan <- fmt.Errorf("failed to create svn external: %w", err)
 				continue
 			}
+			checkoutWg.Add(1)
 		case external.Hg:
 			externalLogger.Warn("Mercurial externals are not supported yet for %s", currentPath)
 			continue
