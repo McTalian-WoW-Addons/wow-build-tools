@@ -69,7 +69,7 @@ func (r *GitHubRelease) UpdateRelease(newPayload GitHubReleasePayload) error {
 	return nil
 }
 
-func CreateRelease(slug string, payload GitHubReleasePayload) (release *GitHubRelease, err error) {
+func CreateRelease(slug string, payload GitHubReleasePayload) (*GitHubRelease, error) {
 	r := &GitHubRelease{
 		GitHubReleasePayload: payload,
 		Slug:                 slug,
@@ -96,9 +96,12 @@ func CreateRelease(slug string, payload GitHubReleasePayload) (release *GitHubRe
 		return nil, fmt.Errorf("failed to create release: %d", resp.StatusCode)
 	}
 
-	err = json.NewDecoder(resp.Body).Decode(release)
+	if err := json.NewDecoder(resp.Body).Decode(r); err != nil {
+		return nil, fmt.Errorf("failed to decode release: %w", err)
+	}
+	r.Slug = slug
 
-	return release, err
+	return r, nil
 }
 
 var ErrReleaseNotFound = fmt.Errorf("release not found")
