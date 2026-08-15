@@ -1,11 +1,9 @@
 package update
 
 import (
-	"bufio"
 	"context"
 	"io"
 	"os"
-	"strings"
 
 	goversion "github.com/hashicorp/go-version"
 
@@ -19,20 +17,15 @@ import (
 const version = "LOCAL"
 const repo = "McTalian-WoW-Addons/wow-build-tools"
 
-// Package-level seams so tests can substitute the current version, update
-// backend, stdin, os.Exit, and os.Executable without touching the control
-// flow below. currentVersion starts equal to the (possibly sed-replaced)
-// version const in production; it exists only so tests can override it,
-// since the const itself can't be reassigned.
-var (
-	currentVersion             = version
-	updater        selfUpdater = rhysdUpdater{}
-	stdin          io.Reader   = os.Stdin
-	osExit                     = os.Exit
-	executablePath             = os.Executable
-)
+func ConfirmAndSelfUpdate() {
+	confirmAndSelfUpdate(rhysdUpdater{}, version, os.Stdin, os.Exit, os.Executable)
+}
 
-func checkVersion() (*goversion.Version, error) {
+func DoSelfUpdate() {
+	doSelfUpdate(rhysdUpdater{}, version, os.Executable)
+}
+
+func parseVersion(currentVersion string) (*goversion.Version, error) {
 	v, err := goversion.NewVersion(currentVersion)
 	if err != nil {
 		logger.Debug("Running in local, alpha, or beta mode (%s). Skipping self-update.", currentVersion)
@@ -41,13 +34,13 @@ func checkVersion() (*goversion.Version, error) {
 	return v, nil
 }
 
-func ConfirmAndSelfUpdate() {
-	v, err := checkVersion()
+func confirmAndSelfUpdate(u selfUpdater, currentVersion string, stdin io.Reader, osExit func(int), executablePath func() (string, error)) {
+	v, err := parseVersion(currentVersion)
 	if err != nil {
 		return
 	}
 
-	latest, found, err := updater.DetectLatest(context.Background(), repo)
+	latest, found, err := u.DetectLatest(context.Background(), repo)
 	if err != nil {
 		logger.Error("Error occurred while detecting version: %v", err)
 		return
@@ -66,14 +59,12 @@ func ConfirmAndSelfUpdate() {
 		return
 	}
 
-	logger.Prompt("Do you want to update to %s? (y/N): ", latest.Version)
-	input, err := bufio.NewReader(stdin).ReadString('\n')
-	input = strings.ToLower(strings.TrimSpace(input))
-	if err != nil || (input != "y" && input != "n" && input != "") {
-		logger.Error("Invalid input (%s), needed 'y' or 'n'", input)
+	update, err := logger.PromptYesNo(stdin, "Do you want to update to %s? (y/N): ", latest.Version)
+	if err != nil {
+		logger.Error("Invalid input: %v", err)
 		return
 	}
-	if input == "n" || input == "" {
+	if !update {
 		logger.Info("Skipping update, if you change your mind, run `wow-build-tools update` at any time")
 		return
 	}
@@ -83,7 +74,7 @@ func ConfirmAndSelfUpdate() {
 		logger.Error("Could not locate executable path: %v", err)
 		return
 	}
-	if err := updater.UpdateTo(context.Background(), latest, exe); err != nil {
+	if err := u.UpdateTo(context.Background(), latest, exe); err != nil {
 		logger.Error("Error occurred while updating binary: %v", err)
 		return
 	}
@@ -93,15 +84,15 @@ func ConfirmAndSelfUpdate() {
 	osExit(0)
 }
 
-func DoSelfUpdate() {
-	v, err := checkVersion()
+func doSelfUpdate(u selfUpdater, currentVersion string, executablePath func() (string, error)) {
+	v, err := parseVersion(currentVersion)
 	if err != nil {
 		return
 	}
 
 	logger.Info("Checking for newer versions that %s...", v.String())
 
-	latest, found, err := updater.DetectLatest(context.Background(), repo)
+	latest, found, err := u.DetectLatest(context.Background(), repo)
 	if err != nil {
 		logger.Error("Binary update failed: %v", err)
 		return
@@ -127,7 +118,7 @@ func DoSelfUpdate() {
 		logger.Error("Binary update failed: %v", err)
 		return
 	}
-	if err := updater.UpdateTo(context.Background(), latest, exe); err != nil {
+	if err := u.UpdateTo(context.Background(), latest, exe); err != nil {
 		logger.Error("Binary update failed: %v", err)
 		return
 	}
