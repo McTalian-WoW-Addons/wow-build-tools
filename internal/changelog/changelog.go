@@ -120,7 +120,7 @@ func (c *Changelog) GetChangelog() error {
 	c.PreExistingFilePath = filepath.Join(c.pkgDir, "CHANGELOG.md")
 
 	// Write the changelog to the package directory
-	f, err := os.OpenFile(c.PreExistingFilePath, os.O_CREATE|os.O_WRONLY, 0644)
+	f, err := os.OpenFile(c.PreExistingFilePath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 	if err != nil {
 		logger.Error("Could not create the changelog file: %v", err)
 		return err
@@ -173,7 +173,7 @@ func NewChangelog(repo repo.VcsRepo, pkgMeta *pkg.PkgMeta, title string, pkgDir 
 
 		// Write the release body to the cache directory
 		releaseBodyPath := filepath.Join(pkgDir, "CHANGELOG.md")
-		f, err := os.OpenFile(releaseBodyPath, os.O_CREATE|os.O_WRONLY, 0644)
+		f, err := os.OpenFile(releaseBodyPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
 		if err != nil {
 			return nil, fmt.Errorf("could not create the temporary github changelog file: %w", err)
 		}
