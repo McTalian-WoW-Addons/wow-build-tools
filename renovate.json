@@ -59,6 +59,11 @@
       "matchDatasources": ["github-tags", "github-digest"],
       "matchPackageNames": ["McTalian-WoW-Addons/wow-build-tools"],
       "enabled": false
+    },
+    {
+      "description": "defusedxml is feature-complete, not actively releasing; don't flag as abandoned",
+      "matchPackageNames": ["defusedxml"],
+      "abandonmentThreshold": null
     }
   ],
   "vulnerabilityAlerts": {

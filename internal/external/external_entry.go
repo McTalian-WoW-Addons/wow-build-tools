@@ -6,7 +6,7 @@ import (
 	"strings"
 
 	"github.com/fatih/color"
-	"gopkg.in/yaml.v3"
+	"go.yaml.in/yaml/v3"
 
 	"github.com/McTalian/wow-build-tools/internal/config"
 	"github.com/McTalian/wow-build-tools/internal/logger"

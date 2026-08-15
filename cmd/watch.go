@@ -27,7 +27,6 @@ import (
 	"os/signal"
 	"syscall"
 
-	"github.com/lithammer/dedent"
 	"github.com/spf13/cobra"
 
 	"github.com/McTalian/wow-build-tools/internal/build"
@@ -37,16 +36,14 @@ import (
 var watchCmd = &cobra.Command{
 	Use:   "watch",
 	Short: "Run build when files change",
-	Long: dedent.Dedent(`
-	Watches the current directory for changes and runs the build command when a change is detected.
+	Long: `Watches the current directory for changes and runs the build command when a change is detected.
 
-	Build command flags can also be passed to this subcommand, including --force-alpha, --force-beta, and --force-dev.
-	
-	Running "wow-build-tools link" before running this command is recommended to ensure that the build output directories are symlinked to your WoW installation directories.
-	
-	You can enable "--copyToWowDirs" as an alterative. The build output directories will then be copied to configured WoW installation directories.
-	When copying from WSL to the host system, the copies can be slower than desired.
-	`),
+Build command flags can also be passed to this subcommand, including --force-alpha, --force-beta, and --force-dev.
+
+Running "wow-build-tools link" before running this command is recommended to ensure that the build output directories are symlinked to your WoW installation directories.
+
+You can enable "--copyToWowDirs" as an alterative. The build output directories will then be copied to configured WoW installation directories.
+When copying from WSL to the host system, the copies can be slower than desired.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		// Create a context that cancels on interrupt signals (Ctrl+C)
 		ctx, cancel := context.WithCancel(context.Background())
