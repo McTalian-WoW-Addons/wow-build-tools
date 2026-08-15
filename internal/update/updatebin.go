@@ -17,6 +17,13 @@ import (
 const version = "LOCAL"
 const repo = "McTalian-WoW-Addons/wow-build-tools"
 
+// CurrentVersion returns the version this binary was built with -- "LOCAL"
+// for a dev build, or the release tag baked in via the sed replacement
+// described above.
+func CurrentVersion() string {
+	return version
+}
+
 func ConfirmAndSelfUpdate() {
 	confirmAndSelfUpdate(rhysdUpdater{}, version, os.Stdin, os.Exit, os.Executable)
 }

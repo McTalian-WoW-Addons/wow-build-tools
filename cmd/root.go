@@ -28,6 +28,7 @@ import (
 	"github.com/McTalian/wow-build-tools/internal/cmdargs"
 	"github.com/McTalian/wow-build-tools/internal/config"
 	"github.com/McTalian/wow-build-tools/internal/logger"
+	"github.com/McTalian/wow-build-tools/internal/update"
 	"github.com/fatih/color"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
@@ -35,8 +36,9 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "wow-build-tools",
-	Short: "World of Warcraft addon build tools",
+	Use:     "wow-build-tools",
+	Short:   "World of Warcraft addon build tools",
+	Version: update.CurrentVersion(),
 	Long: `This tool is used to build World of Warcraft addons both for local development
 	and for release/distribution via CurseForge, WoWInterface, and Wago.`,
 	// Uncomment the following line if your bare application
