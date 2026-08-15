@@ -2,10 +2,13 @@ package pkg
 
 import (
 	"testing"
+	"time"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 	"go.yaml.in/yaml/v3"
+
+	"github.com/McTalian/wow-build-tools/internal/external"
 )
 
 func TestPkgMeta_UnmarshalYAML(t *testing.T) {
@@ -52,4 +55,35 @@ wowi-archive-previous: false
 	assert.False(t, pkgMeta.WowiArchivePrevious, "Expected WowiArchivePrevious to be false")
 	assert.True(t, pkgMeta.WowiConvertChangelog, "Expected WowiConvertChangelog to be true")
 	assert.True(t, pkgMeta.WowiCreateChangelog, "Expected WowiCreateChangelog to be true")
+}
+
+// TestFetchExternals_SvnConstructorErrorDoesNotHang locks in a fix for a bug
+// where checkoutWg.Add(1) ran before NewSvnExternal, so an early "continue"
+// on constructor failure (e.g. svn missing from PATH) left the WaitGroup
+// counter permanently incremented with no matching Done -- checkoutWg.Wait()
+// then blocked forever instead of FetchExternals returning the error.
+func TestFetchExternals_SvnConstructorErrorDoesNotHang(t *testing.T) {
+	t.Setenv("PATH", t.TempDir()) // hide svn so external.NewSvnExternal errors
+
+	pkgMeta := &PkgMeta{
+		Externals: map[string]*external.ExternalEntry{
+			"Libs/Foo": {
+				EType:    external.Svn,
+				URL:      "https://example.com/svn/foo/trunk",
+				DestPath: "Libs/Foo",
+			},
+		},
+	}
+
+	done := make(chan error, 1)
+	go func() {
+		done <- pkgMeta.FetchExternals(t.TempDir(), false)
+	}()
+
+	select {
+	case err := <-done:
+		assert.Error(t, err, "expected the missing-svn constructor error to surface")
+	case <-time.After(5 * time.Second):
+		t.Fatal("FetchExternals did not return -- checkoutWg.Wait() likely hung on an unmatched Add/Done")
+	}
 }
