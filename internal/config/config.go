@@ -40,16 +40,13 @@ func promptCreateConfigFileIfNotExist(localPath string) error {
 		}
 
 		logger.Info("It looks like you haven't run `wow-build-tools config` to set up %s config yet.", configType)
-		logger.Prompt("Would you like to create a new %s configuration file? (y/N): ", configType)
 
-		reader := bufio.NewReader(os.Stdin)
-		response, err := reader.ReadString('\n')
+		create, err := logger.PromptYesNo(os.Stdin, "Would you like to create a new %s configuration file? (y/N): ", configType)
 		if err != nil {
 			return err
 		}
-		response = strings.ToUpper(strings.TrimSpace(response))
 
-		if response == "Y" {
+		if create {
 			return createConfigFile(configDir, localPath)
 		} else {
 			fmt.Println()

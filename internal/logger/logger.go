@@ -1,9 +1,12 @@
 package logger
 
 import (
+	"bufio"
 	"fmt"
+	"io"
 	"log"
 	"os"
+	"strings"
 
 	"github.com/McTalian/wow-build-tools/internal/cmdargs"
 	"github.com/fatih/color"
@@ -138,6 +141,25 @@ func (l *Logger) Prompt(format string, v ...interface{}) {
 	if l.level <= INFO {
 		prefix := l.createPrefix("?")
 		fmt.Print(color.New(color.Bold, color.FgHiYellow).Sprint(prefix + handleFormat(format, v...)))
+	}
+}
+
+// PromptYesNo prints format via Prompt, then reads one line from r and
+// interprets it as a yes/no answer: "y"/"yes" is true, "n"/"no"/empty is
+// false (case-insensitive), anything else is an error.
+func PromptYesNo(r io.Reader, format string, v ...interface{}) (bool, error) {
+	Prompt(format, v...)
+	input, err := bufio.NewReader(r).ReadString('\n')
+	if err != nil {
+		return false, err
+	}
+	switch strings.ToLower(strings.TrimSpace(input)) {
+	case "y", "yes":
+		return true, nil
+	case "n", "no", "":
+		return false, nil
+	default:
+		return false, fmt.Errorf("invalid input (%s), needed 'y' or 'n'", strings.TrimSpace(input))
 	}
 }
 
