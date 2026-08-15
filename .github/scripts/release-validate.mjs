@@ -2,9 +2,12 @@
 import { analyzeCommits } from "@semantic-release/commit-analyzer";
 import lint from "@commitlint/lint";
 import load from "@commitlint/load";
-import execa from "execa";
+import { execFile } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { resolve } from "node:path";
+import { promisify } from "node:util";
+
+const execFileAsync = promisify(execFile);
 
 const getRoot = () => {
   const args = process.argv.slice(2);
@@ -20,10 +23,10 @@ const getRoot = () => {
 const ROOT = getRoot();
 
 async function getCommits(base, head) {
-  const { stdout } = await execa(
+  const { stdout } = await execFileAsync(
     "git",
     ["log", "--oneline", "--format=%H %s", `${base}..${head}`],
-    { cwd: ROOT },
+    { cwd: ROOT, maxBuffer: 10 * 1024 * 1024 },
   );
   return stdout
     .trim()
