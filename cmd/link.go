@@ -23,7 +23,6 @@ package cmd
 
 import (
 	"github.com/McTalian/wow-build-tools/internal/build"
-	"github.com/lithammer/dedent"
 	"github.com/spf13/cobra"
 )
 
@@ -31,19 +30,19 @@ import (
 var linkCmd = &cobra.Command{
 	Use:   "link",
 	Short: "Create symlinks in World of Warcraft AddOns directory to the addon(s) in the build output directory",
-	Long: dedent.Dedent(`
-		Create symlinks in the World of Warcraft AddOns directory to the addon(s) in the build output directory.
+	Long: `
+Create symlinks in the World of Warcraft AddOns directory to the addon(s) in the build output directory.
 
-		By default, link targets are filtered to client installs that are compatible with your addon's TOC Interface version(s).
-		Compatibility is resolved from TOC files in the project top directory first.
-		If none are found there, the command will also inspect TOCs in the release directory (including --wsl-path-to-addon-release-dir).
-		Use --all-flavors to bypass TOC compatibility filtering and link to all selected client installs.
-		
-		By default, the release directory is assumed to be a ".release" directory in the top level directory of the addon.
-		
-		If you are developing in WSL, you will need to run this command in Windows in an elevated command prompt.
-		You will also need to provide the path to the addon release directory in WSL using the --wsl-path-to-addon-release-dir flag.
-		From WSL, run "wslpath -w <path_to_your_releasedir>" to get the Windows path to your release directory.`),
+By default, link targets are filtered to client installs that are compatible with your addon's TOC Interface version(s).
+Compatibility is resolved from TOC files in the project top directory first.
+If none are found there, the command will also inspect TOCs in the release directory (including --wsl-path-to-addon-release-dir).
+Use --all-flavors to bypass TOC compatibility filtering and link to all selected client installs.
+
+By default, the release directory is assumed to be a ".release" directory in the top level directory of the addon.
+
+If you are developing in WSL, you will need to run this command in Windows in an elevated command prompt.
+You will also need to provide the path to the addon release directory in WSL using the --wsl-path-to-addon-release-dir flag.
+From WSL, run "wslpath -w <path_to_your_releasedir>" to get the Windows path to your release directory.`,
 	RunE: func(cmd *cobra.Command, args []string) error {
 		return build.Link()
 	},
