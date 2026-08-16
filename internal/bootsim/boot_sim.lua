@@ -207,6 +207,7 @@ local KNOWN_WOW_APIS = {
 	securecall = true,
 	RunNextFrame = true,
 	SlashCmdList = true,
+	StaticPopupDialogs = true,
 	C_AddOns = true,
 	C_Timer = true,
 	C_ChatInfo = true,
@@ -214,6 +215,7 @@ local KNOWN_WOW_APIS = {
 	C_CVar = true,
 	C_TransmogCollection = true,
 	EventRegistry = true,
+	EventUtil = true,
 	TooltipDataProcessor = true,
 	GameTooltip = true,
 	GameTooltip_AddColoredLine = true,
@@ -284,6 +286,21 @@ local function newFrameMock(registry)
 	return frame
 end
 
+--- Real recursive table copy, matching the shape of WoW's own CopyTable —
+--- addon code uses its result as a real table (indexing, iterating), so a
+--- chain-stub return would silently diverge the moment anything checked a
+--- copied value.
+local function deepCopyTable(t)
+	if type(t) ~= "table" then
+		return t
+	end
+	local copy = {}
+	for k, v in pairs(t) do
+		copy[k] = deepCopyTable(v)
+	end
+	return copy
+end
+
 --- Globals whose real return value gets used arithmetically, concatenated,
 --- or as a boolean/string downstream — a generic chain-stub (a table) breaks
 --- that the same way an unmocked LibStub broke `LibStub.minor < N`. These
@@ -296,6 +313,7 @@ end
 --- except CreateFrame, which always stays this one (see installAutoMock).
 local function realImplementations(frames)
 	return {
+		CopyTable = deepCopyTable,
 		CreateFrame = function()
 			return newFrameMock(frames)
 		end,
@@ -317,6 +335,9 @@ local function realImplementations(frames)
 		GetCurrentRegion = function()
 			return 1
 		end,
+		-- Real client behavior when not connected to a Battle.net session --
+		-- also the most accurate state for a boot simulation to model.
+		BNGetInfo = function() end,
 		GetLocale = function()
 			return "enUS"
 		end,
