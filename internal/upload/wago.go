@@ -10,7 +10,6 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
-	"time"
 
 	"github.com/McTalian/wow-build-tools/internal/changelog"
 	"github.com/McTalian/wow-build-tools/internal/logger"
@@ -267,57 +266,19 @@ func (w *wagoUpload) upload() error {
 		return fmt.Errorf("could not close writer: %v", err)
 	}
 
-	req, err := http.NewRequest("POST", w.uploadUrl, &body)
-	if err != nil {
-		return fmt.Errorf("could not create request: %v", err)
-	}
+	payload := body.Bytes()
+	contentType := writer.FormDataContentType()
 
-	req.Header.Set("Content-Type", writer.FormDataContentType())
-	req.Header.Set("Accept", "application/json")
-	req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", w.token))
-
-	client := &http.Client{}
-	maxAttempts := 5
-	delay := 2 * time.Second
-
-	var resp *http.Response
-	for attempt := 0; attempt <= maxAttempts; attempt++ {
-		resp, err = client.Do(req)
-		if err == nil && resp.StatusCode >= http.StatusOK && resp.StatusCode < http.StatusMultipleChoices {
-			w.logGroup.Info("Successfully uploaded to Wago.io!")
-			return nil
-		}
+	return uploadWithRetry(w.logGroup, "Successfully uploaded to Wago.io!", func() (*http.Request, error) {
+		req, err := http.NewRequest("POST", w.uploadUrl, bytes.NewReader(payload))
 		if err != nil {
-			w.logGroup.Warn("Failed to upload to Wago.io: %v", err)
-		} else {
-			w.logGroup.Warn("Failed to upload to Wago.io: %s", resp.Status)
-			jsonBody := make(map[string]interface{})
-			err = json.NewDecoder(resp.Body).Decode(&jsonBody)
-			if err != nil {
-				w.logGroup.Warn("failed to decode response body: %v", err)
-			} else {
-				w.logGroup.Warn("Response: %v", jsonBody)
-			}
-			if resp.StatusCode == http.StatusUnprocessableEntity || resp.StatusCode == http.StatusBadRequest {
-				return fmt.Errorf("upload failed: %s", resp.Status)
-			}
+			return nil, fmt.Errorf("could not create request: %v", err)
 		}
-
-		if attempt < maxAttempts {
-			w.logGroup.Warn("Retrying: Attempt %d/%d in %s...", attempt+1, maxAttempts, delay)
-			time.Sleep(delay)
-			delay *= 2
-		}
-	}
-
-	if err != nil {
-		return fmt.Errorf("upload failed after %d attempts: %v", maxAttempts, err)
-	}
-	if resp != nil && (resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices) {
-		return fmt.Errorf("upload failed with status %s", resp.Status)
-	}
-
-	return nil
+		req.Header.Set("Content-Type", contentType)
+		req.Header.Set("Accept", "application/json")
+		req.Header.Set("Authorization", fmt.Sprintf("Bearer %s", w.token))
+		return req, nil
+	})
 }
 
 type UploadWagoArgs struct {
