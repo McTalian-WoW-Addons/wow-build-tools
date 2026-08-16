@@ -1,0 +1,69 @@
+# Reusable workflow: boot-order smoke test (wow-build-tools boot-sim)
+#
+# Resolves an addon's externals via `wow-build-tools build` (packaging
+# skipped), then simulates a client login against the result to catch Lua
+# load errors before a player does. Standalone from ci.yml on purpose: most
+# addon repos in this org have no busted/Lua test infrastructure at all, and
+# this check needs none beyond a Lua interpreter this workflow installs
+# itself — so a repo can opt in without adopting the rest of ci.yml.
+#
+# Inputs:
+#   addon-name:  Addon directory name (e.g., BeaconUnitFrames)
+#   mocks:       Optional path to a Lua file seeding real WoW API globals
+#                (e.g. {addon-name}_spec/_mocks/helper.lua, if it has no
+#                busted-specific dependencies)
+#   wbt-ref:     wow-build-tools ref to use (default v1)
+
+name: Boot Sim
+
+on:
+  workflow_call:
+    inputs:
+      addon-name:
+        description: Addon directory name (e.g., BeaconUnitFrames)
+        required: true
+        type: string
+      mocks:
+        description: Path to a Lua file that seeds real WoW API globals before simulation
+        required: false
+        type: string
+        default: ""
+      wbt-ref:
+        description: wow-build-tools ref to use (default v1)
+        required: false
+        type: string
+        default: v1
+
+permissions: {}
+
+jobs:
+  boot_sim:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+
+      - name: Build (resolve externals, skip packaging)
+        # A step's `uses:` can't reference the `inputs` context (only
+        # `github`/`needs`/`strategy`/`matrix` are available there), so this
+        # can't be parameterized by wbt-ref the way the checkout below is —
+        # matches the existing hardcoded @v1 in package-and-distribute.yml.
+        # trunk-ignore(pinact/unpinned-action)
+        uses: McTalian-WoW-Addons/wow-build-tools@v1
+        with:
+          args: -t ./${{ inputs.addon-name }} -r ./.release --skipZip --skipUpload --skipChangelog
+
+      - name: Checkout wow-build-tools (boot-sim action)
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          repository: McTalian-WoW-Addons/wow-build-tools
+          ref: ${{ inputs.wbt-ref }}
+          path: .wbt
+
+      - name: Run boot sim
+        uses: ./.wbt/boot-sim-action
+        with:
+          topDir: ./.release/${{ inputs.addon-name }}
+          mocks: ${{ inputs.mocks }}

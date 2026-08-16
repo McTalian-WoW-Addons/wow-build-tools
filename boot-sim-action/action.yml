@@ -1,0 +1,46 @@
+name: WoW Build Tools - Boot Sim
+description: Simulate a WoW client login against an addon to catch Lua errors before a player does.
+branding:
+  icon: play
+  color: blue
+
+inputs:
+  topDir:
+    description: >
+      Path to the addon's top-level directory (containing its .toc file(s)).
+      If the addon embeds externals (Libs/), point this at a built output
+      (e.g. ./.release/AddonName) rather than the source tree, since
+      boot-sim needs those resolved on disk to follow real Include chains.
+    required: true
+  mocks:
+    description: >
+      Path to a Lua file that seeds real WoW API globals before simulation
+      (e.g. a busted _mocks/helper.lua, if it has no busted-specific
+      dependencies). Optional — unmocked globals fall back to a safe no-op
+      stub for a curated set of known WoW API entry points.
+    required: false
+    default: ""
+  luaVersion:
+    description: Lua version to install for the simulation. lua5.1 matches the WoW client exactly.
+    required: false
+    default: 5.1.5
+
+runs:
+  using: composite
+  steps:
+    - name: Install Lua ${{ inputs.luaVersion }}
+      uses: McTalian-WoW-Addons/gh-actions-lua@ff6eeef8bc502bfe3dbdd3d87dc0a4766f8c9fb0 # v1.0.2
+      with:
+        luaVersion: ${{ inputs.luaVersion }}
+
+    - name: Run boot sim
+      shell: bash
+      run: |
+        set -euo pipefail
+
+        MOCKS_ARGS=()
+        if [ -n "${{ inputs.mocks }}" ]; then
+          MOCKS_ARGS=(-m "${{ inputs.mocks }}")
+        fi
+
+        "${GITHUB_ACTION_PATH}/../dist/wow-build-tools" boot-sim -t "${{ inputs.topDir }}" "${MOCKS_ARGS[@]}"
