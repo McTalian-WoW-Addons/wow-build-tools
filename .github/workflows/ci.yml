@@ -1,7 +1,7 @@
-# Reusable workflow: CI pipeline (tests, i18n, semantic-release)
+# Reusable workflow: CI pipeline (tests, i18n, boot-sim, semantic-release)
 #
 # Triggered on push to main/release branches. Runs Lua tests, optional i18n
-# translation checks, and semantic-release.
+# translation checks, an optional boot-order smoke test, and semantic-release.
 #
 # Inputs:
 #   addon-name:          Addon directory name (e.g., Endeavoring, RPGLootFeed)
@@ -10,6 +10,8 @@
 #   i18n-enabled:        Whether to run i18n translation checks
 #   locale-dir:          Locale directory path (default: {addon-name}/locale)
 #   locale-xml:          XML file listing locale scripts (default: index.xml)
+#   boot-sim-enabled:    Whether to run the boot-order smoke test (see boot-sim.yml)
+#   boot-sim-mocks:      Optional path to a Lua mocks file for boot-sim
 #
 # Requires secrets (via `secrets: inherit`):
 #   - GH_PAT (org-level) for semantic-release
@@ -52,6 +54,16 @@ on:
         required: false
         type: string
         default: v1
+      boot-sim-enabled:
+        description: Whether to run the boot-order smoke test (wow-build-tools boot-sim)
+        required: false
+        type: boolean
+        default: false
+      boot-sim-mocks:
+        description: "Path to a Lua mocks file for boot-sim (e.g. {addon-name}_spec/_mocks/helper.lua)"
+        required: false
+        type: string
+        default: ""
 
 permissions: {}
 
@@ -135,9 +147,17 @@ jobs:
           name: luacov-html
           path: luacov-html/
 
+  boot_sim:
+    if: ${{ inputs.boot-sim-enabled }}
+    uses: ./.github/workflows/boot-sim.yml
+    with:
+      addon-name: ${{ inputs.addon-name }}
+      mocks: ${{ inputs.boot-sim-mocks }}
+      wbt-ref: ${{ inputs.wbt-ref }}
+
   release:
-    needs: [run_tests, i18n_translations]
-    if: ${{ !cancelled() && needs.run_tests.result == 'success' && (needs.i18n_translations.result == 'success' || needs.i18n_translations.result == 'skipped') }}
+    needs: [run_tests, i18n_translations, boot_sim]
+    if: ${{ !cancelled() && needs.run_tests.result == 'success' && (needs.i18n_translations.result == 'success' || needs.i18n_translations.result == 'skipped') && (needs.boot_sim.result == 'success' || needs.boot_sim.result == 'skipped') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write
