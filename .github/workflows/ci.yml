@@ -149,6 +149,8 @@ jobs:
 
   boot_sim:
     if: ${{ inputs.boot-sim-enabled }}
+    permissions:
+      contents: read
     uses: ./.github/workflows/boot-sim.yml
     with:
       addon-name: ${{ inputs.addon-name }}
