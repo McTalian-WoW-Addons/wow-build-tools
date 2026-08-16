@@ -290,6 +290,10 @@ end
 --- get a real, typed implementation instead of a KNOWN_WOW_APIS stub.
 --- frames is threaded through so CreateFrame's mock can register into the
 --- same registry M.simulateBoot fires login events against.
+---
+--- installAutoMock (below) only applies these where nothing already set the
+--- global first — i.e. an addon's own --mocks file wins for all of these
+--- except CreateFrame, which always stays this one (see installAutoMock).
 local function realImplementations(frames)
 	return {
 		CreateFrame = function()
@@ -359,8 +363,18 @@ local function installAutoMock()
 	local previousValues = {}
 
 	for key, impl in pairs(impls) do
-		previousValues[key] = rawget(_G, key)
-		rawset(_G, key, impl)
+		-- CreateFrame is core simulator machinery, not just a convenience
+		-- mock: M.simulateBoot's login-event firing only sees frames created
+		-- through this tracked mock, so it always wins regardless of
+		-- --mocks. Every other entry here defers to a real value an
+		-- addon's own --mocks file already set (RPGLootFeed's busted
+		-- helper, for example, defines its own CreateFrame/UnitClass/
+		-- GetExpansionLevel/RunNextFrame) rather than silently overwriting
+		-- it.
+		if key == "CreateFrame" or rawget(_G, key) == nil then
+			previousValues[key] = rawget(_G, key)
+			rawset(_G, key, impl)
+		end
 	end
 
 	setmetatable(_G, {
