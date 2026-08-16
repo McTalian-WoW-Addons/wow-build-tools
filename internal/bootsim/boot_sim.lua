@@ -218,6 +218,7 @@ local KNOWN_WOW_APIS = {
 	EventUtil = true,
 	TooltipDataProcessor = true,
 	GameTooltip = true,
+	HelpTip = true,
 	GameTooltip_AddColoredLine = true,
 	ItemRefTooltip = true,
 	UIParent = true,
@@ -338,6 +339,21 @@ local function realImplementations(frames)
 		-- Real client behavior when not connected to a Battle.net session --
 		-- also the most accurate state for a boot simulation to model.
 		BNGetInfo = function() end,
+		-- Real implementation, not a stub: addons commonly build their
+		-- whole namespace object with `ns = Mixin({}, SomeMixin)`, so
+		-- everything downstream depends on the real methods actually
+		-- landing on the returned table.
+		Mixin = function(object, ...)
+			for i = 1, select("#", ...) do
+				local mixin = select(i, ...)
+				if type(mixin) == "table" then
+					for k, v in pairs(mixin) do
+						object[k] = v
+					end
+				end
+			end
+			return object
+		end,
 		GetLocale = function()
 			return "enUS"
 		end,
