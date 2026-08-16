@@ -1,8 +1,8 @@
-# Reusable workflow: PR checks (tests, translations, packaging, linting)
+# Reusable workflow: PR checks (tests, translations, packaging, boot-sim, linting)
 #
 # Triggered on pull_request and merge_group events. Runs Lua tests, optional
-# i18n translation checks, test packaging with PR comment, optional trunk
-# linting.
+# i18n translation checks, test packaging with PR comment, an optional
+# boot-order smoke test, optional trunk linting.
 #
 # Inputs:
 #   addon-name:          Addon directory name (e.g., Endeavoring, RPGLootFeed)
@@ -15,6 +15,8 @@
 #   locale-table:        Locale table name used in addon code (default: L)
 #   i18n-ignore-dirs:    Extra directories to ignore in hardcode string check
 #   i18n-ignore-files:   Extra files to ignore in hardcode string check
+#   boot-sim-enabled:    Whether to run the boot-order smoke test (see boot-sim.yml)
+#   boot-sim-mocks:      Optional path to a Lua mocks file for boot-sim
 #
 # Expects in the calling repo:
 #   - Makefile with test-ci target
@@ -77,6 +79,16 @@ on:
         required: false
         type: string
         default: v1
+      boot-sim-enabled:
+        description: Whether to run the boot-order smoke test (wow-build-tools boot-sim)
+        required: false
+        type: boolean
+        default: false
+      boot-sim-mocks:
+        description: "Path to a Lua mocks file for boot-sim (e.g. {addon-name}_spec/_mocks/helper.lua)"
+        required: false
+        type: string
+        default: ""
 
 permissions: {}
 
@@ -308,11 +320,19 @@ jobs:
       - name: Trunk Code Quality
         uses: trunk-io/trunk-action@04ba50e7658c81db7356da96657e6e77f220bfa3 # v1.3.1
 
+  boot_sim:
+    if: ${{ inputs.boot-sim-enabled }}
+    uses: ./.github/workflows/boot-sim.yml
+    with:
+      addon-name: ${{ inputs.addon-name }}
+      mocks: ${{ inputs.boot-sim-mocks }}
+      wbt-ref: ${{ inputs.wbt-ref }}
+
   all_pr_checks:
     name: Passing PR Checks
     runs-on: ubuntu-latest
     if: always()
-    needs: [check_translations, run_tests, test_package, trunk-check]
+    needs: [check_translations, run_tests, test_package, boot_sim, trunk-check]
     steps:
       - name: Export needs results as JSON
         id: export-needs
