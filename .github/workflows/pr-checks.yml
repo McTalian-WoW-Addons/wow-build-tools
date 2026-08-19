@@ -17,6 +17,12 @@
 #   i18n-ignore-files:   Extra files to ignore in hardcode string check
 #   boot-sim-enabled:    Whether to run the boot-order smoke test (see boot-sim.yml)
 #   boot-sim-mocks:      Optional path to a Lua mocks file for boot-sim
+#   externals-cache-ttl: How long a cached svn/git external checkout is considered
+#                        fresh (Go duration, e.g. 168h). Defaults to 168h rather
+#                        than wow-build-tools' own 24h default, since this workflow
+#                        never uploads a package; the actual release/publish
+#                        pipeline (package-and-distribute.yml) keeps the 24h
+#                        default for freshness.
 #
 # Expects in the calling repo:
 #   - Makefile with test-ci target
@@ -89,6 +95,11 @@ on:
         required: false
         type: string
         default: ""
+      externals-cache-ttl:
+        description: How long a cached svn/git external checkout is considered fresh before an update is attempted (Go duration, e.g. 24h, 168h). Defaults to 168h since this workflow never uploads a package.
+        required: false
+        type: string
+        default: 168h
 
 permissions: {}
 
@@ -232,6 +243,7 @@ jobs:
         uses: McTalian-WoW-Addons/wow-build-tools@v1
         with:
           args: -d -t ./${{ inputs.addon-name }} -r ./.release --skipChangelog -n {package-name}-pr${{github.event.number}}-{nolib}{classic}
+          externals-cache-ttl: ${{ inputs.externals-cache-ttl }}
 
       - name: Capture Filenames
         id: capture-filenames
@@ -329,6 +341,7 @@ jobs:
       addon-name: ${{ inputs.addon-name }}
       mocks: ${{ inputs.boot-sim-mocks }}
       wbt-ref: ${{ inputs.wbt-ref }}
+      externals-cache-ttl: ${{ inputs.externals-cache-ttl }}
 
   all_pr_checks:
     name: Passing PR Checks

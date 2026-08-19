@@ -24,6 +24,7 @@ package cmd
 import (
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/spf13/cobra"
 
@@ -68,6 +69,7 @@ func init() {
 	buildCmd.Flags().BoolVar(&build.BuildParams.SkipChangelog, "skipChangelog", false, "Skip changelog generation.")
 	buildCmd.Flags().BoolVarP(&build.BuildParams.SkipExternals, "skipExternals", "e", false, "Skip fetching externals.")
 	buildCmd.Flags().BoolVarP(&build.BuildParams.ForceExternals, "forceExternals", "E", false, "Force fetching externals, bypassing the cache.")
+	buildCmd.Flags().DurationVar(&build.BuildParams.ExternalsCacheTTL, "externalsCacheTTL", 24*time.Hour, "How long a cached svn/git external checkout is considered fresh before an update is attempted (e.g. 24h, 168h). Ignored if --forceExternals is set.")
 	buildCmd.Flags().BoolVarP(&build.BuildParams.SkipZip, "skipZip", "z", false, "Skip zipping the package (and uploading).")
 	buildCmd.Flags().BoolVarP(&build.BuildParams.SkipUpload, "skipUpload", "d", false, "Skip uploading.")
 	buildCmd.PersistentFlags().BoolVar(&build.BuildParams.ForceAlpha, "force-alpha", false, "Force alpha build type and bypass git/tag auto-detection.")

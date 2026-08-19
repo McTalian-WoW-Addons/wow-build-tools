@@ -9,6 +9,10 @@ inputs:
     description: Arguments to pass to `wow-build-tools build`.
     required: false
     default: ""
+  externals-cache-ttl:
+    description: How long a cached svn/git external checkout is considered fresh before an update is attempted (Go duration, e.g. 24h, 168h). Passed through as `--externalsCacheTTL`. Leave unset to use wow-build-tools' default (24h).
+    required: false
+    default: ""
 
 outputs:
   package-name:
@@ -36,6 +40,10 @@ runs:
           INPUT_ARGS="${{ inputs.args }}"
         fi
 
+        if [ -n "${{ inputs.externals-cache-ttl }}" ]; then
+          INPUT_ARGS="${INPUT_ARGS} --externalsCacheTTL ${{ inputs.externals-cache-ttl }}"
+        fi
+
         echo "INPUT_ARGS=${INPUT_ARGS}" >> $GITHUB_OUTPUT
     - name: Check for Subversion
       id: check-svn
@@ -53,6 +61,13 @@ runs:
       with:
         packages: subversion
         version: 1.14
+    - name: Cache SVN/git externals
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.wow-build-tools/.cache/externals
+        key: wow-build-tools-externals-${{ runner.os }}-${{ hashFiles('**/pkgmeta.yml', '**/pkgmeta.yaml', '**/.pkgmeta') }}
+        restore-keys: |
+          wow-build-tools-externals-${{ runner.os }}-
     - name: Run wow-build-tools
       shell: bash
       run: |
