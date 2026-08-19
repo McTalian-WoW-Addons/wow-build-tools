@@ -214,6 +214,7 @@ local KNOWN_WOW_APIS = {
 	C_Item = true,
 	C_CVar = true,
 	C_TransmogCollection = true,
+	C_UIFileAsset = true,
 	EventRegistry = true,
 	EventUtil = true,
 	TooltipDataProcessor = true,
