@@ -261,7 +261,9 @@ func (s *SvnExternal) Checkout() error {
 			if err != nil {
 				outputStr := string(output)
 				if i < 4 && strings.Contains(outputStr, "E175002") {
-					e.LogGroup.Warn("500 Internal Server Error detected (output: %s), retrying (attempt %d)...", outputStr, i+1)
+					backoff := time.Duration(500*(1<<uint(i))) * time.Millisecond
+					e.LogGroup.Warn("500 Internal Server Error detected (output: %s), retrying in %s (attempt %d)...", outputStr, backoff, i+1)
+					time.Sleep(backoff)
 					continue
 				}
 				if i < 4 && strings.Contains(outputStr, "E155000") {
@@ -308,8 +310,9 @@ func (s *SvnExternal) Checkout() error {
 				if i >= 4 {
 					return fmt.Errorf("failed to update repository: %w, output: %s", err, string(output))
 				}
-				e.LogGroup.Verbose("SVN: Failed to update repository: %v, retrying...", err)
-				time.Sleep(50 * time.Millisecond)
+				backoff := time.Duration(500*(1<<uint(i))) * time.Millisecond
+				e.LogGroup.Verbose("SVN: Failed to update repository: %v, retrying in %s...", err, backoff)
+				time.Sleep(backoff)
 				continue
 			}
 			break

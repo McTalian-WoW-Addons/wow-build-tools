@@ -53,6 +53,13 @@ runs:
       with:
         packages: subversion
         version: 1.14
+    - name: Cache SVN/git externals
+      uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+      with:
+        path: ~/.wow-build-tools/.cache/externals
+        key: wow-build-tools-externals-${{ runner.os }}-${{ hashFiles('**/pkgmeta.yml', '**/pkgmeta.yaml', '**/.pkgmeta') }}
+        restore-keys: |
+          wow-build-tools-externals-${{ runner.os }}-
     - name: Run wow-build-tools
       shell: bash
       run: |
