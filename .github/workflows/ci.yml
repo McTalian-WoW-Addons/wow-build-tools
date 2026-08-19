@@ -12,6 +12,11 @@
 #   locale-xml:          XML file listing locale scripts (default: index.xml)
 #   boot-sim-enabled:    Whether to run the boot-order smoke test (see boot-sim.yml)
 #   boot-sim-mocks:      Optional path to a Lua mocks file for boot-sim
+#   externals-cache-ttl: How long a cached svn/git external checkout is considered
+#                        fresh (Go duration, e.g. 168h), passed to boot-sim. Safe
+#                        to set generously here since this workflow (push-to-main
+#                        validation) never uploads a package itself — the actual
+#                        release/publish pipeline is package-and-distribute.yml.
 #
 # Requires secrets (via `secrets: inherit`):
 #   - GH_PAT (org-level) for semantic-release
@@ -61,6 +66,11 @@ on:
         default: false
       boot-sim-mocks:
         description: "Path to a Lua mocks file for boot-sim (e.g. {addon-name}_spec/_mocks/helper.lua)"
+        required: false
+        type: string
+        default: ""
+      externals-cache-ttl:
+        description: How long a cached svn/git external checkout is considered fresh before an update is attempted (Go duration, e.g. 24h, 168h), passed through to boot-sim. Leave unset to use wow-build-tools' default (24h).
         required: false
         type: string
         default: ""
@@ -156,6 +166,7 @@ jobs:
       addon-name: ${{ inputs.addon-name }}
       mocks: ${{ inputs.boot-sim-mocks }}
       wbt-ref: ${{ inputs.wbt-ref }}
+      externals-cache-ttl: ${{ inputs.externals-cache-ttl }}
 
   release:
     needs: [run_tests, i18n_translations, boot_sim]
