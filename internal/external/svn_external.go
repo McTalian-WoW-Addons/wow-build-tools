@@ -16,6 +16,7 @@ type SvnExternal struct {
 	BaseVcs
 	metadata       *ExternalEntry
 	forceExternals bool
+	cacheTTL       time.Duration
 }
 
 func (s *SvnExternal) lookForCurseSlug() error {
@@ -60,7 +61,7 @@ func (s *SvnExternal) lookForCurseSlug() error {
 }
 
 // NewSvnExternal creates a new instance of SvnExternal.
-func NewSvnExternal(e *ExternalEntry, forceExternals bool) (*SvnExternal, error) {
+func NewSvnExternal(e *ExternalEntry, forceExternals bool, cacheTTL time.Duration) (*SvnExternal, error) {
 	if e.EType != Svn {
 		return nil, fmt.Errorf("external entry is not an svn type")
 	}
@@ -72,6 +73,7 @@ func NewSvnExternal(e *ExternalEntry, forceExternals bool) (*SvnExternal, error)
 	return &SvnExternal{
 		metadata:       e,
 		forceExternals: forceExternals,
+		cacheTTL:       cacheTTL,
 	}, nil
 }
 
@@ -121,7 +123,7 @@ func (s *SvnExternal) getSvnTag() (*svnTagMeta, error) {
 		}
 	} else if lastUpdatePath != "" {
 		// Check if the marker is still valid (not stale).
-		stale, err := helper.IsStale(lastUpdatePath, 24*time.Hour)
+		stale, err := helper.IsStale(lastUpdatePath, s.cacheTTL)
 		if err != nil {
 			return nil, err
 		}
@@ -286,7 +288,7 @@ func (s *SvnExternal) Checkout() error {
 		}
 	} else {
 		// Otherwise, check if the cache is stale.
-		stale, err := helper.IsStale(lastUpdatedPath, 24*time.Hour)
+		stale, err := helper.IsStale(lastUpdatedPath, s.cacheTTL)
 		if err != nil {
 			return err
 		}

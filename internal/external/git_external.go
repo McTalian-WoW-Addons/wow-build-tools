@@ -15,6 +15,7 @@ import (
 type GitExternal struct {
 	BaseVcs
 	forceExternals bool
+	cacheTTL       time.Duration
 	metadata       *ExternalEntry
 }
 
@@ -74,7 +75,7 @@ func (gE *GitExternal) Checkout() error {
 			return fmt.Errorf("GIT: failed to delete lastUpdated marker: %w", err)
 		}
 	} else {
-		if stale, err := helper.IsStale(lastUpdatedPath, 24*time.Hour); err != nil {
+		if stale, err := helper.IsStale(lastUpdatedPath, gE.cacheTTL); err != nil {
 			return err
 		} else if !stale {
 			e.LogGroup.Verbose("GIT: Cache is up-to-date for %s", e.DestPath)
@@ -230,7 +231,7 @@ func (e *GitExternal) getRepoCachePath() string {
 	return e.metadata.RepoCacheDir
 }
 
-func NewGitExternal(e *ExternalEntry, forceExternals bool) (*GitExternal, error) {
+func NewGitExternal(e *ExternalEntry, forceExternals bool, cacheTTL time.Duration) (*GitExternal, error) {
 	if e.EType != Git {
 		return nil, fmt.Errorf("external entry is not a git type")
 	}
@@ -238,5 +239,6 @@ func NewGitExternal(e *ExternalEntry, forceExternals bool) (*GitExternal, error)
 	return &GitExternal{
 		metadata:       e,
 		forceExternals: forceExternals,
+		cacheTTL:       cacheTTL,
 	}, nil
 }

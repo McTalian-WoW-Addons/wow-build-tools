@@ -38,8 +38,9 @@ type BuildArgs struct {
 	SkipLocalization bool
 	SkipZip          bool
 
-	ForceExternals   bool
-	OnlyLocalization bool
+	ForceExternals    bool
+	ExternalsCacheTTL time.Duration
+	OnlyLocalization  bool
 
 	CreateNoLib     bool
 	KeepPackageDir  bool
@@ -173,7 +174,7 @@ func Build(args *BuildArgs) (err error) {
 	defer cl.Cleanup()
 
 	if !args.SkipExternals {
-		err = pkgMeta.FetchExternals(packageDir, args.ForceExternals)
+		err = pkgMeta.FetchExternals(packageDir, args.ForceExternals, args.ExternalsCacheTTL)
 		if err != nil {
 			return
 		}

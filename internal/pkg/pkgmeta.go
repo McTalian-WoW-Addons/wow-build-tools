@@ -80,7 +80,7 @@ func (p *PkgMeta) String() string {
 	return str
 }
 
-func (p *PkgMeta) FetchExternals(packageDir string, forceExternals bool) error {
+func (p *PkgMeta) FetchExternals(packageDir string, forceExternals bool, cacheTTL time.Duration) error {
 	externalLogger := logger.GetSubLog("EXT")
 	externalLogger.Info("%sFetching external dependencies", logger.External)
 
@@ -103,7 +103,7 @@ func (p *PkgMeta) FetchExternals(packageDir string, forceExternals bool) error {
 		case external.Git:
 			checkoutWg.Add(1)
 			currentEntry.LogGroup.Info("%sProcessing external for %s", logger.Processing, currentPath)
-			ext, err = external.NewGitExternal(currentEntry, forceExternals)
+			ext, err = external.NewGitExternal(currentEntry, forceExternals, cacheTTL)
 			if err != nil {
 				currentEntry.LogGroup.Error("Failed to create git external: %v", err)
 				currentEntry.LogGroup.Flush()
@@ -112,7 +112,7 @@ func (p *PkgMeta) FetchExternals(packageDir string, forceExternals bool) error {
 			}
 		case external.Svn:
 			currentEntry.LogGroup.Info("%sProcessing external for %s", logger.Processing, currentPath)
-			ext, err = external.NewSvnExternal(currentEntry, forceExternals)
+			ext, err = external.NewSvnExternal(currentEntry, forceExternals, cacheTTL)
 			if err != nil {
 				currentEntry.LogGroup.Error("Failed to create svn external: %v", err)
 				currentEntry.LogGroup.Flush()

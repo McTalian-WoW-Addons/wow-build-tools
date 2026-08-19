@@ -77,7 +77,7 @@ func TestFetchExternals_SvnConstructorErrorDoesNotHang(t *testing.T) {
 
 	done := make(chan error, 1)
 	go func() {
-		done <- pkgMeta.FetchExternals(t.TempDir(), false)
+		done <- pkgMeta.FetchExternals(t.TempDir(), false, 24*time.Hour)
 	}()
 
 	select {
