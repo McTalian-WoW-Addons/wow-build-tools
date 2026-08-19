@@ -18,9 +18,11 @@
 #   boot-sim-enabled:    Whether to run the boot-order smoke test (see boot-sim.yml)
 #   boot-sim-mocks:      Optional path to a Lua mocks file for boot-sim
 #   externals-cache-ttl: How long a cached svn/git external checkout is considered
-#                        fresh (Go duration, e.g. 168h). Safe to set generously here
-#                        since this workflow never uploads a package; leave unset on
-#                        the actual release/publish pipeline to keep it fresh.
+#                        fresh (Go duration, e.g. 168h). Defaults to 168h rather
+#                        than wow-build-tools' own 24h default, since this workflow
+#                        never uploads a package; the actual release/publish
+#                        pipeline (package-and-distribute.yml) keeps the 24h
+#                        default for freshness.
 #
 # Expects in the calling repo:
 #   - Makefile with test-ci target
@@ -94,10 +96,10 @@ on:
         type: string
         default: ""
       externals-cache-ttl:
-        description: How long a cached svn/git external checkout is considered fresh before an update is attempted (Go duration, e.g. 24h, 168h). Leave unset to use wow-build-tools' default (24h).
+        description: How long a cached svn/git external checkout is considered fresh before an update is attempted (Go duration, e.g. 24h, 168h). Defaults to 168h since this workflow never uploads a package.
         required: false
         type: string
-        default: ""
+        default: 168h
 
 permissions: {}
 
