@@ -49,10 +49,12 @@ func TocFileToGameFlavor(noExt string) (flavor GameFlavor, suffix string) {
 		flavor = SlClassic
 	case "df":
 		flavor = DfClassic
-	case "forever":
-		// TODO(forever): the TOC suffix Blizzard and the packagers settle on is
-		// not published yet; "Forever" follows the existing convention.
+	case "camelot", "forever":
+		// Camelot is the suffix the packagers actually use for Forever (it is the
+		// internal codename); Wago lists both, so accept either.
 		flavor = Forever
+	case "titan":
+		flavor = TitanClassic
 	case "", "mainline":
 		flavor = Retail
 	default:

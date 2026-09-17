@@ -100,7 +100,13 @@ func TestLabel(t *testing.T) {
 }
 
 func TestTocFileToGameFlavor_Forever(t *testing.T) {
-	for _, noExt := range []string{"TestAddon-Forever", "TestAddon_Forever", "TestAddon-forever"} {
+	// Camelot is the suffix the packagers actually generate and glob for; the
+	// Forever spelling is accepted because Wago lists both.
+	suffixes := []string{
+		"TestAddon-Camelot", "TestAddon_Camelot", "TestAddon-camelot",
+		"TestAddon-Forever", "TestAddon_Forever", "TestAddon-forever",
+	}
+	for _, noExt := range suffixes {
 		if flavor, _ := TocFileToGameFlavor(noExt); flavor != Forever {
 			t.Errorf("TocFileToGameFlavor(%q) = %s, expected forever", noExt, flavor.ToString())
 		}
@@ -118,6 +124,11 @@ func TestCompatibleInstallFlavors_Forever(t *testing.T) {
 
 	if !slices.Contains(ids, "forever") {
 		t.Errorf("Expected forever install flavor, got %v", ids)
+	}
+	// The 1.60.x beta installs into _classic_beta_, so that is where a Forever
+	// addon has to be linked today.
+	if !slices.Contains(ids, "classicBeta") {
+		t.Errorf("Expected classicBeta install flavor, got %v", ids)
 	}
 	if slices.Contains(ids, "classicEra") {
 		t.Errorf("Forever interface should not map to Classic Era, got %v", ids)

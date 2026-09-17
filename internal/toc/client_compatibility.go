@@ -47,9 +47,18 @@ func compatibleInstallFlavorsForGameFlavor(gameFlavor GameFlavor) []flavor.Flavo
 			flavor.FromId("anniversary"),
 		}
 	case Forever:
+		// classicBeta is where a Forever client actually lives today: the 1.60.x
+		// beta ships through wow_classic_beta, whose TACT product config installs
+		// into _classic_beta_. The forever* directories are for the eventual
+		// standalone product.
 		return []flavor.Flavor{
 			flavor.FromId("forever"),
 			flavor.FromId("foreverBeta"),
+			flavor.FromId("classicBeta"),
+		}
+	case TitanClassic:
+		return []flavor.Flavor{
+			flavor.FromId("classicTitan"),
 		}
 	case Unknown:
 		return nil

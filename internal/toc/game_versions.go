@@ -26,6 +26,9 @@ const (
 	// Forever is the 1.60.x "WoW Forever" client line. It shares Classic Era's
 	// major version, so it can only be told apart by the minor version.
 	Forever
+	// TitanClassic is the 3.80.x "Titan" client line. It shares Wrath Classic's
+	// major version, so it too is told apart by the minor version.
+	TitanClassic
 )
 
 const CurrentClassic GameFlavor = MistsClassic
@@ -35,6 +38,10 @@ const CurrentAnniversary GameFlavor = TbcClassic
 // belongs to Forever rather than Classic Era. Classic Era has stayed in the
 // 1.13-1.15 range; Forever started at 1.60.
 const foreverMinMinorVersion = 60
+
+// titanMinMinorVersion is the equivalent split on the 3.x line. Wrath Classic
+// has stayed in the 3.4.x range; Titan started at 3.80.
+const titanMinMinorVersion = 80
 
 func (g GameFlavor) ToString() string {
 	switch g {
@@ -60,6 +67,8 @@ func (g GameFlavor) ToString() string {
 		return "df"
 	case Forever:
 		return "forever"
+	case TitanClassic:
+		return "titan"
 	default:
 		return "retail"
 	}
@@ -92,6 +101,8 @@ func (g GameFlavor) DisplayName() string {
 		return "Dragonflight Classic"
 	case Forever:
 		return "Forever"
+	case TitanClassic:
+		return "Titan Classic"
 	default:
 		return "Retail"
 	}
@@ -130,6 +141,9 @@ func getFlavorFromVersion(majorVersion, minorVersion int) GameFlavor {
 	case 2:
 		return TbcClassic
 	case 3:
+		if minorVersion >= titanMinMinorVersion {
+			return TitanClassic
+		}
 		return WotlkClassic
 	case 4:
 		return CataClassic
@@ -159,7 +173,7 @@ func getFlavorFromInterfaceVersion(interfaceVersion int) GameFlavor {
 func parseGameVersionSegment(version string) error {
 	orig := strings.ToLower(version)
 	switch strings.ToLower(orig) {
-	case Retail.ToString(), ClassicEra.ToString(), TbcClassic.ToString(), WotlkClassic.ToString(), CataClassic.ToString(), MistsClassic.ToString(), Forever.ToString():
+	case Retail.ToString(), ClassicEra.ToString(), TbcClassic.ToString(), WotlkClassic.ToString(), CataClassic.ToString(), MistsClassic.ToString(), Forever.ToString(), TitanClassic.ToString():
 		return nil
 	case "mainline":
 		return nil

@@ -269,3 +269,27 @@ func TestUploadToWago(t *testing.T) {
 		}
 	})
 }
+
+func TestWagoTypeForFlavor(t *testing.T) {
+	// Wago's patches keys are: retail, mop, cata, wotlk, bc, forever, classic,
+	// titan. Anything not special-cased has to match our slug exactly.
+	tests := []struct {
+		flavor   toc.GameFlavor
+		expected string
+	}{
+		{toc.Retail, "retail"},
+		{toc.ClassicEra, "classic"},
+		{toc.TbcClassic, "bc"},
+		{toc.WotlkClassic, "wotlk"},
+		{toc.CataClassic, "cata"},
+		{toc.MistsClassic, "mop"},
+		{toc.TitanClassic, "titan"},
+		{toc.Forever, "forever"},
+	}
+
+	for _, tt := range tests {
+		if actual := wagoTypeForFlavor(tt.flavor); actual != tt.expected {
+			t.Errorf("wagoTypeForFlavor(%s) = %q, expected %q", tt.flavor.ToString(), actual, tt.expected)
+		}
+	}
+}

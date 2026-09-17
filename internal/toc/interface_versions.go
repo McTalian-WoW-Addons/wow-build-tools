@@ -79,7 +79,7 @@ var ProductToFlavorMap map[Product]GameFlavor = map[Product]GameFlavor{
 	ProductWowClassic:                CurrentClassic,
 	ProductWowClassicBeta:            CurrentClassic,
 	ProductWowClassicPtr:             CurrentClassic,
-	ProductWowClassicTitan:           WotlkClassic, // This one's a bit more nuanced than that
+	ProductWowClassicTitan:           TitanClassic,
 	ProductWowClassicAnniversary:     CurrentAnniversary,
 	ProductWowClassicAnniversaryBeta: CurrentAnniversary,
 	ProductWowClassicAnniversaryPtr:  CurrentAnniversary,
@@ -142,6 +142,8 @@ var (
 	ClassicAnniversaryBetaFlavorRelease = GameFlavorRelease{Flavor: CurrentAnniversary, ReleaseType: BetaRelease}
 	ClassicAnniversaryTestFlavorRelease = GameFlavorRelease{Flavor: CurrentAnniversary, ReleaseType: TestRelease}
 
+	TitanFlavorRelease = GameFlavorRelease{Flavor: TitanClassic, ReleaseType: LiveRelease}
+
 	ForeverFlavorRelease     = GameFlavorRelease{Flavor: Forever, ReleaseType: LiveRelease}
 	ForeverBetaFlavorRelease = GameFlavorRelease{Flavor: Forever, ReleaseType: BetaRelease}
 	ForeverTestFlavorRelease = GameFlavorRelease{Flavor: Forever, ReleaseType: TestRelease}
@@ -163,6 +165,9 @@ var FlavorReleaseToProductMap map[GameFlavorRelease][]Product = map[GameFlavorRe
 	ClassicAnniversaryFlavorRelease:     {ProductWowClassicAnniversary},
 	ClassicAnniversaryBetaFlavorRelease: {ProductWowClassicAnniversaryBeta},
 	ClassicAnniversaryTestFlavorRelease: {ProductWowClassicAnniversaryPtr},
+
+	// Titan has no beta or PTR product of its own.
+	TitanFlavorRelease: {ProductWowClassicTitan},
 
 	ForeverFlavorRelease: {ProductWowForever},
 	// wow_classic_beta is listed here because that is where the 1.60.x Forever
