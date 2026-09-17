@@ -131,6 +131,21 @@ func (w *wagoUpload) lookupWagoToken() (err error) {
 	return
 }
 
+// wagoTypeForFlavor maps a game flavor to the key Wago uses in its patches
+// list. Most match our slug, but Wago names a few differently.
+func wagoTypeForFlavor(flavor toc.GameFlavor) string {
+	switch flavor {
+	case toc.TbcClassic:
+		return "bc"
+	case toc.WotlkClassic:
+		return "wotlk"
+	case toc.MistsClassic:
+		return "mop"
+	default:
+		return flavor.ToString()
+	}
+}
+
 func (w *wagoUpload) validateGameVersions(gameVersions []string) (err error) {
 	req, err := http.NewRequest("GET", wagoGameVersionsUrl, nil)
 	if err != nil {
@@ -175,15 +190,7 @@ func (w *wagoUpload) validateGameVersions(gameVersions []string) (err error) {
 	flavorVersionMap := toc.GetGameFlavorVersionsMap()
 
 	for flavor, versions := range flavorVersionMap {
-		var wago_type string
-		switch flavor {
-		case toc.TbcClassic:
-			wago_type = "bc"
-		case toc.WotlkClassic:
-			wago_type = "wotlk"
-		default:
-			wago_type = flavor.ToString()
-		}
+		wago_type := wagoTypeForFlavor(flavor)
 		for _, version := range versions {
 			if slices.Contains(versionResp.Patches[wago_type], version) {
 				w.supportMap[wago_type] = append(w.supportMap[wago_type], version)

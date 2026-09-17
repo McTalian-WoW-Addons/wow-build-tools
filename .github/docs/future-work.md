@@ -118,30 +118,68 @@ Small inconsistencies between addon repos, not worth a dedicated sprint but wort
 
 ---
 
-## WoW Forever (1.60.x) — remaining unknowns
+## WoW Forever (1.60.x)
 
-Forever beta opened 2026-09-17 (ends 2026-10-21); launch 2026-11-04. Classification
-support landed already: `Forever` game flavor, interface range `16xxx`
-(1.60.1 → `16001`), a minor-version split against Classic Era, and a guard in
-`CheckForInterfaceBumps` that rejects a product serving a different client line
-(`wow_classic_beta` is currently serving the Forever beta, not Mists).
+Beta opened 2026-09-17 (ends 2026-10-21); launch 2026-11-04.
 
-These are guesses marked `TODO(forever)` in the code and must be confirmed:
+Confirmed as of 2026-09-17:
 
-- [ ] Install directory names (`_forever_`, `_forever_beta_`) — `internal/flavor/flavor.go`
-- [ ] CDN product codes (`wow_forever`, `wow_forever_beta`, `wow_forever_ptr`) — `internal/toc/interface_versions.go`
-- [ ] TOC filename/`## Interface-` suffix (`Forever`) — `internal/toc/general.go`
-- [ ] CurseForge `gameVersionTypeID` and whether `1.60.x` appears in `/api/game/wow/versions`
-- [ ] Wago `patches` key and `toc_suffixes` entry (absent as of 2026-09-16)
-- [ ] WoWInterface compatibility id (absent as of 2026-09-16; they also still lack Mists and Titan)
-- [ ] `.release.json` flavor string — currently emitted as `forever`
+| Fact                         | Value                                      | Source                                                                      |
+| ---------------------------- | ------------------------------------------ | --------------------------------------------------------------------------- |
+| Interface range              | `16xxx`; 1.60.1 → `16001`                  | BigWigs packager `16???`; wow-ui-source `forever` branch `version.txt`      |
+| Flavor slug                  | `forever` (alias `camelot`)                | packager `game_flavor` map                                                  |
+| TOC suffix                   | `Camelot` (`_Camelot.toc`, `-Camelot.toc`) | packager globs and `forever) new_file+="_Camelot.toc"`                      |
+| Build token                  | `@version-forever@`                        | packager lua/xml/toc filters                                                |
+| CurseForge game version type | `88568`                                    | packager `forever) game_id=88568`                                           |
+| Wago patches key             | `forever`                                  | `addons.wago.io/api/data/game`                                              |
+| Install dir (beta)           | `_classic_beta_`                           | `wow_classic_beta` TACT product config `shared_container_default_subfolder` |
 
-**Cross-repo:** `toc-interface-updater` has the same guard
-(`checked_product_version` in `toc_interface_updater/update.py`) plus a `forever`
-flavor, a `_Forever.toc` suffix and `## Interface-Forever` handling. Its three
-live tests need a machine that can reach `us.version.battle.net:1119` — they skip
-when the version server is unreachable.
+Install directories for every product come from that product's TACT product
+config, which is the authoritative source:
+`http://level3.blizzard.com/tpr/configs/data/<h0:2>/<h2:4>/<product_config>`,
+field `all.config.shared_container_default_subfolder`. The `product_config`
+hashes come from `https://wago.tools/api/builds/latest`.
 
-**Unrelated pre-existing gap:** Titan (`3.80.x`) has no flavor here. BigWigs
-packager has `380??` → `titan` and CurseForge `81212`; Wago publishes a `titan`
-patches key.
+Still open:
+
+- [ ] Live CDN product code. None exists yet; the beta ships through
+      `wow_classic_beta`. `wow_forever`, `wow_forever_beta` and `wow_forever_ptr`
+      are declared on the assumption a standalone product appears before launch —
+      unknown products are simply absent from the build feed, so they are inert.
+- [ ] Live install directory. `_forever_` and `_forever_beta_` are declared for
+      the same reason and do not exist yet; `Forever` also maps to the
+      `classicBeta` install flavor so `link` works against the beta client today.
+- [ ] Whether `1.60.x` appears in CurseForge `/api/game/wow/versions`. Needs a
+      token; we match by version name rather than type id, so the id above is
+      informational.
+- [ ] WoWInterface support. Absent, and the packager explicitly warns and skips
+      Forever uploads to WoWI. They also still lack Mists and Titan.
+
+**Cross-repo:** `McTalian/wow-toc-updater` (formerly `toc-interface-updater`) is
+unmaintained — every tag now fails with a migration notice pointing here.
+
+---
+
+## Flavor coverage
+
+Confirmed install directories, from the TACT product configs described above:
+
+| Product               | Version | Install dir         |
+| --------------------- | ------- | ------------------- |
+| `wow`                 | 12.1.0  | `_retail_`          |
+| `wow_beta`            | 12.0.1  | `_beta_`            |
+| `wowt`                | 12.1.0  | `_ptr_`             |
+| `wowxptr`             | 12.1.5  | `_xptr_`            |
+| `wow_classic`         | 5.5.4   | `_classic_`         |
+| `wow_classic_ptr`     | 5.5.4   | `_classic_ptr_`     |
+| `wow_classic_beta`    | 1.60.1  | `_classic_beta_`    |
+| `wow_classic_era`     | 1.15.9  | `_classic_era_`     |
+| `wow_classic_era_ptr` | 2.5.6   | `_classic_era_ptr_` |
+| `wow_anniversary`     | 2.5.6   | `_anniversary_`     |
+| `wow_classic_titan`   | 3.80.2  | `_classic_titan_`   |
+| `wowlivetest`         | 10.2.5  | `_dark_realm_`      |
+| `wowz`                | 1.14.4  | `_submission_`      |
+
+Note that `wow_classic_beta` and `wow_classic_era_ptr` are both serving a
+different client line than their name suggests. `CheckForInterfaceBumps` trusts
+the build version over the product name for exactly this reason.

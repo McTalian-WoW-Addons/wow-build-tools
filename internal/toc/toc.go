@@ -110,8 +110,13 @@ func (t *Toc) getProductsToCheck(flavorReleaseInfo FlavorReleaseInfo) (productsT
 					seen[check] = true
 					productsToCheck = append(productsToCheck, check)
 				}
-			} else {
+			} else if releaseType == LiveRelease {
+				// No live product means the flavor cannot be resolved at all.
 				l.Warn("No products found for flavor release: %s", flavorRelease.ToString())
+			} else {
+				// Plenty of flavors have no beta or PTR channel of their own
+				// (Titan, for one). That is normal, not a problem.
+				l.Verbose("No %s products for %s", releaseType.ToString(), flavor.Label())
 			}
 		}
 	}
