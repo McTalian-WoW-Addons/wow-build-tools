@@ -35,6 +35,13 @@ const (
 	ProductWowClassicAnniversaryPtr  Product = "wow_anniversary_ptr"
 	ProductWowClassicEra             Product = "wow_classic_era"
 	ProductWowClassicEraPtr          Product = "wow_classic_era_ptr"
+	// TODO(forever): these product codes are unconfirmed. Blizzard has not
+	// published a Forever product yet and the 1.60.x beta is being served
+	// through wow_classic_beta. Unknown products are simply absent from the
+	// build info response, so listing them early is harmless.
+	ProductWowForever     Product = "wow_forever"
+	ProductWowForeverBeta Product = "wow_forever_beta"
+	ProductWowForeverPtr  Product = "wow_forever_ptr"
 )
 
 func (p Product) IsBeta() bool {
@@ -53,6 +60,8 @@ func (p Product) GetLive() Product {
 		return ProductWowClassic
 	case ProductWowClassicEraPtr:
 		return ProductWowClassicEra
+	case ProductWowForeverBeta, ProductWowForeverPtr:
+		return ProductWowForever
 	case ProductWowClassicAnniversaryBeta, ProductWowClassicAnniversaryPtr:
 		return ProductWowClassicAnniversary
 	default:
@@ -76,6 +85,9 @@ var ProductToFlavorMap map[Product]GameFlavor = map[Product]GameFlavor{
 	ProductWowClassicAnniversaryPtr:  CurrentAnniversary,
 	ProductWowClassicEra:             ClassicEra,
 	ProductWowClassicEraPtr:          ClassicEra,
+	ProductWowForever:                Forever,
+	ProductWowForeverBeta:            Forever,
+	ProductWowForeverPtr:             Forever,
 }
 
 type FlavorReleaseInfo struct {
@@ -129,6 +141,10 @@ var (
 	ClassicAnniversaryFlavorRelease     = GameFlavorRelease{Flavor: CurrentAnniversary, ReleaseType: LiveRelease}
 	ClassicAnniversaryBetaFlavorRelease = GameFlavorRelease{Flavor: CurrentAnniversary, ReleaseType: BetaRelease}
 	ClassicAnniversaryTestFlavorRelease = GameFlavorRelease{Flavor: CurrentAnniversary, ReleaseType: TestRelease}
+
+	ForeverFlavorRelease     = GameFlavorRelease{Flavor: Forever, ReleaseType: LiveRelease}
+	ForeverBetaFlavorRelease = GameFlavorRelease{Flavor: Forever, ReleaseType: BetaRelease}
+	ForeverTestFlavorRelease = GameFlavorRelease{Flavor: Forever, ReleaseType: TestRelease}
 )
 
 var FlavorReleaseToProductMap map[GameFlavorRelease][]Product = map[GameFlavorRelease][]Product{
@@ -147,6 +163,13 @@ var FlavorReleaseToProductMap map[GameFlavorRelease][]Product = map[GameFlavorRe
 	ClassicAnniversaryFlavorRelease:     {ProductWowClassicAnniversary},
 	ClassicAnniversaryBetaFlavorRelease: {ProductWowClassicAnniversaryBeta},
 	ClassicAnniversaryTestFlavorRelease: {ProductWowClassicAnniversaryPtr},
+
+	ForeverFlavorRelease: {ProductWowForever},
+	// wow_classic_beta is listed here because that is where the 1.60.x Forever
+	// beta is actually being served. CheckForInterfaceBumps verifies the build
+	// really is a Forever build before using it, so this is safe either way.
+	ForeverBetaFlavorRelease: {ProductWowForeverBeta, ProductWowClassicBeta},
+	ForeverTestFlavorRelease: {ProductWowForeverPtr},
 }
 
 type ProductBuilds = map[Product]BuildInfo

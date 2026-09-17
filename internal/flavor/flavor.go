@@ -17,6 +17,12 @@ var KnownFlavors = []Flavor{
 	{Id: "classicPtr", Name: "Classic PTR", Dir: "_classic_ptr_"},
 	{Id: "classicEraPtr", Name: "Classic Era PTR", Dir: "_classic_era_ptr_"},
 	{Id: "classicBeta", Name: "Classic Beta", Dir: "_classic_beta_"},
+	// TODO(forever): install directory names are unconfirmed. Blizzard has not
+	// published them and the 1.60.x beta is being served through the
+	// wow_classic_beta product. These follow the existing naming convention and
+	// are inert until a matching directory actually exists on disk.
+	{Id: "forever", Name: "Forever", Dir: "_forever_"},
+	{Id: "foreverBeta", Name: "Forever Beta", Dir: "_forever_beta_"},
 }
 var UnknownFlavor = Flavor{Id: "unknown", Name: "Unknown", Dir: ""}
 

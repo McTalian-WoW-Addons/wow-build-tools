@@ -77,6 +77,7 @@ const (
 	VersionSl      BuildTypeToken = "version-sl"
 	VersionDf      BuildTypeToken = "version-df"
 	VersionTWW     BuildTypeToken = "version-tww"
+	VersionForever BuildTypeToken = "version-forever"
 )
 
 var fileTokens = []ValidToken{
@@ -128,6 +129,7 @@ var buildTypeTokens = []BuildTypeToken{
 	VersionSl,
 	VersionDf,
 	VersionTWW,
+	VersionForever,
 }
 
 func uniqueTokens(slice []ValidToken) []ValidToken {

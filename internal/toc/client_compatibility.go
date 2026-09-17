@@ -14,7 +14,7 @@ func CompatibleInstallFlavorsFromInterfaces(interfaceVersions []int) []flavor.Fl
 	seenFlavorIds := make(map[string]bool)
 
 	for _, interfaceVersion := range interfaceVersions {
-		gameFlavor := getFlavorFromMajorVersion(interfaceVersion / 10000)
+		gameFlavor := getFlavorFromInterfaceVersion(interfaceVersion)
 		for _, installFlavor := range compatibleInstallFlavorsForGameFlavor(gameFlavor) {
 			if installFlavor.IsUnknown() || seenFlavorIds[installFlavor.Id] {
 				continue
@@ -45,6 +45,11 @@ func compatibleInstallFlavorsForGameFlavor(gameFlavor GameFlavor) []flavor.Flavo
 	case CurrentAnniversary:
 		return []flavor.Flavor{
 			flavor.FromId("anniversary"),
+		}
+	case Forever:
+		return []flavor.Flavor{
+			flavor.FromId("forever"),
+			flavor.FromId("foreverBeta"),
 		}
 	case Unknown:
 		return nil
