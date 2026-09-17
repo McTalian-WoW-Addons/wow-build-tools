@@ -6,3 +6,6 @@ dist/*
 node_modules/
 
 .env
+
+.claude/worktrees/
+.claude/.last-checks.json
