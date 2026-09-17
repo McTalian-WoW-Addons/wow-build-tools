@@ -65,6 +65,44 @@ func (g GameFlavor) ToString() string {
 	}
 }
 
+// DisplayName is the human readable name for a flavor. ToString returns the
+// packager slug (Classic Era is "classic", Burning Crusade is "bcc"), which is
+// right for filenames and --game-version but reads wrong in a sentence.
+func (g GameFlavor) DisplayName() string {
+	switch g {
+	case ClassicEra:
+		return "Classic Era"
+	case TbcClassic:
+		return "Burning Crusade Classic"
+	case WotlkClassic:
+		return "Wrath Classic"
+	case CataClassic:
+		return "Cataclysm Classic"
+	case MistsClassic:
+		return "Mists Classic"
+	case WodClassic:
+		return "Warlords Classic"
+	case LegionClassic:
+		return "Legion Classic"
+	case BfaClassic:
+		return "Battle for Azeroth Classic"
+	case SlClassic:
+		return "Shadowlands Classic"
+	case DfClassic:
+		return "Dragonflight Classic"
+	case Forever:
+		return "Forever"
+	default:
+		return "Retail"
+	}
+}
+
+// Label pairs the two for user-facing messages, e.g. "Classic Era (classic)",
+// so the text reads naturally and the slug stays greppable.
+func (g GameFlavor) Label() string {
+	return fmt.Sprintf("%s (%s)", g.DisplayName(), g.ToString())
+}
+
 type GameVersions map[GameFlavor][]string
 type GameInterfaces map[GameFlavor][]int
 

@@ -168,8 +168,8 @@ func (t *Toc) CheckForInterfaceBumps(flavorReleaseInfo FlavorReleaseInfo) (avail
 		// Trust the build version over the product name.
 		if buildFlavor := getFlavorFromInterfaceVersion(interfaceVersion); buildFlavor != check.flavor {
 			l.Warn(
-				"Product %s is serving a %s build (%d), not %s; skipping",
-				check.product, buildFlavor.ToString(), interfaceVersion, check.flavor.ToString(),
+				"Skipping %s: it is serving a %s build (Interface %d), but %s versions were requested",
+				check.product, buildFlavor.Label(), interfaceVersion, check.flavor.Label(),
 			)
 			continue
 		}
