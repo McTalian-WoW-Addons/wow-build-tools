@@ -1,6 +1,9 @@
 package flavor
 
-import "testing"
+import (
+	"strings"
+	"testing"
+)
 
 func TestFromDir(t *testing.T) {
 	tests := []struct {
@@ -50,6 +53,31 @@ func TestFromId(t *testing.T) {
 		result := FromId(test.id)
 		if result != test.expected {
 			t.Errorf("FromId(%s) = %v; want %v", test.id, result, test.expected)
+		}
+	}
+}
+
+// Viper lowercases every configuration key, so "wowPath.classicBeta" reads back
+// as "classicbeta". Lookups have to tolerate that or those flavors silently
+// never resolve.
+func TestFromIdAndFromDirAreCaseInsensitive(t *testing.T) {
+	for _, f := range KnownFlavors {
+		if got := FromId(strings.ToLower(f.Id)); got.Id != f.Id {
+			t.Errorf("FromId(%q) = %q, expected %q", strings.ToLower(f.Id), got.Id, f.Id)
+		}
+		if got := FromId(strings.ToUpper(f.Id)); got.Id != f.Id {
+			t.Errorf("FromId(%q) = %q, expected %q", strings.ToUpper(f.Id), got.Id, f.Id)
+		}
+		if got := FromDir(strings.ToUpper(f.Dir)); got.Id != f.Id {
+			t.Errorf("FromDir(%q) = %q, expected %q", strings.ToUpper(f.Dir), got.Id, f.Id)
+		}
+	}
+}
+
+func TestFromIdStillRejectsUnknown(t *testing.T) {
+	for _, id := range []string{"", "nope", "classicbetaptr"} {
+		if got := FromId(id); !got.IsUnknown() {
+			t.Errorf("FromId(%q) = %q, expected unknown", id, got.Id)
 		}
 	}
 }
