@@ -49,6 +49,10 @@ func TocFileToGameFlavor(noExt string) (flavor GameFlavor, suffix string) {
 		flavor = SlClassic
 	case "df":
 		flavor = DfClassic
+	case "forever":
+		// TODO(forever): the TOC suffix Blizzard and the packagers settle on is
+		// not published yet; "Forever" follows the existing convention.
+		flavor = Forever
 	case "", "mainline":
 		flavor = Retail
 	default:

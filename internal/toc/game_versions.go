@@ -23,10 +23,18 @@ const (
 	SlClassic
 	DfClassic
 	Retail
+	// Forever is the 1.60.x "WoW Forever" client line. It shares Classic Era's
+	// major version, so it can only be told apart by the minor version.
+	Forever
 )
 
 const CurrentClassic GameFlavor = MistsClassic
 const CurrentAnniversary GameFlavor = TbcClassic
+
+// foreverMinMinorVersion is the lowest minor version of the 1.x line that
+// belongs to Forever rather than Classic Era. Classic Era has stayed in the
+// 1.13-1.15 range; Forever started at 1.60.
+const foreverMinMinorVersion = 60
 
 func (g GameFlavor) ToString() string {
 	switch g {
@@ -50,6 +58,8 @@ func (g GameFlavor) ToString() string {
 		return "sl"
 	case DfClassic:
 		return "df"
+	case Forever:
+		return "forever"
 	default:
 		return "retail"
 	}
@@ -69,9 +79,15 @@ func AddGameVersion(flavor GameFlavor, version string) {
 	gameVersions[flavor] = append(gameVersions[flavor], version)
 }
 
-func getFlavorFromMajorVersion(majorVersion int) GameFlavor {
+// getFlavorFromVersion maps a game version to its flavor. The minor version is
+// required because Classic Era (1.13-1.15) and Forever (1.60+) share a major
+// version.
+func getFlavorFromVersion(majorVersion, minorVersion int) GameFlavor {
 	switch majorVersion {
 	case 1:
+		if minorVersion >= foreverMinMinorVersion {
+			return Forever
+		}
 		return ClassicEra
 	case 2:
 		return TbcClassic
@@ -96,10 +112,16 @@ func getFlavorFromMajorVersion(majorVersion int) GameFlavor {
 	}
 }
 
+// getFlavorFromInterfaceVersion maps a packed interface version (e.g. 16001)
+// to its flavor.
+func getFlavorFromInterfaceVersion(interfaceVersion int) GameFlavor {
+	return getFlavorFromVersion(interfaceVersion/10000, (interfaceVersion/100)%100)
+}
+
 func parseGameVersionSegment(version string) error {
 	orig := strings.ToLower(version)
 	switch strings.ToLower(orig) {
-	case Retail.ToString(), ClassicEra.ToString(), TbcClassic.ToString(), WotlkClassic.ToString(), CataClassic.ToString(), MistsClassic.ToString():
+	case Retail.ToString(), ClassicEra.ToString(), TbcClassic.ToString(), WotlkClassic.ToString(), CataClassic.ToString(), MistsClassic.ToString(), Forever.ToString():
 		return nil
 	case "mainline":
 		return nil
@@ -124,7 +146,7 @@ func parseGameVersionSegment(version string) error {
 			return fmt.Errorf("invalid argument for game version: %s", orig)
 		}
 
-		flavor := getFlavorFromMajorVersion(major)
+		flavor := getFlavorFromVersion(major, minor)
 
 		AddGameVersion(flavor, fmt.Sprintf("%d.%d.%d", major, minor, patch))
 		interfaceVersion, err := strconv.Atoi(fmt.Sprintf("%d%02d%02d", major, minor, patch))

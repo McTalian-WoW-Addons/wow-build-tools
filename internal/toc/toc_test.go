@@ -468,8 +468,26 @@ Core.lua`
 	if _, exists := availableInterfaces[ProductWowClassicPtr]; !exists {
 		t.Error("Expected Classic PTR product in results")
 	}
-	if _, exists := availableInterfaces[ProductWowClassicEraPtr]; !exists {
-		t.Error("Expected Classic Era PTR product in results")
+	// The Classic Era PTR product is only usable when it is actually serving a
+	// Classic Era build. Blizzard periodically repoints it at another client
+	// line (it has carried 2.5.x Anniversary builds), and CheckForInterfaceBumps
+	// drops it in that case rather than writing a foreign interface version into
+	// a Classic Era TOC line.
+	if iface, exists := availableInterfaces[ProductWowClassicEraPtr]; exists {
+		if getFlavorFromInterfaceVersion(iface) != ClassicEra {
+			t.Errorf("Classic Era PTR interface %d is not a Classic Era interface", iface)
+		}
+	}
+
+	// Whatever survived must match the flavor it was looked up for.
+	for product, iface := range availableInterfaces {
+		expected, known := ProductToFlavorMap[product]
+		if !known {
+			continue
+		}
+		if actual := getFlavorFromInterfaceVersion(iface); actual != expected {
+			t.Errorf("Product %s returned a %s interface (%d), expected %s", product, actual.ToString(), iface, expected.ToString())
+		}
 	}
 }
 

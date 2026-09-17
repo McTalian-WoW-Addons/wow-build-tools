@@ -42,7 +42,7 @@ func (t *Toc) addGameVersionsFromToc() map[GameFlavor][]string {
 		// Grab the left-most digits for the major version
 		majorVersion := interfaceVersion / 10000
 
-		flavor := getFlavorFromMajorVersion(majorVersion)
+		flavor := getFlavorFromVersion(majorVersion, minorVersion)
 		AddGameVersion(flavor, fmt.Sprintf("%d.%d.%d", majorVersion, minorVersion, patchVersion))
 		AddGameInterface(flavor, interfaceVersion)
 		t.tocSpecificInterfaces[flavor] = append(t.tocSpecificInterfaces[flavor], interfaceVersion)
@@ -71,7 +71,14 @@ func (t *Toc) GetTocEntriesTree(addonDir string, ignoredFiles []string, l *logge
 	return &tocTree, nil
 }
 
-func (t *Toc) getProductsToCheck(flavorReleaseInfo FlavorReleaseInfo) (productsToCheck []Product, err error) {
+// productCheck pairs a CDN product with the flavor it was looked up for, so a
+// product that turns out to be serving a different client line can be rejected.
+type productCheck struct {
+	product Product
+	flavor  GameFlavor
+}
+
+func (t *Toc) getProductsToCheck(flavorReleaseInfo FlavorReleaseInfo) (productsToCheck []productCheck, err error) {
 	_, err = GetLatestBuildInfo()
 	if err != nil {
 		return
@@ -92,7 +99,9 @@ func (t *Toc) getProductsToCheck(flavorReleaseInfo FlavorReleaseInfo) (productsT
 			}
 			products, exists := FlavorReleaseToProductMap[flavorRelease]
 			if exists {
-				productsToCheck = append(productsToCheck, products...)
+				for _, product := range products {
+					productsToCheck = append(productsToCheck, productCheck{product: product, flavor: flavor})
+				}
 			} else {
 				l.Warn("No products found for flavor release: %s", flavorRelease.ToString())
 			}
@@ -100,6 +109,32 @@ func (t *Toc) getProductsToCheck(flavorReleaseInfo FlavorReleaseInfo) (productsT
 	}
 
 	return
+}
+
+// liveInterfaceForFlavor returns the highest live interface version known for a
+// flavor, used to suppress beta/PTR builds that trail live.
+func liveInterfaceForFlavor(flavor GameFlavor, availableInterfaces map[Product]int) int {
+	highest := 0
+	liveRelease := GameFlavorRelease{Flavor: flavor, ReleaseType: LiveRelease}
+	for _, liveProduct := range FlavorReleaseToProductMap[liveRelease] {
+		liveInterface, exists := availableInterfaces[liveProduct]
+		if !exists {
+			liveBuildInfo, cached := (*cacheLatestBuilds)[liveProduct]
+			if !cached {
+				continue
+			}
+			parsed, parseErr := liveBuildInfo.GetInterfaceVersion()
+			if parseErr != nil || getFlavorFromInterfaceVersion(parsed) != flavor {
+				continue
+			}
+			liveInterface = parsed
+		}
+		if liveInterface > highest {
+			highest = liveInterface
+		}
+	}
+
+	return highest
 }
 
 func (t *Toc) CheckForInterfaceBumps(flavorReleaseInfo FlavorReleaseInfo) (availableInterfaces map[Product]int, err error) {
@@ -110,35 +145,35 @@ func (t *Toc) CheckForInterfaceBumps(flavorReleaseInfo FlavorReleaseInfo) (avail
 
 	availableInterfaces = make(map[Product]int)
 
-	for _, product := range productsToCheck {
-		buildInfo, exists := (*cacheLatestBuilds)[product]
+	for _, check := range productsToCheck {
+		buildInfo, exists := (*cacheLatestBuilds)[check.product]
 		if !exists {
 			continue
 		}
 		interfaceVersion, err := buildInfo.GetInterfaceVersion()
 		if err != nil {
-			return nil, fmt.Errorf("error parsing Interface version for product %s: %v", product, err)
+			return nil, fmt.Errorf("error parsing Interface version for product %s: %v", check.product, err)
 		}
-		if product.IsBeta() || product.IsTest() {
-			liveProduct := product.GetLive()
-			liveInterface, liveExists := availableInterfaces[liveProduct]
-			if !liveExists {
-				liveBuildInfo, liveCacheExists := (*cacheLatestBuilds)[liveProduct]
-				if liveCacheExists {
-					liveInterface, err = liveBuildInfo.GetInterfaceVersion()
-					if err != nil {
-						return nil, fmt.Errorf("error parsing Interface version for live product %s: %v", liveProduct, err)
-					}
-				}
-			}
 
-			if liveInterface > interfaceVersion {
+		// Blizzard reuses product codes across client lines - wow_classic_beta is
+		// currently serving the 1.60.x Forever beta rather than a Classic build.
+		// Trust the build version over the product name.
+		if buildFlavor := getFlavorFromInterfaceVersion(interfaceVersion); buildFlavor != check.flavor {
+			l.Warn(
+				"Product %s is serving a %s build (%d), not %s; skipping",
+				check.product, buildFlavor.ToString(), interfaceVersion, check.flavor.ToString(),
+			)
+			continue
+		}
+
+		if check.product.IsBeta() || check.product.IsTest() {
+			if liveInterfaceForFlavor(check.flavor, availableInterfaces) > interfaceVersion {
 				// Skip older version
 				continue
 			}
 		}
 
-		availableInterfaces[product] = interfaceVersion
+		availableInterfaces[check.product] = interfaceVersion
 	}
 
 	return
@@ -399,8 +434,7 @@ func (t *Toc) GetFlavorsFromInterfaces() []GameFlavor {
 	flavorSet := make(map[GameFlavor]bool)
 
 	for _, interfaceVersion := range t.Interface {
-		majorVersion := interfaceVersion / 10000
-		flavor := getFlavorFromMajorVersion(majorVersion)
+		flavor := getFlavorFromInterfaceVersion(interfaceVersion)
 		if !flavorSet[flavor] {
 			flavors = append(flavors, flavor)
 			flavorSet[flavor] = true

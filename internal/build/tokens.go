@@ -157,6 +157,8 @@ func populateTokens(args populateTokensArgs) (result populateTokensResult, err e
 			bTTM[tokens.VersionSl] = true
 		case toc.DfClassic:
 			bTTM[tokens.VersionDf] = true
+		case toc.Forever:
+			bTTM[tokens.VersionForever] = true
 		default:
 			bTTM[tokens.Retail] = true
 		}

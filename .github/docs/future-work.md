@@ -115,3 +115,33 @@ Small inconsistencies between addon repos, not worth a dedicated sprint but wort
 | `.luacov`               | Minor differences between repos — low priority |
 | Rockspec                | Minor differences — low priority               |
 | Makefile (core targets) | Minor differences — low priority               |
+
+---
+
+## WoW Forever (1.60.x) — remaining unknowns
+
+Forever beta opened 2026-09-17 (ends 2026-10-21); launch 2026-11-04. Classification
+support landed already: `Forever` game flavor, interface range `16xxx`
+(1.60.1 → `16001`), a minor-version split against Classic Era, and a guard in
+`CheckForInterfaceBumps` that rejects a product serving a different client line
+(`wow_classic_beta` is currently serving the Forever beta, not Mists).
+
+These are guesses marked `TODO(forever)` in the code and must be confirmed:
+
+- [ ] Install directory names (`_forever_`, `_forever_beta_`) — `internal/flavor/flavor.go`
+- [ ] CDN product codes (`wow_forever`, `wow_forever_beta`, `wow_forever_ptr`) — `internal/toc/interface_versions.go`
+- [ ] TOC filename/`## Interface-` suffix (`Forever`) — `internal/toc/general.go`
+- [ ] CurseForge `gameVersionTypeID` and whether `1.60.x` appears in `/api/game/wow/versions`
+- [ ] Wago `patches` key and `toc_suffixes` entry (absent as of 2026-09-16)
+- [ ] WoWInterface compatibility id (absent as of 2026-09-16; they also still lack Mists and Titan)
+- [ ] `.release.json` flavor string — currently emitted as `forever`
+
+**Cross-repo:** `toc-interface-updater` has the same guard
+(`checked_product_version` in `toc_interface_updater/update.py`) plus a `forever`
+flavor, a `_Forever.toc` suffix and `## Interface-Forever` handling. Its three
+live tests need a machine that can reach `us.version.battle.net:1119` — they skip
+when the version server is unreachable.
+
+**Unrelated pre-existing gap:** Titan (`3.80.x`) has no flavor here. BigWigs
+packager has `380??` → `titan` and CurseForge `81212`; Wago publishes a `titan`
+patches key.
