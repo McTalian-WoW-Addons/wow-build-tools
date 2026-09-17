@@ -1,5 +1,7 @@
 package flavor
 
+import "strings"
+
 type Flavor struct {
 	Id   string
 	Name string
@@ -39,22 +41,30 @@ func (f Flavor) IsUnknown() bool {
 var IdFlavorMap = map[string]Flavor{}
 var DirFlavorMap = map[string]Flavor{}
 
+// Lookups are case-insensitive. Viper lowercases every configuration key, so a
+// camelCase id such as "classicBeta" comes back out of the config as
+// "classicbeta" and would otherwise never resolve.
+var lowerIdFlavorMap = map[string]Flavor{}
+var lowerDirFlavorMap = map[string]Flavor{}
+
 func init() {
 	for _, f := range KnownFlavors {
 		IdFlavorMap[f.Id] = f
 		DirFlavorMap[f.Dir] = f
+		lowerIdFlavorMap[strings.ToLower(f.Id)] = f
+		lowerDirFlavorMap[strings.ToLower(f.Dir)] = f
 	}
 }
 
 func FromDir(dir string) Flavor {
-	if f, ok := DirFlavorMap[dir]; ok {
+	if f, ok := lowerDirFlavorMap[strings.ToLower(dir)]; ok {
 		return f
 	}
 	return UnknownFlavor
 }
 
 func FromId(id string) Flavor {
-	if f, ok := IdFlavorMap[id]; ok {
+	if f, ok := lowerIdFlavorMap[strings.ToLower(id)]; ok {
 		return f
 	}
 	return UnknownFlavor

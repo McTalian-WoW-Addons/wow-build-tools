@@ -97,21 +97,54 @@ func Link() error {
 		}
 	}
 
-	linksCreated := 0
-
+	linkTargets := map[string]string{}
 	for k, wowPath := range wowPaths {
 		if k == "base" {
 			continue
 		}
 
-		if !slices.Contains(flavors, flavor.FromId(k)) {
-			l.Debug("Skipping flavor %s", k)
+		f := flavor.FromId(k)
+		if f.IsUnknown() {
+			l.Warn("Ignoring unrecognized flavor %q in your wowPath configuration", k)
 			continue
 		}
 
-		if _, err := os.Stat(filepath.Join(wowPath)); os.IsNotExist(err) {
-			l.Error("World of Warcraft path %s does not exist", wowPath)
-			return err
+		linkTargets[f.Id] = wowPath
+	}
+
+	// A client installed since `wow-build-tools config` last ran has no entry of
+	// its own. Derive it from the base path so a newly released flavor works
+	// without reconfiguring.
+	if basePath, ok := wowPaths["base"]; ok && basePath != "" {
+		for _, f := range flavors {
+			if _, configured := linkTargets[f.Id]; configured || f.Dir == "" {
+				continue
+			}
+
+			derived := filepath.Join(basePath, f.Dir)
+			if _, err := os.Stat(derived); err != nil {
+				continue
+			}
+
+			l.Debug("Discovered %s installation at %s", f.Name, derived)
+			linkTargets[f.Id] = derived
+		}
+	}
+
+	linksCreated := 0
+
+	for _, f := range flavors {
+		wowPath, ok := linkTargets[f.Id]
+		if !ok {
+			l.Debug("Skipping %s, no installation configured or found", f.Name)
+			continue
+		}
+
+		if _, err := os.Stat(wowPath); err != nil {
+			// A configured path for a client that is not installed (or is not
+			// mounted right now) should not fail the whole run.
+			l.Warn("Skipping %s, %s is not accessible", f.Name, wowPath)
+			continue
 		}
 
 		if _, err := os.Stat(filepath.Join(wowPath, "Interface", "AddOns")); os.IsNotExist(err) {

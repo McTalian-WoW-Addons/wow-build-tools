@@ -216,3 +216,102 @@ func assertSymlinkExists(t *testing.T, path string) {
 	require.NoError(t, err)
 	assert.NotZero(t, info.Mode()&os.ModeSymlink)
 }
+
+// Reproduces the reported failure: wowPath.classicBeta is configured, the TOC
+// declares a Forever interface, but nothing was linked because viper hands back
+// "classicbeta" and the flavor lookup was case-sensitive.
+func TestLinkResolvesLowercasedConfigKeys(t *testing.T) {
+	defer resetBuildParams()
+	defer resetLinkParams()
+	viper.Reset()
+	defer viper.Reset()
+
+	topDir := t.TempDir()
+	releaseDir := filepath.Join(topDir, ".release")
+	addonName := "TestAddon"
+
+	require.NoError(t, os.MkdirAll(filepath.Join(releaseDir, addonName), 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(topDir, addonName+".toc"), []byte("## Interface: 16001\n\nCore.lua\n"), 0644))
+
+	classicBetaInstall := filepath.Join(t.TempDir(), "classic-beta")
+	retailInstall := filepath.Join(t.TempDir(), "retail")
+	require.NoError(t, os.MkdirAll(classicBetaInstall, 0755))
+	require.NoError(t, os.MkdirAll(retailInstall, 0755))
+
+	viper.Set("wowPath.base", filepath.Join(t.TempDir(), "wow"))
+	viper.Set("wowPath.retail", retailInstall)
+	viper.Set("wowPath.classicBeta", classicBetaInstall)
+
+	BuildParams.TopDir = topDir
+	BuildParams.ReleaseDir = releaseDir
+
+	require.NoError(t, Link())
+
+	assertSymlinkExists(t, filepath.Join(classicBetaInstall, "Interface", "AddOns", addonName))
+	assert.NoFileExists(t, filepath.Join(retailInstall, "Interface", "AddOns", addonName))
+}
+
+// A client installed after `config` last ran has no entry of its own, so it is
+// derived from the base path.
+func TestLinkDiscoversUnconfiguredFlavorFromBasePath(t *testing.T) {
+	defer resetBuildParams()
+	defer resetLinkParams()
+	viper.Reset()
+	defer viper.Reset()
+
+	topDir := t.TempDir()
+	releaseDir := filepath.Join(topDir, ".release")
+	addonName := "TestAddon"
+
+	require.NoError(t, os.MkdirAll(filepath.Join(releaseDir, addonName), 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(topDir, addonName+".toc"), []byte("## Interface: 16001\n\nCore.lua\n"), 0644))
+
+	basePath := filepath.Join(t.TempDir(), "wow")
+	discovered := filepath.Join(basePath, "_classic_beta_")
+	require.NoError(t, os.MkdirAll(discovered, 0755))
+
+	retailInstall := filepath.Join(t.TempDir(), "retail")
+	require.NoError(t, os.MkdirAll(retailInstall, 0755))
+
+	viper.Set("wowPath.base", basePath)
+	viper.Set("wowPath.retail", retailInstall)
+
+	BuildParams.TopDir = topDir
+	BuildParams.ReleaseDir = releaseDir
+
+	require.NoError(t, Link())
+
+	assertSymlinkExists(t, filepath.Join(discovered, "Interface", "AddOns", addonName))
+}
+
+// A configured path for a client that is not installed used to abort the whole
+// run; it should just be skipped.
+func TestLinkSkipsMissingInstallPathWithoutFailing(t *testing.T) {
+	defer resetBuildParams()
+	defer resetLinkParams()
+	viper.Reset()
+	defer viper.Reset()
+
+	topDir := t.TempDir()
+	releaseDir := filepath.Join(topDir, ".release")
+	addonName := "TestAddon"
+
+	require.NoError(t, os.MkdirAll(filepath.Join(releaseDir, addonName), 0755))
+	require.NoError(t, os.WriteFile(filepath.Join(topDir, addonName+".toc"), []byte("## Interface: 16001, 120100\n\nCore.lua\n"), 0644))
+
+	retailInstall := filepath.Join(t.TempDir(), "retail")
+	require.NoError(t, os.MkdirAll(retailInstall, 0755))
+	missingInstall := filepath.Join(t.TempDir(), "not-installed")
+
+	viper.Set("wowPath.base", filepath.Join(t.TempDir(), "wow"))
+	viper.Set("wowPath.retail", retailInstall)
+	viper.Set("wowPath.classicBeta", missingInstall)
+
+	BuildParams.TopDir = topDir
+	BuildParams.ReleaseDir = releaseDir
+
+	require.NoError(t, Link())
+
+	assertSymlinkExists(t, filepath.Join(retailInstall, "Interface", "AddOns", addonName))
+	assert.NoDirExists(t, missingInstall)
+}
