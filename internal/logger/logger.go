@@ -176,6 +176,13 @@ func InitLogger() {
 	log.SetFlags(0)
 }
 
+// SetOutput redirects every logger's output. Commands that write machine
+// readable output to stdout use this to move logging to stderr, so a log line
+// can never end up inside the payload.
+func SetOutput(w io.Writer) {
+	log.SetOutput(w)
+}
+
 // Global logger instance without a prefix
 var DefaultLogger = &Logger{prefix: "", level: currentLevel, timings: []string{}, warningsEncountered: []string{}}
 

@@ -6,3 +6,6 @@ dist/*
 node_modules/
 
 .env
+
+# wow-dev run-checks record (local only)
+.claude/.last-checks.json
