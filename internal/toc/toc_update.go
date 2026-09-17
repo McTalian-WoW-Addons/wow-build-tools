@@ -3,6 +3,7 @@ package toc
 import (
 	"encoding/json"
 	"fmt"
+	"os"
 
 	"github.com/McTalian/wow-build-tools/internal/logger"
 )
@@ -10,9 +11,11 @@ import (
 func RunTocUpdate(outputJson bool) (err error) {
 	l := logger.GetSubLog("TOC_UPDATE")
 
-	// When outputting JSON, suppress all non-error logging to keep stdout clean
+	// Keep stdout pure JSON. Logging goes to stderr rather than being silenced,
+	// so warnings (a product serving another client line, say) still reach the
+	// CI log while the payload stays parseable.
 	if outputJson {
-		l.SetLogLevel(logger.ERROR)
+		logger.SetOutput(os.Stderr)
 	}
 
 	defer func() {

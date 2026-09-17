@@ -91,6 +91,7 @@ func (t *Toc) getProductsToCheck(flavorReleaseInfo FlavorReleaseInfo) (productsT
 		releaseTypes = append(releaseTypes, TestRelease)
 	}
 
+	seen := make(map[productCheck]bool)
 	for flavor := range t.tocSpecificInterfaces {
 		for _, releaseType := range releaseTypes {
 			flavorRelease := GameFlavorRelease{
@@ -100,7 +101,14 @@ func (t *Toc) getProductsToCheck(flavorReleaseInfo FlavorReleaseInfo) (productsT
 			products, exists := FlavorReleaseToProductMap[flavorRelease]
 			if exists {
 				for _, product := range products {
-					productsToCheck = append(productsToCheck, productCheck{product: product, flavor: flavor})
+					check := productCheck{product: product, flavor: flavor}
+					// Beta and test releases can name the same product, which
+					// would otherwise be looked up (and warned about) twice.
+					if seen[check] {
+						continue
+					}
+					seen[check] = true
+					productsToCheck = append(productsToCheck, check)
 				}
 			} else {
 				l.Warn("No products found for flavor release: %s", flavorRelease.ToString())
@@ -160,8 +168,8 @@ func (t *Toc) CheckForInterfaceBumps(flavorReleaseInfo FlavorReleaseInfo) (avail
 		// Trust the build version over the product name.
 		if buildFlavor := getFlavorFromInterfaceVersion(interfaceVersion); buildFlavor != check.flavor {
 			l.Warn(
-				"Product %s is serving a %s build (%d), not %s; skipping",
-				check.product, buildFlavor.ToString(), interfaceVersion, check.flavor.ToString(),
+				"Skipping %s: it is serving a %s build (Interface %d), but %s versions were requested",
+				check.product, buildFlavor.Label(), interfaceVersion, check.flavor.Label(),
 			)
 			continue
 		}

@@ -57,6 +57,48 @@ func TestForeverToString(t *testing.T) {
 	}
 }
 
+func TestDisplayName(t *testing.T) {
+	tests := []struct {
+		flavor   GameFlavor
+		expected string
+	}{
+		{ClassicEra, "Classic Era"},
+		{TbcClassic, "Burning Crusade Classic"},
+		{MistsClassic, "Mists Classic"},
+		{Forever, "Forever"},
+		{Retail, "Retail"},
+	}
+
+	for _, tt := range tests {
+		if actual := tt.flavor.DisplayName(); actual != tt.expected {
+			t.Errorf("DisplayName() = %q, expected %q", actual, tt.expected)
+		}
+	}
+
+	// The slug and the display name are deliberately different things.
+	if ClassicEra.ToString() == ClassicEra.DisplayName() {
+		t.Error("Expected the Classic Era slug and display name to differ")
+	}
+}
+
+func TestLabel(t *testing.T) {
+	tests := []struct {
+		flavor   GameFlavor
+		expected string
+	}{
+		{ClassicEra, "Classic Era (classic)"},
+		{TbcClassic, "Burning Crusade Classic (bcc)"},
+		{Forever, "Forever (forever)"},
+		{Retail, "Retail (retail)"},
+	}
+
+	for _, tt := range tests {
+		if actual := tt.flavor.Label(); actual != tt.expected {
+			t.Errorf("Label() = %q, expected %q", actual, tt.expected)
+		}
+	}
+}
+
 func TestTocFileToGameFlavor_Forever(t *testing.T) {
 	for _, noExt := range []string{"TestAddon-Forever", "TestAddon_Forever", "TestAddon-forever"} {
 		if flavor, _ := TocFileToGameFlavor(noExt); flavor != Forever {
