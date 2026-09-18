@@ -61,6 +61,12 @@
       "enabled": false
     },
     {
+      "description": "conventional-changelog-conventionalcommits >=10 needs conventional-changelog-writer@9; @semantic-release/release-notes-generator 14.x bundles writer@8 (v10.2.1 shipped empty release notes). Lift once release-notes-generator 15.x is stable.",
+      "matchPackageNames": ["conventional-changelog-conventionalcommits"],
+      "matchUpdateTypes": ["major"],
+      "enabled": false
+    },
+    {
       "description": "defusedxml is feature-complete, not actively releasing; don't flag as abandoned",
       "matchPackageNames": ["defusedxml"],
       "abandonmentThreshold": null

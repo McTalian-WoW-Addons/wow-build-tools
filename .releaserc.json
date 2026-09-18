@@ -4,7 +4,7 @@
     [
       "@semantic-release/commit-analyzer",
       {
-        "preset": "angular",
+        "preset": "conventionalcommits",
         "releaseRules": [
           { "type": "locale", "release": "patch" },
           { "type": "toc", "release": "patch" }
@@ -14,7 +14,7 @@
     [
       "@semantic-release/release-notes-generator",
       {
-        "preset": "angular",
+        "preset": "conventionalcommits",
         "presetConfig": {
           "types": [
             { "type": "feat", "section": "✨ Features" },
@@ -28,5 +28,5 @@
     ],
     "@semantic-release/github"
   ],
-  "preset": "angular"
+  "preset": "conventionalcommits"
 }
