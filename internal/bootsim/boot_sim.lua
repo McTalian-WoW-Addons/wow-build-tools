@@ -337,6 +337,9 @@ local function realImplementations(frames)
 		GetCurrentRegion = function()
 			return 1
 		end,
+		GetCurrentRegionName = function()
+			return "US"
+		end,
 		-- Real client behavior when not connected to a Battle.net session --
 		-- also the most accurate state for a boot simulation to model.
 		BNGetInfo = function() end,
@@ -360,6 +363,12 @@ local function realImplementations(frames)
 		end,
 		GetExpansionLevel = function()
 			return 10
+		end,
+		-- version, build, date, tocVersion. A Retail-shaped build to match
+		-- GetExpansionLevel above; libraries branch on tocVersion at file
+		-- load (e.g. AceDB-3.0 checks for the 1.x WoW Forever band).
+		GetBuildInfo = function()
+			return "12.0.1", "00000", "Jan 1 2026", 120001
 		end,
 		CreateAtlasMarkup = function()
 			return ""
