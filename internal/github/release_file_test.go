@@ -306,3 +306,27 @@ func TestValidateReleaseJSON_AdditionalProperty(t *testing.T) {
 	err := ValidateReleaseJSON(invalid)
 	assert.Error(t, err)
 }
+
+// Every flavor GetReleaseMetadataContents can emit for a shipping client must
+// satisfy the embedded schema, since ValidateReleaseJSON is not part of the
+// build path and nothing else would catch a slug the spec doesn't know.
+func TestGetReleaseMetadataContents_ForeverValidatesAgainstSchema(t *testing.T) {
+	contents, err := GetReleaseMetadataContents(
+		"MyAddon",
+		"1.0.0",
+		toc.GameInterfaces{
+			toc.ClassicEra: {11509},
+			toc.Forever:    {16001},
+			toc.Retail:     {120100},
+		},
+		"MyAddon-1.0.0.zip",
+	)
+	require.NoError(t, err)
+
+	var parsed wbtReleaseMetadata
+	require.NoError(t, json.Unmarshal([]byte(contents), &parsed))
+	require.Len(t, parsed.Releases, 1)
+	assert.Contains(t, parsed.Releases[0].Metadata, metadata{Flavor: "forever", Interface: 16001})
+
+	assert.NoError(t, ValidateReleaseJSON(contents))
+}
