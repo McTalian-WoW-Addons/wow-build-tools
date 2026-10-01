@@ -328,12 +328,23 @@ local function realImplementations(frames)
 		UnitName = function()
 			return "TestUnit", nil
 		end,
+		-- AceDB-3.0 builds its character key from this at file load.
+		UnitNameUnmodified = function()
+			return "TestUnit", nil
+		end,
 		UnitClass = function()
 			return "Warrior", "WARRIOR", 1
 		end,
 		UnitRace = function()
 			return "Human", "Human", 1
 		end,
+		-- Plain Blizzard constants (Blizzard_FrameXMLBase/Constants.lua, same
+		-- values on every flavor). Addons use them as table keys at file load,
+		-- where a nil global is "table index is nil".
+		LOOT_ROLL_TYPE_PASS = 0,
+		LOOT_ROLL_TYPE_NEED = 1,
+		LOOT_ROLL_TYPE_GREED = 2,
+		LOOT_ROLL_TYPE_DISENCHANT = 3,
 		GetCurrentRegion = function()
 			return 1
 		end,
