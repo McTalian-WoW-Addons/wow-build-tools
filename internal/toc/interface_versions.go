@@ -2,10 +2,14 @@ package toc
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strconv"
 	"strings"
+	"time"
+
+	"github.com/McTalian/wow-build-tools/internal/httpclient"
 )
 
 type BuildInfo struct {
@@ -179,10 +183,18 @@ var FlavorReleaseToProductMap map[GameFlavorRelease][]Product = map[GameFlavorRe
 
 type ProductBuilds = map[Product]BuildInfo
 
+// wagoApiUrl, wagoTimeout and wagoRetryBackoff are vars so tests can override them.
 var wagoApiUrl = "https://wago.tools/api"
-var latestBuilds = fmt.Sprintf("%s/builds/latest", wagoApiUrl)
+var wagoTimeout = httpclient.LookupTimeout
+var wagoRetryBackoff = 500 * time.Millisecond
 
 var cacheLatestBuilds *ProductBuilds = nil
+
+// errTransient marks failures worth a single retry (timeouts, 5xx).
+type errTransient struct{ err error }
+
+func (e errTransient) Error() string { return e.err.Error() }
+func (e errTransient) Unwrap() error { return e.err }
 
 func GetLatestBuildInfo() (*ProductBuilds, error) {
 	// Return cached builds if available
@@ -190,30 +202,47 @@ func GetLatestBuildInfo() (*ProductBuilds, error) {
 		return cacheLatestBuilds, nil
 	}
 
-	req, err := http.NewRequest("GET", latestBuilds, nil)
+	builds, err := fetchLatestBuilds()
+	var transient errTransient
+	if errors.As(err, &transient) {
+		time.Sleep(wagoRetryBackoff)
+		builds, err = fetchLatestBuilds()
+	}
+	if err != nil {
+		return nil, err
+	}
+
+	cacheLatestBuilds = builds
+	return builds, nil
+}
+
+func fetchLatestBuilds() (*ProductBuilds, error) {
+	req, err := http.NewRequest("GET", wagoApiUrl+"/builds/latest", nil)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create request: %w", err)
 	}
 
-	resp, err := http.DefaultClient.Do(req)
+	client := &http.Client{Timeout: wagoTimeout}
+	resp, err := client.Do(req)
 	if err != nil {
-		return nil, fmt.Errorf("failed to perform request: %w", err)
+		// Timeouts and connection errors are all worth one retry.
+		return nil, errTransient{fmt.Errorf("failed to perform request: %w", err)}
 	}
 	defer func() { _ = resp.Body.Close() }()
 
 	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		err := fmt.Errorf("unexpected status code: %d", resp.StatusCode)
+		if resp.StatusCode >= 500 {
+			return nil, errTransient{err}
+		}
+		return nil, err
 	}
 
 	var builds ProductBuilds
-	err = json.NewDecoder(resp.Body).Decode(&builds)
-	if err != nil {
+	if err := json.NewDecoder(resp.Body).Decode(&builds); err != nil {
 		return nil, fmt.Errorf("failed to decode response: %w", err)
 	}
 
-	cacheLatestBuilds = &builds
-
-	// Implementation to fetch and parse latest build info from Wago API
 	return &builds, nil
 }
 

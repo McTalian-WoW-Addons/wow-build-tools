@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/McTalian/wow-build-tools/internal/httpclient"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -155,7 +156,7 @@ func (w *wagoUpload) validateGameVersions(gameVersions []string) (err error) {
 
 	req.Header.Set("Accept", "application/json")
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpclient.NewLookup().Do(req)
 	if err != nil {
 		w.logGroup.Error("Could not fetch game versions: %v", err)
 		return

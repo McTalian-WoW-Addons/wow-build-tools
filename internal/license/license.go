@@ -2,8 +2,8 @@ package license
 
 import (
 	"fmt"
+	"github.com/McTalian/wow-build-tools/internal/httpclient"
 	"io"
-	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
@@ -20,7 +20,7 @@ func downloadLicense(curseProjectId string) (string, error) {
 	url := fmt.Sprintf("%s%s%s", baseUrl, curseProjectId, licensePath)
 
 	// Download license file
-	resp, err := http.Get(url)
+	resp, err := httpclient.NewLookup().Get(url)
 	if err != nil {
 		return "", err
 	}

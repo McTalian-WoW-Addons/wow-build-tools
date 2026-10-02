@@ -97,46 +97,50 @@ func RunTocCheck() (err error) {
 	}
 
 	if !TocCheckParams.SkipInterfaceCheck {
-		flavorReleaseInfo := FlavorReleaseInfo{
-			IsBeta: TocParams.Beta,
-			IsTest: TocParams.Ptr,
-		}
-		var updateCount = 0
-		for _, tocFile := range tocFiles {
-			var availableInterfaces map[Product]int
-			availableInterfaces, err = tocFile.CheckForInterfaceBumps(flavorReleaseInfo)
-			if err != nil {
-				return
+		if _, buildErr := GetLatestBuildInfo(); buildErr != nil {
+			l.Warn("could not fetch latest builds from wago.tools, skipping interface version check: %v", buildErr)
+		} else {
+			flavorReleaseInfo := FlavorReleaseInfo{
+				IsBeta: TocParams.Beta,
+				IsTest: TocParams.Ptr,
 			}
+			var updateCount = 0
+			for _, tocFile := range tocFiles {
+				var availableInterfaces map[Product]int
+				availableInterfaces, err = tocFile.CheckForInterfaceBumps(flavorReleaseInfo)
+				if err != nil {
+					return
+				}
 
-			var iFaceMap = make(map[int]bool)
-			for _, iface := range availableInterfaces {
-				iFaceMap[iface] = true
-			}
+				var iFaceMap = make(map[int]bool)
+				for _, iface := range availableInterfaces {
+					iFaceMap[iface] = true
+				}
 
-			var tocFaceMap = make(map[int]bool)
-			for _, iface := range tocFile.Interface {
-				tocFaceMap[iface] = true
-			}
+				var tocFaceMap = make(map[int]bool)
+				for _, iface := range tocFile.Interface {
+					tocFaceMap[iface] = true
+				}
 
-			// Check for any interfaces in the TOC that are no longer the latest
-			for _, iface := range tocFile.Interface {
-				if !iFaceMap[iface] {
-					updateCount++
-					checkWarnings = append(checkWarnings, fmt.Sprintf("TOC file '%s' uses interface version %d which is no longer a latest version", tocFile.Filepath, iface))
+				// Check for any interfaces in the TOC that are no longer the latest
+				for _, iface := range tocFile.Interface {
+					if !iFaceMap[iface] {
+						updateCount++
+						checkWarnings = append(checkWarnings, fmt.Sprintf("TOC file '%s' uses interface version %d which is no longer a latest version", tocFile.Filepath, iface))
+					}
+				}
+
+				// Check for any interfaces that are available but not in the TOC
+				for iface := range iFaceMap {
+					if !tocFaceMap[iface] {
+						updateCount++
+						checkWarnings = append(checkWarnings, fmt.Sprintf("TOC file '%s' is missing available interface version upgrade %d", tocFile.Filepath, iface))
+					}
 				}
 			}
 
-			// Check for any interfaces that are available but not in the TOC
-			for iface := range iFaceMap {
-				if !tocFaceMap[iface] {
-					updateCount++
-					checkWarnings = append(checkWarnings, fmt.Sprintf("TOC file '%s' is missing available interface version upgrade %d", tocFile.Filepath, iface))
-				}
-			}
+			l.Info("Completed interface version check: %d interface version updates available", updateCount)
 		}
-
-		l.Info("Completed interface version check: %d interface version updates available", updateCount)
 	}
 
 	if len(checkErrors) > 0 {

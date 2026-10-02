@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/McTalian/wow-build-tools/internal/httpclient"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -109,7 +110,7 @@ func stringInSlice(str string, list []string) bool {
 }
 
 func (w *wowiUpload) validateGameVersions(gameVersions []string) error {
-	resp, err := http.Get(wowiGameVersionsUrl)
+	resp, err := httpclient.NewLookup().Get(wowiGameVersionsUrl)
 	if err != nil {
 		w.logGroup.Error("Could not fetch game versions: %v", err)
 		return err

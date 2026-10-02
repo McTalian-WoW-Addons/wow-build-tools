@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"fmt"
+	"github.com/McTalian/wow-build-tools/internal/httpclient"
 	"io"
 	"mime/multipart"
 	"net/http"
@@ -223,7 +224,7 @@ func (c *curseUpload) validateGameVersions(gameVersions []string) (err error) {
 	req.Header.Set("Accept", "application/json")
 	req.Header.Set("x-api-token", c.token)
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpclient.NewLookup().Do(req)
 	if err != nil {
 		c.logGroup.Error("Could not fetch game versions: %v", err)
 		return
