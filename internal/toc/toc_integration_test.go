@@ -85,6 +85,7 @@ func getMockVersions() mockInterfaceVersions {
 
 // TestUpdateTocFiles_DefaultBehavior tests updating TOC files without flags
 func TestUpdateTocFiles_DefaultBehavior(t *testing.T) {
+	requireWago(t)
 	// This test verifies that the actual UpdateInterfaceVersions method works correctly
 	// Note: This requires network access to fetch actual version data from wago.tools API
 	// Skip if network is unavailable or for faster unit tests
@@ -140,6 +141,7 @@ func TestUpdateTocFiles_DefaultBehavior(t *testing.T) {
 
 // TestUpdateTocFiles_WithPtrFlag tests updating TOC files with PTR flag enabled
 func TestUpdateTocFiles_WithPtrFlag(t *testing.T) {
+	requireWago(t)
 	// This test verifies PTR flag behavior with actual API calls
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")
@@ -195,6 +197,7 @@ func TestUpdateTocFiles_WithPtrFlag(t *testing.T) {
 
 // TestUpdateTocFiles_WithBetaFlag tests updating TOC files with beta flag enabled
 func TestUpdateTocFiles_WithBetaFlag(t *testing.T) {
+	requireWago(t)
 	// This test verifies beta flag behavior with actual API calls
 	if testing.Short() {
 		t.Skip("Skipping integration test in short mode")

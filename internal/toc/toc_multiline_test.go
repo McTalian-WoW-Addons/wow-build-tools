@@ -8,6 +8,7 @@ import (
 )
 
 func TestMultiLineInterfaceUpdate(t *testing.T) {
+	requireWago(t)
 	tempDir := t.TempDir()
 	tocPath := filepath.Join(tempDir, "test.toc")
 
@@ -79,6 +80,7 @@ file.lua
 }
 
 func TestMultiLineInterfaceWithInactiveFlavor(t *testing.T) {
+	requireWago(t)
 	tempDir := t.TempDir()
 	tocPath := filepath.Join(tempDir, "test.toc")
 

@@ -5,6 +5,7 @@ import (
 	"net/http/httptest"
 	"os"
 	"path/filepath"
+	"sync"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -132,4 +133,20 @@ func TestRunTocCheck_RealFailureStillFailsWhenWagoDown(t *testing.T) {
 	t.Cleanup(func() { TocParams.AddonDir, TocCheckParams = oldDir, oldCheck })
 
 	assert.Error(t, RunTocCheck())
+}
+
+var (
+	wagoProbeOnce sync.Once
+	wagoProbeErr  error
+)
+
+// requireWago skips tests that depend on the live wago.tools API when it is
+// unreachable. The probe runs once per test binary so an outage costs one
+// timeout, not one per test.
+func requireWago(t *testing.T) {
+	t.Helper()
+	wagoProbeOnce.Do(func() { _, wagoProbeErr = GetLatestBuildInfo() })
+	if wagoProbeErr != nil {
+		t.Skipf("wago.tools unavailable, skipping live lookup test: %v", wagoProbeErr)
+	}
 }

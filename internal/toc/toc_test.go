@@ -366,6 +366,7 @@ Utils.lua
 }
 
 func TestToc_CheckForInterfaceBumpsNormal(t *testing.T) {
+	requireWago(t)
 	tempDir := t.TempDir()
 	tocPath := filepath.Join(tempDir, "TestAddon.toc")
 
@@ -415,6 +416,7 @@ Core.lua`
 }
 
 func TestToc_CheckForInterfaceBumpsPtr(t *testing.T) {
+	requireWago(t)
 	tempDir := t.TempDir()
 	tocPath := filepath.Join(tempDir, "TestAddon.toc")
 
@@ -492,6 +494,7 @@ Core.lua`
 }
 
 func TestToc_CheckForInterfaceBumpsBeta(t *testing.T) {
+	requireWago(t)
 	tempDir := t.TempDir()
 	tocPath := filepath.Join(tempDir, "TestAddon.toc")
 
@@ -552,6 +555,7 @@ Core.lua`
 }
 
 func TestToc_CheckForInterfaceBumpsBetaAndPtr(t *testing.T) {
+	requireWago(t)
 	tempDir := t.TempDir()
 	tocPath := filepath.Join(tempDir, "TestAddon.toc")
 
