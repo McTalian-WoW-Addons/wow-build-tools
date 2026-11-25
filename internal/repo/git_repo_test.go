@@ -1,6 +1,8 @@
 package repo
 
 import (
+	"os/exec"
+	"path/filepath"
 	"testing"
 
 	"github.com/go-git/go-git/v5/plumbing"
@@ -331,4 +333,34 @@ func TestSortTagNameHashes_MultiDigitVersions(t *testing.T) {
 	}
 
 	assert.Equal(t, expected, result)
+}
+
+func TestGitRepo_openRepo_LinkedWorktree(t *testing.T) {
+	if _, err := exec.LookPath("git"); err != nil {
+		t.Skip("git not available")
+	}
+
+	dir := t.TempDir()
+	mainDir := filepath.Join(dir, "main")
+	wtDir := filepath.Join(dir, "wt")
+
+	run := func(args ...string) {
+		t.Helper()
+		cmd := exec.Command("git", args...)
+		cmd.Dir = mainDir
+		if out, err := cmd.CombinedOutput(); err != nil {
+			t.Fatalf("git %v failed: %v\n%s", args, err, out)
+		}
+	}
+
+	assert.NoError(t, exec.Command("git", "init", "-q", mainDir).Run())
+	run("config", "user.email", "test@example.com")
+	run("config", "user.name", "Test")
+	run("remote", "add", "origin", "git@github.com:owner/repo.git")
+	run("commit", "-q", "--allow-empty", "-m", "init")
+	run("worktree", "add", "-q", "--detach", wtDir)
+
+	gR := &GitRepo{repo: &Repo{repoRoot: wtDir}}
+	assert.NoError(t, gR.openRepo())
+	assert.Equal(t, "owner/repo", gR.gitHubSlug)
 }

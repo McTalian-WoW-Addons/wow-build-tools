@@ -90,7 +90,11 @@ func (gR *GitRepo) parseGitHubURL() {
 
 func (gR *GitRepo) openRepo() error {
 	var err error
-	gR.gitRepo, err = git.PlainOpen(gR.repo.GetRepoRoot())
+	// EnableDotGitCommonDir lets go-git read the shared config (remotes, etc.)
+	// when the repo root is a linked worktree whose .git is a file.
+	gR.gitRepo, err = git.PlainOpenWithOptions(gR.repo.GetRepoRoot(), &git.PlainOpenOptions{
+		EnableDotGitCommonDir: true,
+	})
 	if err != nil {
 		return fmt.Errorf("failed to open git repository: %w", err)
 	}
