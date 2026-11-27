@@ -33,11 +33,21 @@ jobs:
             echo "updated=true" >> $GITHUB_OUTPUT
           fi
 
+      - name: Create GitHub App token
+        id: app-token
+        if: steps.compare.outputs.updated == 'true'
+        uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
+        with:
+          app-id: ${{ secrets.TOC_APP_ID }}
+          private-key: ${{ secrets.TOC_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-pull-requests: write
+
       - name: Create pull request
         if: steps.compare.outputs.updated == 'true'
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
-          token: ${{ secrets.GH_PAT }}
+          token: ${{ steps.app-token.outputs.token }}
           title: "chore: update embedded release.json schema"
           commit-message: "chore: update embedded release.json schema"
           branch: update-release-schema
