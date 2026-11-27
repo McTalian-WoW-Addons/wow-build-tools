@@ -9,10 +9,9 @@
 #   pr-body:    The PR body markdown (checklist of test requirements)
 #
 # Auth for PR creation (secrets passed via `secrets: inherit`):
-#   Preferred: TOC_APP_ID + TOC_APP_PRIVATE_KEY. A GitHub App with Contents: write
+#   TOC_APP_ID + TOC_APP_PRIVATE_KEY: A GitHub App with Contents: write
 #     and Pull requests: write, installed on the calling repo, mints a short-lived
 #     token, and PRs created with it still trigger CI.
-#   Fallback: GH_PAT, used when the app secrets are unset or minting fails.
 
 name: Update TOC Interface version(s)
 
@@ -46,8 +45,6 @@ jobs:
     permissions:
       contents: write
       pull-requests: write
-    env:
-      TOC_APP_ID: ${{ secrets.TOC_APP_ID }}
     steps:
       - name: Clone project
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -83,9 +80,6 @@ jobs:
 
       - name: Create GitHub App token
         id: app-token
-        if: env.TOC_APP_ID != ''
-        # Fall back to GH_PAT if the app is misconfigured rather than failing the run
-        continue-on-error: true
         uses: actions/create-github-app-token@f418cff399f7aef4c2f0ad47e25ca7a6abbdd6fc # v3.4.0
         with:
           app-id: ${{ secrets.TOC_APP_ID }}
@@ -96,7 +90,7 @@ jobs:
       - name: Create pull request
         uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
         with:
-          token: ${{ steps.app-token.outputs.token || secrets.GH_PAT }}
+          token: ${{ steps.app-token.outputs.token }}
           title: ${{ steps.change-type.outputs.pr_title }}
           body: ${{ inputs.pr-body }}
           commit-message: ${{ steps.change-type.outputs.commit_message }}
